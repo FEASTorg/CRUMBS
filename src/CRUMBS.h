@@ -5,7 +5,6 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <tinycbor.h>
 #include "CRUMBSMessage.h"
 
 #ifdef CRUMBS_DEBUG
@@ -29,8 +28,8 @@ public:
 
     uint8_t getAddress() const;
 
+    // Manual serialization and deserialization
     size_t encodeMessage(const CRUMBSMessage& message, uint8_t* buffer, size_t bufferSize);
-
     bool decodeMessage(const uint8_t* buffer, size_t bufferSize, CRUMBSMessage& message);
 
 private:

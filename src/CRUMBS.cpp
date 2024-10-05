@@ -35,7 +35,7 @@ void CRUMBS::begin() {
 void CRUMBS::sendMessage(const CRUMBSMessage& message, uint8_t targetAddress) {
     CRUMBS_DEBUG_PRINTLN("Preparing to send message...");
 
-    uint8_t buffer[64];
+    uint8_t buffer[20]; // 1 + 1 + 1 + (4*4) + 1 = 20 bytes
     size_t encodedSize = encodeMessage(message, buffer, sizeof(buffer));
 
     if (encodedSize == 0) {
@@ -68,10 +68,10 @@ void CRUMBS::sendMessage(const CRUMBSMessage& message, uint8_t targetAddress) {
 void CRUMBS::receiveMessage(CRUMBSMessage& message) {
     CRUMBS_DEBUG_PRINTLN("Receiving message...");
 
-    uint8_t buffer[64];
+    uint8_t buffer[20];
     size_t index = 0;
 
-    while (Wire.available() > 0) {
+    while (Wire.available() > 0 && index < sizeof(buffer)) {
         buffer[index++] = Wire.read();
     }
 
@@ -105,153 +105,60 @@ uint8_t CRUMBS::getAddress() const {
 }
 
 size_t CRUMBS::encodeMessage(const CRUMBSMessage& message, uint8_t* buffer, size_t bufferSize) {
-    CborEncoder encoder, arrayEncoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-
-    // Corrected array length to 8
-    CborError err = cbor_encoder_create_array(&encoder, &arrayEncoder, 8);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error creating CBOR array");
+    const size_t MESSAGE_SIZE = 20; // Fixed message size
+    if (bufferSize < MESSAGE_SIZE) {
+        CRUMBS_DEBUG_PRINTLN("Buffer size too small for encoding message.");
         return 0;
     }
 
-    err = cbor_encode_uint(&arrayEncoder, message.sliceID);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error encoding sliceID");
-        return 0;
-    }
+    size_t index = 0;
 
-    err = cbor_encode_uint(&arrayEncoder, message.typeID);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error encoding typeID");
-        return 0;
-    }
+    // Serialize fields into buffer in order
+    buffer[index++] = message.sliceID;
+    buffer[index++] = message.typeID;
+    buffer[index++] = message.commandType;
 
-    err = cbor_encode_uint(&arrayEncoder, message.commandType);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error encoding commandType");
-        return 0;
-    }
-
+    // Serialize float data[4]
     for (int i = 0; i < 4; i++) {
-        err = cbor_encode_float(&arrayEncoder, message.data[i]);
-        if (err != CborNoError) {
-            CRUMBS_DEBUG_PRINT("Error encoding data element ");
-            CRUMBS_DEBUG_PRINTLN(i);
-            return 0;
+        // Assuming little-endian architecture
+        uint8_t* floatPtr = (uint8_t*)&message.data[i];
+        for (int b = 0; b < sizeof(float); b++) {
+            buffer[index++] = floatPtr[b];
         }
     }
 
-    err = cbor_encode_uint(&arrayEncoder, message.errorFlags);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error encoding errorFlags");
-        return 0;
-    }
-
-    err = cbor_encoder_close_container(&encoder, &arrayEncoder);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error closing CBOR container");
-        return 0;
-    }
+    buffer[index++] = message.errorFlags;
 
     CRUMBS_DEBUG_PRINTLN("Message successfully encoded.");
 
-    return cbor_encoder_get_buffer_size(&encoder, buffer);
+    return index; // Should be 20
 }
 
 bool CRUMBS::decodeMessage(const uint8_t* buffer, size_t bufferSize, CRUMBSMessage& message) {
-    if (bufferSize == 0) {
-        CRUMBS_DEBUG_PRINTLN("decodeMessage called with empty buffer.");
+    const size_t MESSAGE_SIZE = 20; // Fixed message size
+    if (bufferSize < MESSAGE_SIZE) {
+        CRUMBS_DEBUG_PRINTLN("Buffer size too small for decoding message.");
         return false;
     }
 
-    CborParser parser;
-    CborValue it, array;
-    CborError err;
+    size_t index = 0;
 
-    err = cbor_parser_init(buffer, bufferSize, 0, &parser, &it);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error initializing CBOR parser");
-        return false;
-    }
+    // Deserialize fields from buffer in order
+    message.sliceID = buffer[index++];
+    message.typeID = buffer[index++];
+    message.commandType = buffer[index++];
 
-    err = cbor_value_enter_container(&it, &array);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error entering CBOR container");
-        return false;
-    }
-
-    uint64_t tempUint;
-    float tempFloat;
-
-    err = cbor_value_get_uint64(&array, &tempUint);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error reading sliceID.");
-        return false;
-    }
-    message.sliceID = (uint8_t)tempUint;
-
-    err = cbor_value_advance(&array);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error advancing to typeID.");
-        return false;
-    }
-
-    err = cbor_value_get_uint64(&array, &tempUint);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error reading typeID.");
-        return false;
-    }
-    message.typeID = (uint8_t)tempUint;
-
-    err = cbor_value_advance(&array);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error advancing to commandType.");
-        return false;
-    }
-
-    err = cbor_value_get_uint64(&array, &tempUint);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error reading commandType.");
-        return false;
-    }
-    message.commandType = (uint8_t)tempUint;
-
+    // Deserialize float data[4]
     for (int i = 0; i < 4; i++) {
-        err = cbor_value_advance(&array);
-        if (err != CborNoError) {
-            CRUMBS_DEBUG_PRINT("Error advancing to data element ");
-            CRUMBS_DEBUG_PRINTLN(i);
-            return false;
+        float value = 0.0;
+        uint8_t* floatPtr = (uint8_t*)&value;
+        for (int b = 0; b < sizeof(float); b++) {
+            floatPtr[b] = buffer[index++];
         }
-
-        err = cbor_value_get_float(&array, &tempFloat);
-        if (err != CborNoError) {
-            CRUMBS_DEBUG_PRINT("Error reading data element ");
-            CRUMBS_DEBUG_PRINTLN(i);
-            return false;
-        }
-        message.data[i] = tempFloat;
+        message.data[i] = value;
     }
 
-    err = cbor_value_advance(&array);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error advancing to errorFlags.");
-        return false;
-    }
-
-    err = cbor_value_get_uint64(&array, &tempUint);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error reading errorFlags.");
-        return false;
-    }
-    message.errorFlags = (uint8_t)tempUint;
-
-    err = cbor_value_leave_container(&it, &array);
-    if (err != CborNoError) {
-        CRUMBS_DEBUG_PRINTLN("Error leaving CBOR container");
-        return false;
-    }
+    message.errorFlags = buffer[index++];
 
     CRUMBS_DEBUG_PRINTLN("Message successfully decoded.");
 

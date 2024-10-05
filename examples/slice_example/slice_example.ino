@@ -34,17 +34,27 @@ void handleMessage(CRUMBSMessage& message) {
 
 // Function to handle master's request for data
 void handleRequest() {
-    Serial.println("Slice: Master requested data, sending response...");
+    CRUMBS_DEBUG_PRINTLN("Slice: Master requested data, sending response...");
 
     // Prepare response message
-    CRUMBSMessage responseMessage = {crumbsSlice.getAddress(), 2, 0x05, {42.0, 0.0, 0.0, 0.0}, 0};
-    uint8_t buffer[64];
+    CRUMBSMessage responseMessage;
+    responseMessage.sliceID = crumbsSlice.getAddress();
+    responseMessage.typeID = 2;           // Example Type ID
+    responseMessage.commandType = 5;      // Example Command Type
+    responseMessage.data[0] = 42.0;       // Example Data
+    responseMessage.data[1] = 0.0;
+    responseMessage.data[2] = 0.0;
+    responseMessage.data[3] = 0.0;
+    responseMessage.errorFlags = 0;       // No errors
+
+    uint8_t buffer[20];
     size_t encodedSize = crumbsSlice.encodeMessage(responseMessage, buffer, sizeof(buffer));
 
     if (encodedSize == 0) {
-        Serial.println("Slice: Failed to encode response message.");
+        CRUMBS_DEBUG_PRINTLN("Slice: Failed to encode response message.");
         return;
     }
 
     Wire.write(buffer, encodedSize);
+    CRUMBS_DEBUG_PRINTLN("Slice: Response message sent.");
 }

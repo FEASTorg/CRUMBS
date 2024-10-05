@@ -21,11 +21,11 @@ void loop() {
             // Request data from the slice
             Serial.println("Master: Requesting data from slice...");
             uint8_t targetAddress = 0x08; // Address of the slice
-            Wire.requestFrom(targetAddress, (uint8_t)64); // Request up to 64 bytes
+            Wire.requestFrom(targetAddress, (uint8_t)CRUMBS_MESSAGE_SIZE); // Request 20 bytes
 
-            uint8_t buffer[64];
+            uint8_t buffer[CRUMBS_MESSAGE_SIZE];
             size_t index = 0;
-            while (Wire.available()) {
+            while (Wire.available() && index < CRUMBS_MESSAGE_SIZE) {
                 buffer[index++] = Wire.read();
             }
 
@@ -61,6 +61,15 @@ CRUMBSMessage parseSerialInput(const String& input) {
     int index = 0;
     int lastComma = 0;
 
+    // Initialize all fields to default values
+    message.sliceID = 0;
+    message.typeID = 0;
+    message.commandType = 0;
+    for (int i = 0; i < 4; i++) {
+        message.data[i] = 0.0;
+    }
+    message.errorFlags = 0;
+
     // Parse each value in the comma-separated input string
     for (int i = 0; i < input.length(); i++) {
         if (input[i] == ',' || i == input.length() - 1) {
@@ -76,6 +85,7 @@ CRUMBSMessage parseSerialInput(const String& input) {
                 case 5: message.data[2] = value.toFloat(); break;
                 case 6: message.data[3] = value.toFloat(); break;
                 case 7: message.errorFlags = value.toInt(); break;
+                default: break;
             }
             index++;
         }
