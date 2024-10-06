@@ -1,6 +1,8 @@
+// File: lib/CRUMBS/CRUMBS.cpp
+
 #include "CRUMBS.h"
 
-CRUMBS* crumbsInstance = nullptr;
+CRUMBS* CRUMBS::instance = nullptr;
 
 CRUMBS::CRUMBS(bool isMaster, uint8_t address) : masterMode(isMaster) {
     if (masterMode) {
@@ -8,7 +10,7 @@ CRUMBS::CRUMBS(bool isMaster, uint8_t address) : masterMode(isMaster) {
     } else {
         i2cAddress = address;
     }
-    crumbsInstance = this; // Singleton instance
+    instance = this; // Assign singleton instance
     CRUMBS_DEBUG_PRINT("Initializing CRUMBS instance. Address: 0x");
     CRUMBS_DEBUG_PRINTLN(i2cAddress, HEX);
 }
@@ -29,7 +31,7 @@ void CRUMBS::begin() {
 
     Wire.onReceive(receiveEvent);
     Wire.onRequest(requestEvent);
-    CRUMBS_DEBUG_PRINTLN("onReceive and onRequest events registered.");
+    CRUMBS_DEBUG_PRINTLN("I2C event handlers registered.");
 }
 
 void CRUMBS::sendMessage(const CRUMBSMessage& message, uint8_t targetAddress) {
@@ -88,20 +90,6 @@ void CRUMBS::receiveMessage(CRUMBSMessage& message) {
     } else {
         CRUMBS_DEBUG_PRINTLN("Message received and decoded successfully.");
     }
-}
-
-void CRUMBS::onReceive(void (*callback)(CRUMBSMessage&)) {
-    receiveCallback = callback;
-    CRUMBS_DEBUG_PRINTLN("onReceive callback function set.");
-}
-
-void CRUMBS::onRequest(void (*callback)()) {
-    requestCallback = callback;
-    CRUMBS_DEBUG_PRINTLN("onRequest callback function set.");
-}
-
-uint8_t CRUMBS::getAddress() const {
-    return i2cAddress;
 }
 
 size_t CRUMBS::encodeMessage(const CRUMBSMessage& message, uint8_t* buffer, size_t bufferSize) {
@@ -165,6 +153,20 @@ bool CRUMBS::decodeMessage(const uint8_t* buffer, size_t bufferSize, CRUMBSMessa
     return true;
 }
 
+void CRUMBS::onReceive(void (*callback)(CRUMBSMessage&)) {
+    receiveCallback = callback;
+    CRUMBS_DEBUG_PRINTLN("onReceive callback function set.");
+}
+
+void CRUMBS::onRequest(void (*callback)()) {
+    requestCallback = callback;
+    CRUMBS_DEBUG_PRINTLN("onRequest callback function set.");
+}
+
+uint8_t CRUMBS::getAddress() const {
+    return i2cAddress;
+}
+
 void CRUMBS::receiveEvent(int bytes) {
     CRUMBS_DEBUG_PRINT("Received event with ");
     CRUMBS_DEBUG_PRINT(bytes);
@@ -175,10 +177,10 @@ void CRUMBS::receiveEvent(int bytes) {
         return;
     }
 
-    if (crumbsInstance && crumbsInstance->receiveCallback) {
+    if (instance && instance->receiveCallback) {
         CRUMBSMessage message;
-        crumbsInstance->receiveMessage(message);
-        crumbsInstance->receiveCallback(message);
+        instance->receiveMessage(message);
+        instance->receiveCallback(message);
     } else {
         CRUMBS_DEBUG_PRINTLN("receiveCallback function is not set.");
     }
@@ -187,8 +189,8 @@ void CRUMBS::receiveEvent(int bytes) {
 void CRUMBS::requestEvent() {
     CRUMBS_DEBUG_PRINTLN("Request event triggered.");
 
-    if (crumbsInstance && crumbsInstance->requestCallback) {
-        crumbsInstance->requestCallback();
+    if (instance && instance->requestCallback) {
+        instance->requestCallback();
     } else {
         CRUMBS_DEBUG_PRINTLN("requestCallback function is not set.");
     }

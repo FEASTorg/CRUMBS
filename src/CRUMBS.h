@@ -1,3 +1,5 @@
+// File: lib/CRUMBS/CRUMBS.h
+
 #ifndef CRUMBS_H
 #define CRUMBS_H
 
@@ -40,6 +42,8 @@ private:
 
     static void receiveEvent(int bytes);
     static void requestEvent();
+
+    static CRUMBS* instance; // Singleton instance for static callbacks
 };
 
 #endif // CRUMBS_H

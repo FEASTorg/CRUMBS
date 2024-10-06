@@ -1,38 +1,48 @@
+// File: examples/CRUMBS_Test/crumbs_master_test.ino
+
 #define CRUMBS_DEBUG
 #include <CRUMBS.h>
 
-CRUMBS crumbsMaster(true); // Master mode
+// Instantiate CRUMBS as Master
+CRUMBS crumbsMaster(true); // true = Master mode, address is irrelevant for Master
 
 void setup() {
     Serial.begin(115200);
-    while (!Serial) { delay(10); }
+    while (!Serial) { delay(10); } // Wait for Serial Monitor to open
     crumbsMaster.begin();
-    Serial.println("Master ready. Enter messages in the format: sliceID,typeID,commandType,data1,data2,data3,data4,errorFlags");
+    Serial.println("Master ready. Enter messages in the format: sliceID,typeID,commandType,data0,data1,data2,data3,errorFlags");
+    Serial.println("To request data from the slice, type: request");
+    Serial.println("Example Commands:");
+    Serial.println("1. Send Message:");
+    Serial.println("   0x08,2,5,10.5,20.0,30.5,40.0,0");
+    Serial.println("2. Request Data:");
+    Serial.println("   request");
 }
 
 void loop() {
-    // Wait for serial input to send commands or request data
+    // Listen for serial input to send commands or request data
     if (Serial.available()) {
         String input = Serial.readStringUntil('\n');
-        Serial.print("Master: Received input from serial: ");
+        input.trim(); // Remove any trailing newline characters
+        Serial.print("Master: Received input: ");
         Serial.println(input);
 
-        if (input.startsWith("request")) {
+        if (input.equalsIgnoreCase("request")) {
             // Request data from the slice
             Serial.println("Master: Requesting data from slice...");
             uint8_t targetAddress = 0x08; // Address of the slice
-            Wire.requestFrom(targetAddress, (uint8_t)CRUMBS_MESSAGE_SIZE); // Request 20 bytes
+            Wire.requestFrom(targetAddress, (uint8_t)20); // Request 20 bytes (size of CRUMBSMessage)
 
-            uint8_t buffer[CRUMBS_MESSAGE_SIZE];
+            uint8_t buffer[20];
             size_t index = 0;
-            while (Wire.available() && index < CRUMBS_MESSAGE_SIZE) {
+            while (Wire.available() && index < 20) {
                 buffer[index++] = Wire.read();
             }
 
             CRUMBSMessage receivedMessage;
             if (crumbsMaster.decodeMessage(buffer, index, receivedMessage)) {
                 Serial.println("Master: Received Message from Slice:");
-                Serial.print("Slice ID: "); Serial.println(receivedMessage.sliceID);
+                Serial.print("Slice ID: "); Serial.println(receivedMessage.sliceID, HEX);
                 Serial.print("Type ID: "); Serial.println(receivedMessage.typeID);
                 Serial.print("Command Type: "); Serial.println(receivedMessage.commandType);
                 Serial.print("Data: ");
@@ -77,7 +87,14 @@ CRUMBSMessage parseSerialInput(const String& input) {
             lastComma = i + 1;
 
             switch (index) {
-                case 0: message.sliceID = value.toInt(); break;
+                case 0: 
+                    // Allow both decimal and hexadecimal input for sliceID
+                    if (value.startsWith("0x") || value.startsWith("0X")) {
+                        message.sliceID = strtol(value.c_str(), NULL, 16);
+                    } else {
+                        message.sliceID = value.toInt();
+                    }
+                    break;
                 case 1: message.typeID = value.toInt(); break;
                 case 2: message.commandType = value.toInt(); break;
                 case 3: message.data[0] = value.toFloat(); break;
@@ -93,7 +110,7 @@ CRUMBSMessage parseSerialInput(const String& input) {
 
     Serial.println("Master: Parsed input into CRUMBSMessage");
     Serial.print("Parsed Message -> sliceID: ");
-    Serial.print(message.sliceID);
+    Serial.print(message.sliceID, HEX);
     Serial.print(", typeID: ");
     Serial.print(message.typeID);
     Serial.print(", commandType: ");
