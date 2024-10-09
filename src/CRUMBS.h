@@ -1,6 +1,7 @@
 #ifndef CRUMBS_H
 #define CRUMBS_H
 
+// Uncomment the following line to enable debugging
 #define CRUMBS_DEBUG
 
 #include <Arduino.h>
@@ -8,8 +9,9 @@
 #include "CRUMBSMessage.h"
 
 #ifdef CRUMBS_DEBUG
-    #define CRUMBS_DEBUG_PRINT(...) Serial.print("CRUMBS: "); Serial.print(__VA_ARGS__)
-    #define CRUMBS_DEBUG_PRINTLN(...) Serial.print("CRUMBS: "); Serial.println(__VA_ARGS__)
+    // Use F() macro to store strings in flash memory
+    #define CRUMBS_DEBUG_PRINT(...) Serial.print(F("CRUMBS: ")); Serial.print(__VA_ARGS__)
+    #define CRUMBS_DEBUG_PRINTLN(...) Serial.print(F("CRUMBS: ")); Serial.println(__VA_ARGS__)
 #else
     #define CRUMBS_DEBUG_PRINT(...)
     #define CRUMBS_DEBUG_PRINTLN(...)
@@ -40,6 +42,8 @@ private:
 
     static void receiveEvent(int bytes);
     static void requestEvent();
+
+    static CRUMBS* instance; // Singleton instance for static callbacks
 };
 
 #endif // CRUMBS_H
