@@ -1,17 +1,19 @@
+// File: lib/CRUMBS/CRUMBSMessage.h
+
 #ifndef CRUMBSMESSAGE_H
 #define CRUMBSMESSAGE_H
 
 #include <stdint.h>
 
-// Define the fixed message size
-#define CRUMBS_MESSAGE_SIZE 64
-
+/**
+ * @brief Fixed-size message structure for CRUMBS communication.
+ */
 struct CRUMBSMessage {
-    uint8_t sliceID;         // Unique ID for the slice
-    uint8_t typeID;          // Type identifier of the slice
-    uint8_t commandType;     // Command or action identifier
-    float data[4];           // Data payload
-    uint8_t errorFlags;      // Error or status flags
+    uint8_t sliceID;         /**< Unique identifier for the target slice */
+    uint8_t typeID;          /**< Identifier for the module type */
+    uint8_t commandType;     /**< Command or action identifier */
+    float data[6];           /**< Payload data (6 floating-point values) */
+    uint8_t errorFlags;      /**< Error or status flags */
 };
 
 #endif // CRUMBSMESSAGE_H

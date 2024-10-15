@@ -1,65 +1,137 @@
-// File: examples/CRUMBS_Test/crumbs_slice_test.ino
+/**
+ * @file crumbs_slice_test.ino
+ * @brief CRUMBS Slice example sketch to receive messages from a CRUMBS Master and respond to requests.
+ */
 
 #define CRUMBS_DEBUG
 #include <CRUMBS.h>
 
-// Instantiate CRUMBS as a Slice (Slave) with I2C address 0x08
-CRUMBS crumbsSlice(false, 0x08); // false = Slave mode, 0x08 = I2C address
+/**
+ * @brief I2C address for this Slice device.
+ * 
+ * @note Ensure this matches the address specified by the Master when sending messages.
+ */
+#define SLICE_I2C_ADDRESS 0x08 // Example I2C address
 
-void setup() {
-    Serial.begin(115200);
-    while (!Serial) { delay(10); } // Wait for Serial Monitor to open
-    crumbsSlice.begin();
-    crumbsSlice.onReceive(handleMessage);
-    crumbsSlice.onRequest(handleRequest);
-    Serial.println("Slice ready and listening for messages...");
-}
+/**
+ * @brief Instantiate CRUMBS as a Slice (Slave).
+ * 
+ * @note Pass 'false' to indicate Slave mode and provide the I2C address.
+ */
+CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS); // Slave mode, I2C address 0x08
 
-void loop() {
-    // The slice does not perform actions in loop; it responds to Master via callbacks
-}
-
-// Callback function to handle received messages from the Master
-void handleMessage(CRUMBSMessage& message) {
-    Serial.println("Slice: Received Message:");
-    Serial.print("Slice ID: "); Serial.println(message.sliceID, HEX);
-    Serial.print("Type ID: "); Serial.println(message.typeID);
-    Serial.print("Command Type: "); Serial.println(message.commandType);
-    Serial.print("Data: ");
-    for (int i = 0; i < 4; i++) {
+/**
+ * @brief Callback function to handle received CRUMBSMessages from the Master.
+ * 
+ * @param message The received CRUMBSMessage.
+ */
+void handleMessage(CRUMBSMessage& message)
+{
+    Serial.println(F("Slice: Received Message:"));
+    Serial.print(F("typeID: "));
+    Serial.println(message.typeID);
+    Serial.print(F("unitID: "));
+    Serial.println(message.unitID);
+    Serial.print(F("commandType: "));
+    Serial.println(message.commandType);
+    Serial.print(F("data: "));
+    for (int i = 0; i < 6; i++)
+    {
         Serial.print(message.data[i]);
-        Serial.print(" ");
+        Serial.print(F(" "));
     }
     Serial.println();
-    Serial.print("Error Flags: "); Serial.println(message.errorFlags);
-    Serial.println("Slice: Message successfully processed by handleMessage callback");
+    Serial.print(F("errorFlags: "));
+    Serial.println(message.errorFlags);
+    
+    // Process the message based on commandType
+    switch (message.commandType)
+    {
+        case 0:
+            // CommandType 0: Data Request
+            Serial.println(F("Slice: Data Request Received."));
+            // Optionally, perform actions upon data request
+            break;
+        
+        case 1:
+            // CommandType 1: Example Command (e.g., Set Parameters)
+            Serial.println(F("Slice: Set Parameters Command Received."));
+            // Example: Update internal state based on data
+            // Here, you can add code to handle specific commands
+            break;
+        
+        // Add more case blocks for different commandTypes as needed
+        
+        default:
+            Serial.println(F("Slice: Unknown Command Type."));
+            break;
+    }
+    
+    Serial.println(F("Slice: Message processing complete."));
 }
 
-// Callback function to handle Master's data requests
-void handleRequest() {
-    CRUMBS_DEBUG_PRINTLN("Slice: Master requested data, preparing response...");
+/**
+ * @brief Callback function to handle data requests from the Master.
+ * 
+ * @note This function sends a CRUMBSMessage back to the Master in response to a request.
+ */
+void handleRequest()
+{
+    CRUMBS_DEBUG_PRINTLN(F("Slice: Master requested data, sending response..."));
 
     // Prepare response message
     CRUMBSMessage responseMessage;
-    responseMessage.sliceID = crumbsSlice.getAddress(); // Slice's own address
-    responseMessage.typeID = 2;           // Example Type ID (can be customized)
-    responseMessage.commandType = 5;      // Example Command Type (e.g., status)
-    responseMessage.data[0] = 42.0;       // Example Data (e.g., sensor reading)
-    responseMessage.data[1] = 0.0;
-    responseMessage.data[2] = 0.0;
-    responseMessage.data[3] = 0.0;
-    responseMessage.errorFlags = 0;       // No errors
+    responseMessage.typeID = 1;             /**< Component group ID */
+    responseMessage.unitID = 1;             /**< Specific unit ID */
+    responseMessage.commandType = 0;        /**< CommandType 0 for status response */
+    
+    // Populate data fields with example data
+    responseMessage.data[0] = 42.0f;        /**< Example data0 */
+    responseMessage.data[1] = 1.0f;         /**< Example data1 */
+    responseMessage.data[2] = 2.0f;         /**< Example data2 */
+    responseMessage.data[3] = 3.0f;         /**< Example data3 */
+    responseMessage.data[4] = 4.0f;         /**< Example data4 */
+    responseMessage.data[5] = 5.0f;         /**< Example data5 */
+    
+    responseMessage.errorFlags = 0;         /**< No errors */
 
-    // Encode the message
-    uint8_t buffer[20];
+    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t encodedSize = crumbsSlice.encodeMessage(responseMessage, buffer, sizeof(buffer));
 
-    if (encodedSize == 0) {
-        CRUMBS_DEBUG_PRINTLN("Slice: Failed to encode response message.");
+    if (encodedSize == 0)
+    {
+        CRUMBS_DEBUG_PRINTLN(F("Slice: Failed to encode response message."));
         return;
     }
 
     // Send the encoded message back to the Master
     Wire.write(buffer, encodedSize);
-    CRUMBS_DEBUG_PRINTLN("Slice: Response message sent.");
+    CRUMBS_DEBUG_PRINTLN(F("Slice: Response message sent."));
+}
+
+/**
+ * @brief Sets up the Slice device, initializes serial communication, registers callbacks, and prepares for communication.
+ */
+void setup()
+{
+    Serial.begin(115200); /**< Initialize serial communication at 115200 baud rate */
+    while (!Serial) { delay(10); } // Wait for Serial Monitor to open
+    crumbsSlice.begin(); /**< Initialize CRUMBS communication */
+    
+    // Register callback functions for received messages and data requests
+    crumbsSlice.onReceive(handleMessage);
+    crumbsSlice.onRequest(handleRequest);
+    
+    Serial.println(F("Slice ready and listening for messages..."));
+}
+
+/**
+ * @brief Main loop that can perform periodic tasks if needed.
+ * 
+ * @note Here, all actions are event-driven via callbacks.
+ */
+void loop()
+{
+    // No actions needed in loop for this example
+    // All processing is handled via callbacks
 }
