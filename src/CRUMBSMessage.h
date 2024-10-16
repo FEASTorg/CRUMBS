@@ -16,4 +16,12 @@ struct CRUMBSMessage {
     uint8_t errorFlags;      /**< Error or status flags */
 };
 
+/**
+ * @brief Size of the CRUMBSMessage structure in bytes.
+ * 
+ * @note Calculated as: 1 + 1 + 1 + 24 (6 floats) + 1 = 28 bytes
+ */
+
+#define CRUMBS_MESSAGE_SIZE 28
+
 #endif // CRUMBSMESSAGE_H
