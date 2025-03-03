@@ -3,9 +3,11 @@
 #ifndef CRUMBS_H
 #define CRUMBS_H
 
-#include <Arduino.h>
-#include <Wire.h>
-#include "CRUMBSMessage.h"
+#include <Arduino.h> // Include the Arduino standard library
+#include <Wire.h>   // Include the Wire library for I2C communication
+#include "CRUMBSMessage.h" // Include our CRUMBSMessage class
+
+#define TWI_CLOCK_FREQ 100000 /**< I2C clock frequency in Hz, 100000 is standard */
 
 /** 
  * @def CRUMBS_DEBUG
