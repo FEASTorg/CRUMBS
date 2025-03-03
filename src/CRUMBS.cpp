@@ -63,8 +63,7 @@ void CRUMBS::begin()
  */
 size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size_t bufferSize)
 {
-    const size_t MESSAGE_SIZE = sizeof(CRUMBSMessage); // 1 + 1 + 1 + (4*6) + 1 = 28 bytes
-    if (bufferSize < MESSAGE_SIZE)
+    if (bufferSize < CRUMBS_MESSAGE_SIZE)
     {
         CRUMBS_DEBUG_PRINTLN(F("Buffer size too small for encoding message."));
         return 0;
@@ -74,7 +73,6 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
 
     // Serialize fields into buffer in order
     buffer[index++] = message.typeID;
-    buffer[index++] = message.unitID;
     buffer[index++] = message.commandType;
 
     // Serialize float data[6]
@@ -105,8 +103,7 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
  */
 bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessage &message)
 {
-    const size_t MESSAGE_SIZE = sizeof(CRUMBSMessage); // 28 bytes
-    if (bufferSize < MESSAGE_SIZE)
+    if (bufferSize < CRUMBS_MESSAGE_SIZE)
     {
         CRUMBS_DEBUG_PRINTLN(F("Buffer size too small for decoding message."));
         return false;
@@ -116,7 +113,6 @@ bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessa
 
     // Deserialize fields from buffer in order
     message.typeID = buffer[index++];
-    message.unitID = buffer[index++];
     message.commandType = buffer[index++];
 
     // Deserialize float data[6]
@@ -148,7 +144,7 @@ void CRUMBS::sendMessage(const CRUMBSMessage &message, uint8_t targetAddress)
 {
     CRUMBS_DEBUG_PRINTLN(F("Preparing to send message..."));
 
-    uint8_t buffer[sizeof(CRUMBSMessage)];
+    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t encodedSize = encodeMessage(message, buffer, sizeof(buffer));
 
     if (encodedSize == 0)
@@ -200,7 +196,7 @@ void CRUMBS::receiveMessage(CRUMBSMessage &message)
 {
     CRUMBS_DEBUG_PRINTLN(F("Receiving message..."));
 
-    uint8_t buffer[sizeof(CRUMBSMessage)];
+    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t index = 0;
 
     // Read available bytes into buffer
@@ -209,7 +205,7 @@ void CRUMBS::receiveMessage(CRUMBSMessage &message)
         buffer[index++] = Wire.read();
     }
 
-    CRUMBS_DEBUG_PRINT(F("Bytes received: "));
+    CRUMBS_DEBUG_PRINT(F("Bytes received in buffer: "));
     CRUMBS_DEBUG_PRINTLN(index);
 
     if (index == 0)
@@ -268,9 +264,8 @@ uint8_t CRUMBS::getAddress() const
  */
 void CRUMBS::receiveEvent(int bytes)
 {
-    CRUMBS_DEBUG_PRINT(F("Received event with "));
-    CRUMBS_DEBUG_PRINT(bytes);
-    CRUMBS_DEBUG_PRINTLN(F(" bytes."));
+    CRUMBS_DEBUG_PRINT(F("Received event with num bytes: "));
+    CRUMBS_DEBUG_PRINTLN(bytes);
 
     if (bytes == 0)
     {

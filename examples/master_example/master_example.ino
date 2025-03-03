@@ -24,19 +24,19 @@ void setup()
     }
 
     crumbsMaster.begin(); /**< Initialize CRUMBS communication */
-    
-    printUsage();         /**< Print usage instructions */
+
+    printUsage(); /**< Print usage instructions */
 }
 
 void printUsage()
 {
     Serial.println(F("Master ready. Enter messages in the format:"));
-    Serial.println(F("address,typeID,unitID,commandType,data0,data1,data2,data3,data4,data5,errorFlags"));
-    Serial.println(F("Example Commands:"));
-    Serial.println(F("1. Send Message:"));
-    Serial.println(F("   8,1,1,1,75.0,1.0,0.0,65.0,2.0,1.0,0")); // Example: address 8, typeID 1, unitID 1, commandType 1, data..., errorFlags 0
-    Serial.println(F("2. Request Data:"));
-    Serial.println(F("   8,1,1,0,0.0,0.0,0.0,0.0,0.0,0.0,0")); // Example: commandType 0 indicates a request
+    Serial.println(F("address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags"));
+    Serial.println(F("Example Serial Commands:"));
+    Serial.println(F("0. Request Data Format Change:"));
+    Serial.println(F("   8,1,0,1.0,2.0,3.0,4.0,5.0,6.0,0")); // Example: commandType 0 indicates a request to change the data format sent
+    Serial.println(F("1. Send Command Message:"));
+    Serial.println(F("   8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0")); // Example: address 8, typeID 1, commandType 1, data..., errorFlags 0
 }
 
 // Main loop that listens for serial input, parses commands, and sends CRUMBSMessages to the specified Slice.
@@ -54,20 +54,79 @@ void handleSerialInput()
 {
     if (Serial.available())
     {
-        String input = Serial.readStringUntil('\n'); /**< Read input until newline */
-        input.trim();                                // Remove any trailing newline or carriage return characters
+        String input = Serial.readStringUntil('\n'); // Read input until newline
+        input.trim();                                // Remove any extra whitespace
 
         Serial.print(F("Master: Received input from serial: "));
         Serial.println(input);
 
-        // Check if the input is empty
-        if (input.length() == 0)
+        // Check if the input starts with "request="
+        if (input.startsWith("request="))
         {
-            Serial.println(F("Master: Empty input received. Ignoring."));
-            return;
+            // Extract the address from the input string
+            String addressString = input.substring(strlen("request="));
+            addressString.trim();
+
+            // Support hexadecimal format if it starts with "0x"
+            uint8_t targetAddress = 0;
+            if (addressString.startsWith("0x") || addressString.startsWith("0X"))
+            {
+                targetAddress = (uint8_t)strtol(addressString.c_str(), NULL, 16);
+            }
+            else
+            {
+                targetAddress = (uint8_t)addressString.toInt();
+            }
+
+            Serial.print(F("Master: Requesting data from address: 0x"));
+            Serial.println(targetAddress, HEX);
+
+            // Request CRUMBS_MESSAGE_SIZE bytes from the slave
+            uint8_t numBytes = CRUMBS_MESSAGE_SIZE;
+            Wire.requestFrom(targetAddress, numBytes);
+
+            // Allow some time for the slave to send the response
+            delay(50);
+
+            uint8_t responseBuffer[CRUMBS_MESSAGE_SIZE];
+            int index = 0;
+            while (Wire.available() && index < CRUMBS_MESSAGE_SIZE)
+            {
+                responseBuffer[index++] = Wire.read();
+            }
+
+            Serial.print(F("Master: Received "));
+            Serial.print(index);
+            Serial.println(F(" bytes from slave."));
+
+            // Attempt to decode the received response
+            CRUMBSMessage response;
+            if (crumbsMaster.decodeMessage(responseBuffer, index, response))
+            {
+                Serial.println(F("Master: Decoded response:"));
+                Serial.print(F("typeID: "));
+                Serial.println(response.typeID);
+                Serial.print(F("commandType: "));
+                Serial.println(response.commandType);
+                Serial.print(F("data: "));
+                for (int i = 0; i < 6; i++)
+                {
+                    Serial.print(response.data[i]);
+                    Serial.print(F(" "));
+                }
+                Serial.println();
+                Serial.print(F("errorFlags: "));
+                Serial.println(response.errorFlags);
+            }
+            else
+            {
+                Serial.println(F("Master: Failed to decode response."));
+            }
+
+            return; // Exit the function after handling the request command.
         }
 
-        // Parse the input string into a CRUMBSMessage and target address
+        // Otherwise, assume the input is a comma-separated message.
         uint8_t targetAddress;
         CRUMBSMessage message;
         bool parseSuccess = parseSerialInput(input, targetAddress, message);
@@ -101,7 +160,6 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
 
     // Initialize message fields to default values
     message.typeID = 0;
-    message.unitID = 0;
     message.commandType = 0;
     for (int i = 0; i < 6; i++)
     {
@@ -126,30 +184,27 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 message.typeID = (uint8_t)value.toInt(); /**< Parse typeID */
                 break;
             case 2:
-                message.unitID = (uint8_t)value.toInt(); /**< Parse unitID */
-                break;
-            case 3:
                 message.commandType = (uint8_t)value.toInt(); /**< Parse commandType */
                 break;
-            case 4:
+            case 3:
                 message.data[0] = value.toFloat(); /**< Parse data0 */
                 break;
-            case 5:
+            case 4:
                 message.data[1] = value.toFloat(); /**< Parse data1 */
                 break;
-            case 6:
+            case 5:
                 message.data[2] = value.toFloat(); /**< Parse data2 */
                 break;
-            case 7:
+            case 6:
                 message.data[3] = value.toFloat(); /**< Parse data3 */
                 break;
-            case 8:
+            case 7:
                 message.data[4] = value.toFloat(); /**< Parse data4 */
                 break;
-            case 9:
+            case 8:
                 message.data[5] = value.toFloat(); /**< Parse data5 */
                 break;
-            case 10:
+            case 9:
                 message.errorFlags = (uint8_t)value.toInt(); /**< Parse errorFlags */
                 break;
             default:
@@ -173,8 +228,6 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     Serial.println(targetAddress, HEX);
     Serial.print(F("Parsed Message -> typeID: "));
     Serial.print(message.typeID);
-    Serial.print(F(", unitID: "));
-    Serial.print(message.unitID);
     Serial.print(F(", commandType: "));
     Serial.print(message.commandType);
     Serial.print(F(", data: "));
