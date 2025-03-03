@@ -7,29 +7,29 @@
 #include <CRUMBS.h>
 #include <Wire.h>
 
-/**
- * @brief Instantiate CRUMBS as Master.
- * 
- * @note Master mode is indicated by passing 'true'.
- */
+// Instantiate CRUMBS as Master, set to true for Master mode
 CRUMBS crumbsMaster(true); // Master mode
 
-/**
- * @brief Maximum expected input length for serial commands.
- */
+//  Maximum expected input length for serial commands.
 #define MAX_INPUT_LENGTH 60
 
-/**
- * @brief Initializes the Master device, sets up serial communication, and provides usage instructions.
- */
+// Initializes the Master device, sets up serial communication, and provides usage instructions.
 void setup()
 {
     Serial.begin(115200); /**< Initialize serial communication at 115200 baud rate */
+
     while (!Serial)
     {
         delay(10); // Wait for Serial Monitor to open
     }
+
     crumbsMaster.begin(); /**< Initialize CRUMBS communication */
+    
+    printUsage();         /**< Print usage instructions */
+}
+
+void printUsage()
+{
     Serial.println(F("Master ready. Enter messages in the format:"));
     Serial.println(F("address,typeID,unitID,commandType,data0,data1,data2,data3,data4,data5,errorFlags"));
     Serial.println(F("Example Commands:"));
@@ -39,16 +39,23 @@ void setup()
     Serial.println(F("   8,1,1,0,0.0,0.0,0.0,0.0,0.0,0.0,0")); // Example: commandType 0 indicates a request
 }
 
-/**
- * @brief Main loop that listens for serial input, parses commands, and sends CRUMBSMessages to the specified Slice.
- */
+// Main loop that listens for serial input, parses commands, and sends CRUMBSMessages to the specified Slice.
 void loop()
 {
     // Listen for serial input to send commands or request data
+    handleSerialInput();
+}
+
+/**
+ * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
+ * @return none
+ */
+void handleSerialInput()
+{
     if (Serial.available())
     {
         String input = Serial.readStringUntil('\n'); /**< Read input until newline */
-        input.trim(); // Remove any trailing newline or carriage return characters
+        input.trim();                                // Remove any trailing newline or carriage return characters
 
         Serial.print(F("Master: Received input from serial: "));
         Serial.println(input);
@@ -80,7 +87,7 @@ void loop()
 
 /**
  * @brief Parses a comma-separated serial input string into a target address and CRUMBSMessage.
- * 
+ *
  * @param input The input string from serial.
  * @param targetAddress Reference to store the parsed I2C address.
  * @param message Reference to store the parsed CRUMBSMessage.
@@ -90,7 +97,7 @@ void loop()
 bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage &message)
 {
     int fieldCount = 0; /**< Number of fields parsed */
-    int lastComma = 0; /**< Position of the last comma */
+    int lastComma = 0;  /**< Position of the last comma */
 
     // Initialize message fields to default values
     message.typeID = 0;
@@ -112,42 +119,42 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
 
             switch (fieldCount)
             {
-                case 0:
-                    targetAddress = (uint8_t)value.toInt(); /**< Parse I2C address */
-                    break;
-                case 1:
-                    message.typeID = (uint8_t)value.toInt(); /**< Parse typeID */
-                    break;
-                case 2:
-                    message.unitID = (uint8_t)value.toInt(); /**< Parse unitID */
-                    break;
-                case 3:
-                    message.commandType = (uint8_t)value.toInt(); /**< Parse commandType */
-                    break;
-                case 4:
-                    message.data[0] = value.toFloat(); /**< Parse data0 */
-                    break;
-                case 5:
-                    message.data[1] = value.toFloat(); /**< Parse data1 */
-                    break;
-                case 6:
-                    message.data[2] = value.toFloat(); /**< Parse data2 */
-                    break;
-                case 7:
-                    message.data[3] = value.toFloat(); /**< Parse data3 */
-                    break;
-                case 8:
-                    message.data[4] = value.toFloat(); /**< Parse data4 */
-                    break;
-                case 9:
-                    message.data[5] = value.toFloat(); /**< Parse data5 */
-                    break;
-                case 10:
-                    message.errorFlags = (uint8_t)value.toInt(); /**< Parse errorFlags */
-                    break;
-                default:
-                    // Extra fields are ignored
-                    break;
+            case 0:
+                targetAddress = (uint8_t)value.toInt(); /**< Parse I2C address */
+                break;
+            case 1:
+                message.typeID = (uint8_t)value.toInt(); /**< Parse typeID */
+                break;
+            case 2:
+                message.unitID = (uint8_t)value.toInt(); /**< Parse unitID */
+                break;
+            case 3:
+                message.commandType = (uint8_t)value.toInt(); /**< Parse commandType */
+                break;
+            case 4:
+                message.data[0] = value.toFloat(); /**< Parse data0 */
+                break;
+            case 5:
+                message.data[1] = value.toFloat(); /**< Parse data1 */
+                break;
+            case 6:
+                message.data[2] = value.toFloat(); /**< Parse data2 */
+                break;
+            case 7:
+                message.data[3] = value.toFloat(); /**< Parse data3 */
+                break;
+            case 8:
+                message.data[4] = value.toFloat(); /**< Parse data4 */
+                break;
+            case 9:
+                message.data[5] = value.toFloat(); /**< Parse data5 */
+                break;
+            case 10:
+                message.errorFlags = (uint8_t)value.toInt(); /**< Parse errorFlags */
+                break;
+            default:
+                // Extra fields are ignored
+                break;
             }
             fieldCount++;
         }
