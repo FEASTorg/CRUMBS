@@ -13,28 +13,24 @@
  * @def CRUMBS_DEBUG
  * @brief Uncomment to enable debugging messages.
  */
-#define CRUMBS_DEBUG
+
+//#define CRUMBS_DEBUG
 
 #ifdef CRUMBS_DEBUG
-/**
- * @def CRUMBS_DEBUG_PRINT
- * @brief Macro for printing debug messages with "CRUMBS:" prefix.
- */
+
 #define CRUMBS_DEBUG_PRINT(...)  \
     Serial.print(F("CRUMBS: ")); \
     Serial.print(__VA_ARGS__)
 
-/**
- * @def CRUMBS_DEBUG_PRINTLN
- * @brief Macro for printing debug messages with "CRUMBS:" prefix followed by a newline.
- */
 #define CRUMBS_DEBUG_PRINTLN(...) \
     Serial.print(F("CRUMBS: "));  \
     Serial.println(__VA_ARGS__)
 
 #else
+
 #define CRUMBS_DEBUG_PRINT(...)
 #define CRUMBS_DEBUG_PRINTLN(...)
+
 #endif
 
 /**
