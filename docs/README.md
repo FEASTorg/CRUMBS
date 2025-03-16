@@ -10,8 +10,8 @@ This library, named CRUMBS, provides a streamlined framework for I2C communicati
 - **I2C Communication Modes:**  
   CRUMBS supports two modes of operation:
 
-  - **Master Mode:** In this mode, the device initiates communication by sending messages to target devices (or "slices").
-  - **Slave (Slice) Mode:** Here, the device listens on a specified I2C address, receives messages from the master, and can send responses back when requested.
+  - **Controller Mode:** In this mode, the device initiates communication by sending messages to target devices (or "slices").
+  - **Peripheral (Slice) Mode:** Here, the device listens on a specified I2C address, receives messages from the controller, and can send responses back when requested.
 
 - **Core Functionalities:**
 
@@ -23,4 +23,4 @@ This library, named CRUMBS, provides a streamlined framework for I2C communicati
   When debugging is enabled, the library prints detailed status messages to the serial monitor. These messages provide insights into the internal processing (such as message encoding, decoding, and transmission statuses) which can help during development and troubleshooting.
 
 - **Examples:**  
-  Two example sketches are provided: one demonstrating how a master device sends commands and another showing how a slave device (slice) receives messages and responds. These examples illustrate how to set up the library in both modes and how to use the provided functions to achieve robust I2C communication.
+  Two example sketches are provided: one demonstrating how a controller device sends commands and another showing how a peripheral device (slice) receives messages and responds. These examples illustrate how to set up the library in both modes and how to use the provided functions to achieve robust I2C communication.

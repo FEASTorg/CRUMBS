@@ -1,6 +1,6 @@
 /**
  * @file crumbs_slice_test.ino
- * @brief CRUMBS Slice example sketch to receive messages from a CRUMBS Master and respond to requests.
+ * @brief CRUMBS Slice example sketch to receive messages from a CRUMBS Controller and respond to requests.
  */
 
 #define CRUMBS_DEBUG
@@ -9,19 +9,19 @@
 /**
  * @brief I2C address for this Slice device.
  *
- * @note Ensure this matches the address specified by the Master when sending messages.
+ * @note Ensure this matches the address specified by the Controller when sending messages.
  */
 #define SLICE_I2C_ADDRESS 0x08 // Example I2C address
 
 /**
- * @brief Instantiate CRUMBS as a Slice (Slave).
+ * @brief Instantiate CRUMBS as a Slice (Peripheral).
  *
- * @note Pass 'false' to indicate Slave mode and provide the I2C address.
+ * @note Pass 'false' to indicate Peripheral mode and provide the I2C address.
  */
-CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS); // Slave mode, I2C address 0x08
+CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS); // Peripheral mode, I2C address 0x08
 
 /**
- * @brief Callback function to handle received CRUMBSMessages from the Master.
+ * @brief Callback function to handle received CRUMBSMessages from the Controller.
  *
  * @param message The received CRUMBSMessage.
  */
@@ -68,13 +68,13 @@ void handleMessage(CRUMBSMessage &message)
 }
 
 /**
- * @brief Callback function to handle data requests from the Master.
+ * @brief Callback function to handle data requests from the Controller.
  *
- * @note This function sends a CRUMBSMessage back to the Master in response to a request.
+ * @note This function sends a CRUMBSMessage back to the Controller in response to a request.
  */
 void handleRequest()
 {
-    Serial.println(F("Slice: Master requested data, sending response..."));
+    Serial.println(F("Slice: Controller requested data, sending response..."));
 
     // Prepare response message
     CRUMBSMessage responseMessage;
@@ -100,7 +100,7 @@ void handleRequest()
         return;
     }
 
-    // Send the encoded message back to the Master
+    // Send the encoded message back to the Controller
     Wire.write(buffer, encodedSize);
     CRUMBS_DEBUG_PRINTLN(F("Slice: Response message sent."));
 }

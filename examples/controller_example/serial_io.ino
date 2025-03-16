@@ -12,7 +12,7 @@ void handleSerialInput()
         String input = Serial.readStringUntil('\n'); // Read input until newline
         input.trim();                                // Remove any extra whitespace
 
-        Serial.print(F("Master: Received input from serial: "));
+        Serial.print(F("Controller: Received input from serial: "));
         Serial.println(input);
 
         // Check if the input starts with "request="
@@ -33,14 +33,14 @@ void handleSerialInput()
                 targetAddress = (uint8_t)addressString.toInt();
             }
 
-            Serial.print(F("Master: Requesting data from address: 0x"));
+            Serial.print(F("Controller: Requesting data from address: 0x"));
             Serial.println(targetAddress, HEX);
 
-            // Request CRUMBS_MESSAGE_SIZE bytes from the slave
+            // Request CRUMBS_MESSAGE_SIZE bytes from the peripheral
             uint8_t numBytes = CRUMBS_MESSAGE_SIZE;
             Wire.requestFrom(targetAddress, numBytes);
 
-            // Allow some time for the slave to send the response
+            // Allow some time for the peripheral to send the response
             delay(50);
 
             uint8_t responseBuffer[CRUMBS_MESSAGE_SIZE];
@@ -50,15 +50,15 @@ void handleSerialInput()
                 responseBuffer[index++] = Wire.read();
             }
 
-            Serial.print(F("Master: Received "));
+            Serial.print(F("Controller: Received "));
             Serial.print(index);
-            Serial.println(F(" bytes from slave."));
+            Serial.println(F(" bytes from peripheral."));
 
             // Attempt to decode the received response
             CRUMBSMessage response;
-            if (crumbsMaster.decodeMessage(responseBuffer, index, response))
+            if (crumbsController.decodeMessage(responseBuffer, index, response))
             {
-                Serial.println(F("Master: Decoded response:"));
+                Serial.println(F("Controller: Decoded response:"));
                 Serial.print(F("typeID: "));
                 Serial.println(response.typeID);
                 Serial.print(F("commandType: "));
@@ -75,7 +75,7 @@ void handleSerialInput()
             }
             else
             {
-                Serial.println(F("Master: Failed to decode response."));
+                Serial.println(F("Controller: Failed to decode response."));
             }
 
             return; // Exit the function after handling the request command.
@@ -89,12 +89,12 @@ void handleSerialInput()
         if (parseSuccess)
         {
             // Send the message to the specified target address
-            crumbsMaster.sendMessage(message, targetAddress);
-            Serial.println(F("Master: Message sent based on serial input."));
+            crumbsController.sendMessage(message, targetAddress);
+            Serial.println(F("Controller: Message sent based on serial input."));
         }
         else
         {
-            Serial.println(F("Master: Failed to parse serial input. Please check the format."));
+            Serial.println(F("Controller: Failed to parse serial input. Please check the format."));
         }
     }
 }
@@ -173,12 +173,12 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     // Check if the required number of fields are parsed
     if (fieldCount < 4)
     {
-        Serial.println(F("Master: Not enough fields in input."));
+        Serial.println(F("Controller: Not enough fields in input."));
         return false;
     }
 
     // Debugging output to verify parsed message
-    Serial.println(F("Master: Parsed input into CRUMBSMessage and target address."));
+    Serial.println(F("Controller: Parsed input into CRUMBSMessage and target address."));
     Serial.print(F("Target Address: "));
     Serial.println(targetAddress, HEX);
     Serial.print(F("Parsed Message -> typeID: "));

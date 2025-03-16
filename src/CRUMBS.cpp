@@ -8,14 +8,14 @@ CRUMBS *CRUMBS::instance = nullptr;
 /**
  * @brief Constructs a CRUMBS instance and sets the singleton instance.
  *
- * @param isMaster Set to true if this instance is the I2C master.
- * @param address I2C address for slave mode. Ignored if isMaster is true.
+ * @param isController Set to true if this instance is the I2C controller.
+ * @param address I2C address for peripheral mode. Ignored if isController is true.
  */
-CRUMBS::CRUMBS(bool isMaster, uint8_t address) : masterMode(isMaster)
+CRUMBS::CRUMBS(bool isController, uint8_t address) : controllerMode(isController)
 {
-    if (masterMode)
+    if (controllerMode)
     {
-        i2cAddress = 0; // Master does not have an address
+        i2cAddress = 0; // Controller does not have an address
     }
     else
     {
@@ -33,17 +33,17 @@ void CRUMBS::begin()
 {
     CRUMBS_DEBUG_PRINTLN(F("Begin initialization..."));
 
-    if (masterMode)
+    if (controllerMode)
     {
-        Wire.begin();                  // Initialize as I2C master
+        Wire.begin();                  // Initialize as I2C controller
         Wire.setClock(TWI_CLOCK_FREQ); // Set I2C clock speed
-        CRUMBS_DEBUG_PRINTLN(F("Initialized as Master mode"));
+        CRUMBS_DEBUG_PRINTLN(F("Initialized as Controller mode"));
     }
     else
     {
-        Wire.begin(i2cAddress);        // Initialize as I2C slave with specified address
+        Wire.begin(i2cAddress);        // Initialize as I2C peripheral with specified address
         Wire.setClock(TWI_CLOCK_FREQ); // Set I2C clock speed
-        CRUMBS_DEBUG_PRINT(F("Initialized as Slave mode at address 0x"));
+        CRUMBS_DEBUG_PRINT(F("Initialized as Peripheral mode at address 0x"));
         CRUMBS_DEBUG_PRINTLN(i2cAddress, HEX);
     }
 

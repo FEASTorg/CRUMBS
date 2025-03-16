@@ -1,19 +1,19 @@
 /**
- * @file crumbs_master_test.ino
- * @brief CRUMBS Master example sketch to send messages to a CRUMBS Slice.
+ * @file crumbs_controller_test.ino
+ * @brief CRUMBS Controller example sketch to send messages to a CRUMBS Slice.
  */
 
 #define CRUMBS_DEBUG
 #include <CRUMBS.h>
 #include <Wire.h>
 
-// Instantiate CRUMBS as Master, set to true for Master mode
-CRUMBS crumbsMaster(true); // Master mode
+// Instantiate CRUMBS as Controller, set to true for Controller mode
+CRUMBS crumbsController(true); // Controller mode
 
 //  Maximum expected input length for serial commands.
 #define MAX_INPUT_LENGTH 60
 
-// Initializes the Master device, sets up serial communication, and provides usage instructions.
+// Initializes the Controller device, sets up serial communication, and provides usage instructions.
 void setup()
 {
     Serial.begin(115200); /**< Initialize serial communication at 115200 baud rate */
@@ -23,9 +23,9 @@ void setup()
         delay(10); // Wait for Serial Monitor to open
     }
 
-    crumbsMaster.begin(); /**< Initialize CRUMBS communication */
+    crumbsController.begin(); /**< Initialize CRUMBS communication */
 
-    Serial.println(F("Master ready. Enter messages in the format:"));
+    Serial.println(F("Controller ready. Enter messages in the format:"));
     Serial.println(F("address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags"));
     Serial.println(F("Example Serial Commands:"));
     Serial.println(F("   8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0")); // Example: address 8, typeID 1, commandType 1, data..., errorFlags 0}

@@ -128,7 +128,7 @@
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-39" value="- i2cAddress: uint8_t" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
           <mxGeometry y="26" width="550" height="26" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-40" value="- masterMode: bool" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-40" value="- controllerMode: bool" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
           <mxGeometry y="52" width="550" height="26" as="geometry" />
         </mxCell>
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-41" value="- receiveCallback: void (*)(CRUMBSMessage &amp;amp;)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
@@ -146,7 +146,7 @@
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-59" value="" style="line;html=1;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
           <mxGeometry y="164" width="550" height="8" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-60" value="+ CRUMBS(isMaster: bool = false, address: uint8_t = 0)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-60" value="+ CRUMBS(isController: bool = false, address: uint8_t = 0)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
           <mxGeometry y="172" width="550" height="26" as="geometry" />
         </mxCell>
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-46" value="+ begin(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-37">
@@ -203,10 +203,10 @@
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-72" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" vertex="1" parent="1">
           <mxGeometry x="3065" y="180" width="310" height="550" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-73" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Verdana; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;Leader Sketch&lt;/span&gt;" style="text;whiteSpace=wrap;html=1;align=center;fontSize=15;fontStyle=1;labelBackgroundColor=none;" vertex="1" parent="1">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-73" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Verdana; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;Controller Sketch&lt;/span&gt;" style="text;whiteSpace=wrap;html=1;align=center;fontSize=15;fontStyle=1;labelBackgroundColor=none;" vertex="1" parent="1">
           <mxGeometry x="1215" y="180" width="140" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-74" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Verdana; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;Follower Sketch&lt;/span&gt;" style="text;whiteSpace=wrap;html=1;align=center;fontSize=15;fontStyle=1;labelBackgroundColor=none;" vertex="1" parent="1">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-74" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Verdana; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;Peripheral Sketch&lt;/span&gt;" style="text;whiteSpace=wrap;html=1;align=center;fontSize=15;fontStyle=1;labelBackgroundColor=none;" vertex="1" parent="1">
           <mxGeometry x="3150" y="180" width="140" height="40" as="geometry" />
         </mxCell>
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-75" value="" style="endArrow=none;html=1;rounded=0;strokeWidth=4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" edge="1" parent="1">
@@ -221,13 +221,13 @@
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-77" value="setup()" style="swimlane;html=1;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#dae8fc;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;align=center;rounded=1;shadow=0;comic=0;labelBackgroundColor=none;strokeWidth=1;fontFamily=Verdana;fontSize=12;strokeColor=#6c8ebf;" vertex="1" parent="1">
           <mxGeometry x="950" y="341" width="160" height="56" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-78" value="crumbsMaster.begin();" style="text;html=1;strokeColor=none;fillColor=none;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-77">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-78" value="crumbsController.begin();" style="text;html=1;strokeColor=none;fillColor=none;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="GCxnZ_K5_v9I7kZ8iRKZ-77">
           <mxGeometry y="26" width="160" height="26" as="geometry" />
         </mxCell>
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-95" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GCxnZ_K5_v9I7kZ8iRKZ-81" target="GCxnZ_K5_v9I7kZ8iRKZ-77">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-81" value="&lt;div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;#include &amp;lt;CRUMBS.h&amp;gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;CRUMBS crumbsMaster(true);&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
+        <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-81" value="&lt;div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;#include &amp;lt;CRUMBS.h&amp;gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;CRUMBS crumbsController(true);&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
           <mxGeometry x="950" y="244" width="160" height="60" as="geometry" />
         </mxCell>
         <mxCell id="GCxnZ_K5_v9I7kZ8iRKZ-101" style="edgeStyle=elbowEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1">

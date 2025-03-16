@@ -43,10 +43,10 @@ public:
     /**
      * @brief Constructs a CRUMBS instance.
      *
-     * @param isMaster Set to true if this instance is the I2C master.
-     * @param address I2C address for slave mode. Ignored if isMaster is true.
+     * @param isController Set to true if this instance is the I2C controller.
+     * @param address I2C address for peripheral mode. Ignored if isController is true.
      */
-    CRUMBS(bool isMaster = false, uint8_t address = 0);
+    CRUMBS(bool isController = false, uint8_t address = 0);
 
     /**
      * @brief Initializes the I2C communication and registers event handlers.
@@ -112,7 +112,7 @@ public:
 
 private:
     uint8_t i2cAddress;                                 /**< I2C address of the device */
-    bool masterMode;                                    /**< Indicates if the instance is master */
+    bool controllerMode;                                    /**< Indicates if the instance is controller */
     void (*receiveCallback)(CRUMBSMessage &) = nullptr; /**< Callback for received messages */
     void (*requestCallback)() = nullptr;                /**< Callback for request events */
 
