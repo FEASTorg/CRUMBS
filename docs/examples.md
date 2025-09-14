@@ -2,57 +2,27 @@
 
 ## Controller Example
 
-Demonstrates controller setup with serial interface for sending commands and requesting data.
+Send commands via serial interface and request data from peripherals.
 
 ### Usage
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
-3. Send commands: `address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags`
-4. Request data: `request=address`
+3. Send: `address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags`
+4. Request: `request=address`
 
 ### Example Commands
 
 ```cpp
-8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0
-```
-
-Sends to address 8: typeID=1, commandType=1, data values, no errors.
-
-```cpp
-request=8
-```
-
-Requests data from address 8.
-
-### Key Code Patterns
-
-#### Serial Parsing
-
-```cpp
-bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage &message) {
-    // Tokenize comma-separated values
-    // Convert strings to appropriate data types
-    // Populate message structure
-}
-```
-
-#### Data Requests
-
-```cpp
-Wire.requestFrom(address, CRUMBS_MESSAGE_SIZE);
-delay(50);  // Wait for response
-CRUMBSMessage response;
-controller.receiveMessage(response);
+8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0     // Send to address 8
+request=8                              // Request data from address 8
 ```
 
 ## Peripheral Example
 
-Demonstrates peripheral setup with message handling and data response.
+Respond to controller commands and data requests.
 
 ### Key Code Patterns
-
-#### Message Handler
 
 ```cpp
 void handleMessage(CRUMBSMessage &message) {
@@ -61,30 +31,18 @@ void handleMessage(CRUMBSMessage &message) {
             break;
         case 1: // Set parameters
             break;
-        default:
-            // Unknown command
-            break;
     }
 }
-```
 
-#### Request Handler
-
-```cpp
 void handleRequest() {
     CRUMBSMessage response;
-    response.typeID = 1;
-    response.data[0] = 42.0f;  // Example data
+    response.data[0] = 42.0f;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t size = peripheral.encodeMessage(response, buffer, sizeof(buffer));
     Wire.write(buffer, size);
 }
-```
 
-#### Setup
-
-```cpp
 void setup() {
     peripheral.begin();
     peripheral.onReceive(handleMessage);
@@ -94,7 +52,7 @@ void setup() {
 
 ## Common Patterns
 
-### Multiple Device Communication
+### Multiple Devices
 
 ```cpp
 uint8_t addresses[] = {0x08, 0x09, 0x0A};
@@ -104,50 +62,32 @@ for (int i = 0; i < 3; i++) {
 }
 ```
 
-### Command Processing
+### Data Requests
 
 ```cpp
-switch (message.typeID) {
-    case 1: // Sensor
-        handleSensorCommand(message);
-        break;
-    case 2: // Motor
-        handleMotorCommand(message);
-        break;
-}
+Wire.requestFrom(address, CRUMBS_MESSAGE_SIZE);
+delay(50);
+CRUMBSMessage response;
+controller.receiveMessage(response);
 ```
 
-### Error Validation
+### Error Handling
 
 ```cpp
 if (message.errorFlags != 0) {
     Serial.print("Error: ");
     Serial.println(message.errorFlags);
-    return;
 }
 ```
 
-### I2C Device Scanning
+### I2C Scanning
 
 ```cpp
-void scanI2CDevices() {
-    Serial.println("Scanning I2C bus...");
-    int count = 0;
-    for (uint8_t addr = 8; addr < 120; addr++) {
-        Wire.beginTransmission(addr);
-        if (Wire.endTransmission() == 0) {
-            Serial.print("Device found at 0x");
-            Serial.println(addr, HEX);
-            count++;
-        }
+for (uint8_t addr = 8; addr < 120; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+        Serial.print("Found device at 0x");
+        Serial.println(addr, HEX);
     }
 }
 ```
-
-## Best Practices from Examples
-
-1. **Use callbacks** for event-driven peripheral handling
-2. **Add delays** between I2C operations (10ms typical)
-3. **Validate messages** before processing
-4. **Handle errors gracefully** with appropriate responses
-5. **Use debug output** during development (`#define CRUMBS_DEBUG`)

@@ -2,8 +2,6 @@
 
 ## CRUMBS Class
 
-Main class for I2C communication in controller or peripheral mode.
-
 ### Constructor
 
 ```cpp
@@ -13,7 +11,7 @@ CRUMBS(bool isController = false, uint8_t address = 0);
 - `isController`: `true` for controller, `false` for peripheral
 - `address`: I2C address for peripheral mode (ignored for controller)
 
-### Core Methods
+### Methods
 
 ```cpp
 void begin();                                           // Initialize I2C
@@ -22,11 +20,8 @@ void receiveMessage(CRUMBSMessage &msg);                // Receive message
 void onReceive(void (*callback)(CRUMBSMessage &));      // Set receive callback
 void onRequest(void (*callback)());                     // Set request callback
 uint8_t getAddress() const;                             // Get device address
-```
 
-### Encoding/Decoding
-
-```cpp
+// Encoding/Decoding
 size_t encodeMessage(const CRUMBSMessage &msg, uint8_t *buffer, size_t size);
 bool decodeMessage(const uint8_t *buffer, size_t size, CRUMBSMessage &msg);
 ```
@@ -35,15 +30,15 @@ bool decodeMessage(const uint8_t *buffer, size_t size, CRUMBSMessage &msg);
 
 ```cpp
 struct CRUMBSMessage {
-    uint8_t sliceAddress;  // Target slice identifier (not serialized)
+    uint8_t sliceAddress;  // Target identifier (not serialized)
     uint8_t typeID;        // Module type (sensor=1, motor=2, etc.)
-    uint8_t commandType;   // Command identifier (read=0, set=1, etc.)
+    uint8_t commandType;   // Command (read=0, set=1, etc.)
     float data[6];         // Payload data (6 floats = 24 bytes)
     uint8_t errorFlags;    // Error/status flags
 };
 ```
 
-**Total serialized size**: 27 bytes (typeID + commandType + data + errorFlags)
+**Serialized size**: 27 bytes (typeID + commandType + data + errorFlags)
 
 ## Constants
 
@@ -58,25 +53,6 @@ struct CRUMBSMessage {
 #define CRUMBS_DEBUG               // Enable debug output
 CRUMBS_DEBUG_PRINT(...)           // Print with "CRUMBS: " prefix
 CRUMBS_DEBUG_PRINTLN(...)         // Print line with "CRUMBS: " prefix
-```
-
-## Usage Patterns
-
-### Controller Setup
-
-```cpp
-CRUMBS controller(true);
-controller.begin();
-controller.sendMessage(message, targetAddress);
-```
-
-### Peripheral Setup
-
-```cpp
-CRUMBS peripheral(false, 0x08);
-peripheral.begin();
-peripheral.onReceive(messageHandler);
-peripheral.onRequest(requestHandler);
 ```
 
 ## Error Codes (sendMessage)
