@@ -1,5 +1,3 @@
-// File: lib/CRUMBS/CRUMBS.h
-
 #ifndef CRUMBS_H
 #define CRUMBS_H
 

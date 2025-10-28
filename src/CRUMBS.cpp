@@ -1,5 +1,3 @@
-// File: src/CRUMBS.cpp
-
 #include "CRUMBS.h"
 
 // Initialize the static singleton instance to nullptr

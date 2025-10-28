@@ -1,5 +1,3 @@
-// File: lib/CRUMBS/CRUMBSMessage.h
-
 #ifndef CRUMBSMESSAGE_H
 #define CRUMBSMESSAGE_H
 
