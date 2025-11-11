@@ -16,7 +16,7 @@ struct CRUMBSMessage
 };
 
 /**
- * @brief Size of the CRUMBSMessage structure in bytes.
+ * @brief Total size of the serialized CRUMBS message in bytes.
  *
  * @note Calculated as: 1 + 1 + 24 (6 floats) + 1 = 27 bytes
  */
