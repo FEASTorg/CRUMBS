@@ -24,6 +24,8 @@ void setup()
     }
 
     crumbsController.begin(); /**< Initialize CRUMBS communication */
+    crumbsController.resetCrcErrorCount();
+    Serial.println(F("Controller: CRC diagnostics reset."));
 
     Serial.println(F("Controller ready. Enter messages in the format:"));
     Serial.println(F("address,typeID,commandType,data0,data1,data2,data3,data4,data5,data6"));

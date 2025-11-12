@@ -2,6 +2,32 @@
 #include <Wire.h>
 #include <CRUMBS.h>
 
+extern CRUMBS crumbsController;
+
+namespace
+{
+    uint32_t lastCrcReport = 0;
+    bool lastCrcValid = true;
+
+    void reportCrcStatus(const __FlashStringHelper *context)
+    {
+        const uint32_t current = crumbsController.getCrcErrorCount();
+        const bool lastValid = crumbsController.isLastCrcValid();
+        if (current != lastCrcReport || lastValid != lastCrcValid)
+        {
+            Serial.print(F("Controller: CRC status ["));
+            Serial.print(context);
+            Serial.print(F("] errors="));
+            Serial.print(current);
+            Serial.print(F(" lastValid="));
+            Serial.println(lastValid ? F("true") : F("false"));
+            lastCrcReport = current;
+            lastCrcValid = lastValid;
+        }
+    }
+}
+#include <CRUMBS.h>
+
 /**
  * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
  * @return none
@@ -73,10 +99,12 @@ void handleSerialInput()
                 Serial.println();
                 Serial.print(F("crc8: 0x"));
                 Serial.println(response.crc8, HEX);
+                reportCrcStatus(F("request decode"));
             }
             else
             {
                 Serial.println(F("Controller: Failed to decode response."));
+                reportCrcStatus(F("request decode"));
             }
 
             return; // Exit the function after handling the request command.
@@ -92,6 +120,7 @@ void handleSerialInput()
             // Send the message to the specified target address
             crumbsController.sendMessage(message, targetAddress);
             Serial.println(F("Controller: Message sent based on serial input."));
+            reportCrcStatus(F("send"));
         }
         else
         {

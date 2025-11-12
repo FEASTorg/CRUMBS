@@ -44,6 +44,30 @@ struct LastMsg
     bool valid = false;
 } lastMsg;
 
+namespace
+{
+    uint32_t lastCrcReport = 0;
+    bool lastCrcValid = true;
+
+    void reportCrcStatus(const __FlashStringHelper *context)
+    {
+        const uint32_t current = crumbsController.getCrcErrorCount();
+        const bool lastValid = crumbsController.isLastCrcValid();
+
+        if (current != lastCrcReport || lastValid != lastCrcValid)
+        {
+            Serial.print(F("Controller: CRC status ["));
+            Serial.print(context);
+            Serial.print(F("] errors="));
+            Serial.print(current);
+            Serial.print(F(" lastValid="));
+            Serial.println(lastValid ? F("true") : F("false"));
+            lastCrcReport = current;
+            lastCrcValid = lastValid;
+        }
+    }
+}
+
 // Prototypes (helpers are in .ino companions)
 void handleSerialInput();
 bool parseSerialInput(const String &, uint8_t &, CRUMBSMessage &);
@@ -76,6 +100,8 @@ void setup()
 
     // CRUMBS/I2C
     crumbsController.begin();
+    crumbsController.resetCrcErrorCount();
+    Serial.println(F("Controller: CRC diagnostics reset."));
 
     setOk(); // system starts OK
 
@@ -146,6 +172,8 @@ static void sendCrumbs(uint8_t addr, const CRUMBSMessage &m)
     {
         setError();
     }
+
+    reportCrcStatus(F("send"));
 }
 
 // I2C request wrapper with LED/error handling
@@ -171,9 +199,11 @@ static bool requestCrumbs(uint8_t addr, CRUMBSMessage &out)
         pulseActivity();
         cacheRx(addr, out);
         setOk();
+        reportCrcStatus(F("request"));
         return true;
     }
     Serial.println(F("Controller: decode failed."));
     setError();
+    reportCrcStatus(F("request"));
     return false;
 }

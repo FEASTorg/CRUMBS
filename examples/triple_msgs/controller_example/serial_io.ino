@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 
 extern CRUMBS crumbsController;
 extern void drawDisplay();
@@ -71,7 +72,7 @@ void handleSerialInput()
     }
     else
     {
-    Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data6"));
+        Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data6"));
     }
 }
 

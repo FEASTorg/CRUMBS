@@ -20,6 +20,30 @@
  */
 CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS); // Peripheral mode, I2C address 0x08
 
+namespace
+{
+    uint32_t lastCrcReport = 0;
+    bool lastCrcValid = true;
+
+    void reportCrcStatus(const __FlashStringHelper *context)
+    {
+        const uint32_t current = crumbsSlice.getCrcErrorCount();
+        const bool lastValid = crumbsSlice.isLastCrcValid();
+
+        if (current != lastCrcReport || lastValid != lastCrcValid)
+        {
+            Serial.print(F("Slice: CRC status ["));
+            Serial.print(context);
+            Serial.print(F("] errors="));
+            Serial.print(current);
+            Serial.print(F(" lastValid="));
+            Serial.println(lastValid ? F("true") : F("false"));
+            lastCrcReport = current;
+            lastCrcValid = lastValid;
+        }
+    }
+}
+
 /**
  * @brief Callback function to handle received CRUMBSMessages from the Controller.
  *
@@ -65,6 +89,7 @@ void handleMessage(CRUMBSMessage &message)
     }
 
     Serial.println(F("Slice: Message processing complete."));
+    reportCrcStatus(F("receive"));
 }
 
 /**
@@ -96,12 +121,14 @@ void handleRequest()
     if (encodedSize == 0)
     {
         CRUMBS_DEBUG_PRINTLN(F("Slice: Failed to encode response message."));
+        reportCrcStatus(F("encode"));
         return;
     }
 
     // Send the encoded message back to the Controller
     Wire.write(buffer, encodedSize);
     CRUMBS_DEBUG_PRINTLN(F("Slice: Response message sent."));
+    reportCrcStatus(F("encode"));
 }
 
 /**
@@ -112,6 +139,9 @@ void setup()
     Serial.begin(115200); /**< Initialize serial communication */
 
     crumbsSlice.begin(); /**< Initialize CRUMBS communication */
+    crumbsSlice.resetCrcErrorCount();
+    Serial.println(F("Slice: CRC diagnostics reset."));
+    reportCrcStatus(F("startup"));
 
     crumbsSlice.onRequest(handleRequest); // Register callback for data requests
     crumbsSlice.onReceive(handleMessage); // Register callback for received messages
@@ -131,4 +161,5 @@ void loop()
 {
     // No actions needed in loop for this example
     // All processing is handled via callbacks
+    reportCrcStatus(F("loop"));
 }

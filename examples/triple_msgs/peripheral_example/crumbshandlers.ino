@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 
 extern CRUMBS crumbsSlice;
 
@@ -17,6 +18,7 @@ extern void setOk();
 extern void setError();
 extern void pulseActivity();
 extern void applyDataToChannels(const CRUMBSMessage &m);
+extern void reportCrcStatus(const __FlashStringHelper *context);
 
 // Receive message from controller
 void handleMessage(CRUMBSMessage &m)
@@ -45,6 +47,7 @@ void handleMessage(CRUMBSMessage &m)
 
     pulseActivity();
     setOk();
+    reportCrcStatus(F("receive"));
 
     // Handle command types
     switch (m.commandType)
@@ -72,7 +75,7 @@ void handleRequest()
     Serial.println(F("Slice: request event -> sending status"));
     pulseActivity();
 
-    CRUMBSMessage r;
+    CRUMBSMessage r = {};
     r.typeID = 1;      // slice type
     r.commandType = 0; // status response
     // Example status payload: echo last ratios for three channels and simple telemetry
@@ -91,7 +94,9 @@ void handleRequest()
     if (n == 0)
     {
         Serial.println(F("Slice: encode status failed"));
+        reportCrcStatus(F("request encode"));
         return;
     }
     Wire.write(buffer, n);
+    reportCrcStatus(F("request encode"));
 }

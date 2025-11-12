@@ -56,6 +56,30 @@ struct LastMsg
     bool valid = false;
 } lastRx;
 
+namespace
+{
+    uint32_t lastCrcReport = 0;
+    bool lastCrcValid = true;
+}
+
+void reportCrcStatus(const __FlashStringHelper *context)
+{
+    const uint32_t current = crumbsSlice.getCrcErrorCount();
+    const bool lastValid = crumbsSlice.isLastCrcValid();
+
+    if (current != lastCrcReport || lastValid != lastCrcValid)
+    {
+        Serial.print(F("Slice: CRC status ["));
+        Serial.print(context);
+        Serial.print(F("] errors="));
+        Serial.print(current);
+        Serial.print(F(" lastValid="));
+        Serial.println(lastValid ? F("true") : F("false"));
+        lastCrcReport = current;
+        lastCrcValid = lastValid;
+    }
+}
+
 // Prototypes (helpers in companions)
 void handleMessage(CRUMBSMessage &m);
 void handleRequest();
@@ -87,6 +111,8 @@ void setup()
     u8g2.begin();
 
     crumbsSlice.begin();
+    crumbsSlice.resetCrcErrorCount();
+    Serial.println(F("Slice: CRC diagnostics reset."));
     crumbsSlice.onReceive(handleMessage);
     crumbsSlice.onRequest(handleRequest);
 
@@ -94,12 +120,14 @@ void setup()
     drawDisplay();
     Serial.print(F("Peripheral ready at 0x"));
     Serial.println(kSliceI2cAddress, HEX);
+    reportCrcStatus(F("startup"));
 }
 
 void loop()
 {
     refreshLeds();
     serviceBlinkLogic(); // optional: CRUMBS-driven blink patterns
+    reportCrcStatus(F("loop"));
 }
 
 void applyDataToChannels(const CRUMBSMessage &m)

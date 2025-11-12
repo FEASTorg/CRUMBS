@@ -1,14 +1,37 @@
 #include "CRUMBS.h"
 #include <AceCRC.h>
+#include <cstring>
 
 namespace
 {
     constexpr size_t kDataFieldCount = CRUMBS_DATA_LENGTH;
-    constexpr size_t kHeaderLength = 2;                                             // typeID + commandType
+    constexpr size_t kHeaderLength = 2; // typeID + commandType
     constexpr size_t kPayloadLength = kHeaderLength + kDataFieldCount * sizeof(float);
     constexpr size_t kCrcLength = 1;
     constexpr size_t kFrameLength = kPayloadLength + kCrcLength;
     static_assert(CRUMBS_MESSAGE_SIZE == kFrameLength, "CRUMBS_MESSAGE_SIZE must equal serialized frame length");
+    static_assert(sizeof(float) == 4, "CRUMBS requires 32-bit IEEE 754 floats");
+
+    inline void writeFloatLittleEndian(float value, uint8_t *out)
+    {
+        uint32_t raw = 0;
+        std::memcpy(&raw, &value, sizeof(float));
+        out[0] = static_cast<uint8_t>(raw & 0xFF);
+        out[1] = static_cast<uint8_t>((raw >> 8) & 0xFF);
+        out[2] = static_cast<uint8_t>((raw >> 16) & 0xFF);
+        out[3] = static_cast<uint8_t>((raw >> 24) & 0xFF);
+    }
+
+    inline float readFloatLittleEndian(const uint8_t *in)
+    {
+        uint32_t raw = static_cast<uint32_t>(in[0]) |
+                       (static_cast<uint32_t>(in[1]) << 8) |
+                       (static_cast<uint32_t>(in[2]) << 16) |
+                       (static_cast<uint32_t>(in[3]) << 24);
+        float value = 0.0f;
+        std::memcpy(&value, &raw, sizeof(float));
+        return value;
+    }
 }
 
 // Initialize the static singleton instance to nullptr
@@ -42,19 +65,21 @@ void CRUMBS::begin()
 {
     CRUMBS_DEBUG_PRINTLN(F("Begin initialization..."));
 
+    Wire.setClock(TWI_CLOCK_FREQ); // Apply desired clock before enabling the bus
+
     if (controllerMode)
     {
-        Wire.begin();                  // Initialize as I2C controller
-        Wire.setClock(TWI_CLOCK_FREQ); // Set I2C clock speed
+        Wire.begin(); // Initialize as I2C controller
         CRUMBS_DEBUG_PRINTLN(F("Initialized as Controller mode"));
     }
     else
     {
-        Wire.begin(i2cAddress);        // Initialize as I2C peripheral with specified address
-        Wire.setClock(TWI_CLOCK_FREQ); // Set I2C clock speed
+        Wire.begin(i2cAddress); // Initialize as I2C peripheral with specified address
         CRUMBS_DEBUG_PRINT(F("Initialized as Peripheral mode at address 0x"));
         CRUMBS_DEBUG_PRINTLN(i2cAddress, HEX);
     }
+
+    Wire.setClock(TWI_CLOCK_FREQ); // Reinforce clock in case core applies it post begin
 
     // Register I2C event handlers
     Wire.onReceive(receiveEvent);
@@ -87,11 +112,8 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
     // Serialize float data
     for (size_t i = 0; i < kDataFieldCount; i++)
     {
-        const uint8_t *floatPtr = reinterpret_cast<const uint8_t *>(&message.data[i]);
-        for (size_t b = 0; b < sizeof(float); b++)
-        {
-            buffer[index++] = floatPtr[b];
-        }
+        writeFloatLittleEndian(message.data[i], &buffer[index]);
+        index += sizeof(float);
     }
 
     const uint8_t crc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
@@ -127,6 +149,8 @@ bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessa
     if (computedCrc != receivedCrc)
     {
         CRUMBS_DEBUG_PRINTLN(F("CRC mismatch detected while decoding message."));
+        lastCrcValid = false;
+        crcErrorCount++;
         return false;
     }
 
@@ -139,16 +163,12 @@ bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessa
     // Deserialize float data
     for (size_t i = 0; i < kDataFieldCount; i++)
     {
-        float value = 0.0;
-        uint8_t *floatPtr = reinterpret_cast<uint8_t *>(&value);
-        for (size_t b = 0; b < sizeof(float); b++)
-        {
-            floatPtr[b] = buffer[index++];
-        }
-        message.data[i] = value;
+        message.data[i] = readFloatLittleEndian(&buffer[index]);
+        index += sizeof(float);
     }
 
     message.crc8 = receivedCrc;
+    lastCrcValid = true;
 
     CRUMBS_DEBUG_PRINTLN(F("Message successfully decoded."));
 
@@ -276,6 +296,22 @@ void CRUMBS::onRequest(void (*callback)())
 uint8_t CRUMBS::getAddress() const
 {
     return i2cAddress;
+}
+
+uint32_t CRUMBS::getCrcErrorCount() const
+{
+    return crcErrorCount;
+}
+
+bool CRUMBS::isLastCrcValid() const
+{
+    return lastCrcValid;
+}
+
+void CRUMBS::resetCrcErrorCount()
+{
+    crcErrorCount = 0;
+    lastCrcValid = true;
 }
 
 /**

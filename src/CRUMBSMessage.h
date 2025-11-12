@@ -18,8 +18,8 @@ struct CRUMBSMessage
 {
     uint8_t sliceAddress;           /**< Unique identifier for the target slice (not serialized) */
     uint8_t typeID;                 /**< Identifier for the module type */
-    uint8_t commandType;            /**< Command or action identifier */
-    float data[CRUMBS_DATA_LENGTH]; /**< Payload data (7 floating-point values) */
+    uint8_t commandType;            /**< Command or action identifier (opcode) */
+    float data[CRUMBS_DATA_LENGTH]; /**< Payload data, 7 floating-point values (args) */
     uint8_t crc8;                   /**< CRC-8 checksum calculated over the serialized payload */
 };
 
