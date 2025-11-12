@@ -1,6 +1,6 @@
 #include "CRUMBS.h"
 #include <AceCRC.h>
-#include <cstring>
+#include <string.h>
 
 namespace
 {
@@ -15,7 +15,7 @@ namespace
     inline void writeFloatLittleEndian(float value, uint8_t *out)
     {
         uint32_t raw = 0;
-        std::memcpy(&raw, &value, sizeof(float));
+        memcpy(&raw, &value, sizeof(float));
         out[0] = static_cast<uint8_t>(raw & 0xFF);
         out[1] = static_cast<uint8_t>((raw >> 8) & 0xFF);
         out[2] = static_cast<uint8_t>((raw >> 16) & 0xFF);
@@ -29,7 +29,7 @@ namespace
                        (static_cast<uint32_t>(in[2]) << 16) |
                        (static_cast<uint32_t>(in[3]) << 24);
         float value = 0.0f;
-        std::memcpy(&value, &raw, sizeof(float));
+        memcpy(&value, &raw, sizeof(float));
         return value;
     }
 }
@@ -119,7 +119,8 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
     const uint8_t crc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
     buffer[index++] = crc;
 
-    CRUMBS_DEBUG_PRINTLN(F("Message successfully encoded."));
+    CRUMBS_DEBUG_PRINT(F("Message successfully encoded. CRC: 0x"));
+    CRUMBS_DEBUG_PRINTLN(crc, HEX);
 
     return index;
 }

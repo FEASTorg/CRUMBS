@@ -1,51 +1,14 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
+#include <CRUMBS.h>
+#include <stdio.h>
 
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
-
-extern const uint8_t LED_GREEN;
-extern const uint8_t LED_YELLOW;
-extern const uint8_t LED_RED;
 extern const uint8_t kSliceI2cAddress;
-
-extern volatile unsigned long yellowPulseUntil;
-extern const unsigned long YELLOW_PULSE_MS;
-
-extern struct LastMsg
-{
-    uint8_t typeID;
-    uint8_t commandType;
-    float data[CRUMBS_DATA_LENGTH];
-    uint8_t crc8;
-    bool valid;
-} lastRx;
-
-static bool haveError = false;
-
-void setOk()
-{
-    haveError = false;
-    digitalWrite(LED_RED, LOW);
-    // Green LED is also used by CRUMBS-controlled channel; keep on when OK:
-    digitalWrite(LED_GREEN, HIGH);
-}
-
-void setError()
-{
-    haveError = true;
-    digitalWrite(LED_GREEN, LOW);
-    digitalWrite(LED_RED, HIGH);
-}
-
-void pulseActivity()
-{
-    yellowPulseUntil = millis() + YELLOW_PULSE_MS;
-}
-
-void refreshLeds()
-{
-    digitalWrite(LED_YELLOW, (millis() < yellowPulseUntil) ? HIGH : LOW);
-}
+extern bool hasError;
+extern LedChannel ledChannels[3];
+extern MessageSummary lastCommand;
+extern MessageSummary lastResponse;
 
 void drawDisplay()
 {
@@ -54,37 +17,44 @@ void drawDisplay()
     {
         u8g2.setFont(u8g2_font_6x10_tf);
 
-        // Header "Peripheral 0x.."
-    char head[20];
-    sprintf(head, "Peripheral 0x%02X", kSliceI2cAddress);
-        u8g2.drawStr(0, 10, head);
+        char header[24];
+        snprintf(header, sizeof(header), "Slice 0x%02X", kSliceI2cAddress);
+        u8g2.drawStr(0, 10, header);
+        u8g2.drawStr(0, 23, hasError ? "Status: ERROR" : "Status: OK");
 
-        // Error/OK
-        if (haveError)
-            u8g2.drawStr(100, 10, "ERR");
-        else
-            u8g2.drawStr(100, 10, "OK ");
-
-        int y = 24;
-        if (!lastRx.valid)
+        if (lastCommand.valid)
         {
-            u8g2.drawStr(0, y, "No message yet");
-            continue;
+            char line[40];
+            char g[6], y[6], r[6];
+            dtostrf(lastCommand.message.data[0], 4, 2, g);
+            dtostrf(lastCommand.message.data[1], 4, 2, y);
+            dtostrf(lastCommand.message.data[2], 4, 2, r);
+            snprintf(line, sizeof(line), "Cmd C %s %s %s", g, y, r);
+            u8g2.drawStr(0, 38, line);
+
+            snprintf(line, sizeof(line), "Cmd period %lu ms",
+                     static_cast<unsigned long>(lastCommand.message.data[3]));
+            u8g2.drawStr(0, 50, line);
+        }
+        else
+        {
+            u8g2.drawStr(0, 38, "Awaiting controller...");
         }
 
-        char line[26];
-        sprintf(line, "type:%u cmd:%u crc:%02X", lastRx.typeID, lastRx.commandType, lastRx.crc8);
-        u8g2.drawStr(0, y, line);
-        y += 12;
-
-        char buf[32];
-        snprintf(buf, sizeof(buf), "d0:%0.2f d1:%0.2f d2:%0.2f", lastRx.data[0], lastRx.data[1], lastRx.data[2]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        snprintf(buf, sizeof(buf), "d3:%0.2f d4:%0.2f", lastRx.data[3], lastRx.data[4]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        snprintf(buf, sizeof(buf), "d5:%0.2f d6:%0.2f", lastRx.data[5], lastRx.data[6]);
-        u8g2.drawStr(0, y, buf);
+        char stateLine[40];
+        char g[6], y[6], r[6];
+        dtostrf(ledChannels[0].ratio, 4, 2, g);
+        dtostrf(ledChannels[1].ratio, 4, 2, y);
+        dtostrf(ledChannels[2].ratio, 4, 2, r);
+        if (lastResponse.valid)
+        {
+            snprintf(stateLine, sizeof(stateLine), "LED %s %s %s rsp:%02X",
+                     g, y, r, lastResponse.message.crc8);
+        }
+        else
+        {
+            snprintf(stateLine, sizeof(stateLine), "LED %s %s %s", g, y, r);
+        }
+        u8g2.drawStr(0, 62, stateLine);
     } while (u8g2.nextPage());
 }

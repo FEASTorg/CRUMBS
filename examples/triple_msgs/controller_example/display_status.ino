@@ -1,52 +1,11 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
+#include <CRUMBS.h>
+#include <stdio.h>
 
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
-
-extern const uint8_t LED_GREEN;
-extern const uint8_t LED_YELLOW;
-extern const uint8_t LED_RED;
-
-extern volatile unsigned long yellowPulseUntil;
-extern const unsigned long YELLOW_PULSE_MS;
-
-extern struct LastMsg
-{
-    bool isRx;
-    uint8_t addr;
-    uint8_t typeID;
-    uint8_t commandType;
-    float data[CRUMBS_DATA_LENGTH];
-    uint8_t crc8;
-    bool valid;
-} lastMsg;
-
-static bool haveError = false;
-
-void setOk()
-{
-    haveError = false;
-    digitalWrite(LED_RED, LOW);
-    digitalWrite(LED_GREEN, HIGH);
-}
-
-void setError()
-{
-    haveError = true;
-    digitalWrite(LED_GREEN, LOW);
-    digitalWrite(LED_RED, HIGH);
-}
-
-void pulseActivity()
-{
-    yellowPulseUntil = millis() + YELLOW_PULSE_MS;
-}
-
-void refreshLeds()
-{
-    // Handle yellow pulse timing
-    digitalWrite(LED_YELLOW, (millis() < yellowPulseUntil) ? HIGH : LOW);
-}
+extern bool hasError;
+extern LastExchange lastExchange;
 
 void drawDisplay()
 {
@@ -54,40 +13,35 @@ void drawDisplay()
     do
     {
         u8g2.setFont(u8g2_font_6x10_tf);
-        // Header
-        u8g2.drawStr(0, 10, "Controller");
-        // Error/OK marker
-        if (haveError)
-            u8g2.drawStr(100, 10, "ERR");
-        else
-            u8g2.drawStr(100, 10, "OK ");
 
-        int y = 24;
-        if (!lastMsg.valid)
+        u8g2.drawStr(0, 10, "CRUMBS Controller");
+        u8g2.drawStr(0, 22, hasError ? "Status: ERROR" : "Status: OK");
+
+        if (!lastExchange.hasData)
         {
-            u8g2.drawStr(0, y, "No message yet");
-            continue;
+            u8g2.drawStr(0, 38, "No CRUMBS traffic yet");
         }
+        else
+        {
+            char line[40];
+            snprintf(line, sizeof(line), "%s 0x%02X %s",
+                     lastExchange.wasRx ? "RX" : "TX",
+                     lastExchange.address,
+                     lastExchange.success ? "OK" : "FAIL");
+            u8g2.drawStr(0, 38, line);
 
-        // TX/RX line
-        char line[20];
-        sprintf(line, "%s 0x%02X", lastMsg.isRx ? "RX" : "TX", lastMsg.addr);
-        u8g2.drawStr(0, y, line);
-        y += 12;
+            snprintf(line, sizeof(line), "crc:%02X period:%lu",
+                     lastExchange.message.crc8,
+                     static_cast<unsigned long>(lastExchange.message.data[3]));
+            u8g2.drawStr(0, 50, line);
 
-        sprintf(line, "type:%u cmd:%u crc:%02X", lastMsg.typeID, lastMsg.commandType, lastMsg.crc8);
-        u8g2.drawStr(0, y, line);
-        y += 12;
-
-        // data lines
-        char buf[32];
-        snprintf(buf, sizeof(buf), "d0:%0.2f d1:%0.2f d2:%0.2f", lastMsg.data[0], lastMsg.data[1], lastMsg.data[2]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        snprintf(buf, sizeof(buf), "d3:%0.2f d4:%0.2f", lastMsg.data[3], lastMsg.data[4]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        snprintf(buf, sizeof(buf), "d5:%0.2f d6:%0.2f", lastMsg.data[5], lastMsg.data[6]);
-        u8g2.drawStr(0, y, buf);
+            char dataLine[32];
+            char g[6], y[6], r[6];
+            dtostrf(lastExchange.message.data[0], 4, 2, g);
+            dtostrf(lastExchange.message.data[1], 4, 2, y);
+            dtostrf(lastExchange.message.data[2], 4, 2, r);
+            snprintf(dataLine, sizeof(dataLine), "GYR %s %s %s", g, y, r);
+            u8g2.drawStr(0, 62, dataLine);
+        }
     } while (u8g2.nextPage());
 }

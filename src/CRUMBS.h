@@ -9,10 +9,10 @@
 
 /**
  * @def CRUMBS_DEBUG
- * @brief Uncomment to enable debugging messages.
+ * @brief Uncomment to enable debugging messages globally.
  */
 
-// #define CRUMBS_DEBUG
+#define CRUMBS_DEBUG
 
 #ifdef CRUMBS_DEBUG
 

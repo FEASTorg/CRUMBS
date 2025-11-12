@@ -11,7 +11,7 @@
  *
  * @note Ensure this matches the address specified by the Controller when sending messages.
  */
-#define SLICE_I2C_ADDRESS 0x08 // Example I2C address
+#define SLICE_I2C_ADDRESS 0x09 // Example I2C address
 
 /**
  * @brief Instantiate CRUMBS as a Slice (Peripheral).

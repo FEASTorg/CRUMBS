@@ -1,86 +1,67 @@
 /**
  * @file controller_example.ino
- * @brief CRUMBS Controller: sends messages and requests status from two peripherals.
+ * @brief Minimal CRUMBS controller for the triple board rig.
  *
- * Serial commands:
- *   CSV send:      8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,3.14
- *                  ^ addr,typeID,commandType,data0..data6
- *   Request read:  request=8
+ * Serial commands (newline terminated):
+ *   SEND <addr> <greenRatio> <yellowRatio> <redRatio> <period_ms>
+ *      e.g.  SEND 8 0.5 0 0.25 1500
+ *   REQUEST <addr>
+ *      e.g.  REQUEST 0x08
  */
 
-#define CRUMBS_DEBUG
-#include <CRUMBS.h>
+#include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 #include <U8g2lib.h>
 #include <SPI.h>
 
-// ---------- OLED (software I2C) ----------
-constexpr uint8_t OLED_ADDR = 0x3C;
-constexpr uint8_t OLED_SCL = 8; // D8
-constexpr uint8_t OLED_SDA = 7; // D7
+// ---------- Hardware configuration ----------
+const uint8_t LED_GREEN = 4;
+const uint8_t LED_YELLOW = 6;
+const uint8_t LED_RED = 5;
+
+const uint8_t OLED_ADDR = 0x3C; // SSD1306 128x64 default
+const uint8_t OLED_SCL = 8;     // software I2C SCL
+const uint8_t OLED_SDA = 7;     // software I2C SDA
+
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, U8X8_PIN_NONE);
 
-// ---------- LEDs ----------
-constexpr uint8_t LED_GREEN = 4;
-constexpr uint8_t LED_YELLOW = 6;
-constexpr uint8_t LED_RED = 5;
+// ---------- CRUMBS controller ----------
+CRUMBS crumbsController(true);
 
-// Activity pulse timing
-volatile unsigned long yellowPulseUntil = 0;
-constexpr unsigned long YELLOW_PULSE_MS = 120;
-
-// ---------- CRUMBS ----------
-CRUMBS crumbsController(true); // Master/controller
-
-// ---------- Last message cache for display ----------
-struct LastMsg
+// ---------- Runtime state exposed to helper files ----------
+struct LastExchange
 {
-    bool isRx = false; // false: last TX, true: last RX
-    uint8_t addr = 0;
-    uint8_t typeID = 0;
-    uint8_t commandType = 0;
-    float data[CRUMBS_DATA_LENGTH] = {};
-    uint8_t crc8 = 0;
-    bool valid = false;
-} lastMsg;
+    bool hasData = false;
+    bool wasRx = false; // false = last action was SEND
+    uint8_t address = 0;
+    bool success = false; // true when wire transaction succeeded
+    CRUMBSMessage message = {};
+} lastExchange;
 
-namespace
-{
-    uint32_t lastCrcReport = 0;
-    bool lastCrcValid = true;
+bool hasError = false;
+unsigned long activityPulseUntil = 0;
+const unsigned long kActivityPulseMs = 120;
 
-    void reportCrcStatus(const __FlashStringHelper *context)
-    {
-        const uint32_t current = crumbsController.getCrcErrorCount();
-        const bool lastValid = crumbsController.isLastCrcValid();
-
-        if (current != lastCrcReport || lastValid != lastCrcValid)
-        {
-            Serial.print(F("Controller: CRC status ["));
-            Serial.print(context);
-            Serial.print(F("] errors="));
-            Serial.print(current);
-            Serial.print(F(" lastValid="));
-            Serial.println(lastValid ? F("true") : F("false"));
-            lastCrcReport = current;
-            lastCrcValid = lastValid;
-        }
-    }
-}
-
-// Prototypes (helpers are in .ino companions)
-void handleSerialInput();
-bool parseSerialInput(const String &, uint8_t &, CRUMBSMessage &);
+// ---------- Internal helpers (implemented below / other .ino files) ----------
+void handleSerial();
 void drawDisplay();
+
+void sendCrumbs(uint8_t address, CRUMBSMessage &message);
+void requestCrumbs(uint8_t address);
+void rememberExchange(bool wasRx, uint8_t address, const CRUMBSMessage &message, bool success);
+void pulseActivity();
+void refreshIndicators();
 void setOk();
 void setError();
-void pulseActivity();
-void refreshLeds();
 
-// ================================
+// Display refresh cadence
+unsigned long lastDisplayRefresh = 0;
+const unsigned long kDisplayIntervalMs = 100;
+
+// =======================================================
 void setup()
 {
-    // LEDs
     pinMode(LED_GREEN, OUTPUT);
     pinMode(LED_YELLOW, OUTPUT);
     pinMode(LED_RED, OUTPUT);
@@ -94,116 +75,155 @@ void setup()
         delay(10);
     }
 
-    // OLED
     u8g2.setI2CAddress(OLED_ADDR << 1);
     u8g2.begin();
 
-    // CRUMBS/I2C
     crumbsController.begin();
-    crumbsController.resetCrcErrorCount();
-    Serial.println(F("Controller: CRC diagnostics reset."));
+    setOk();
 
-    setOk(); // system starts OK
-
-    Serial.println(F("Controller ready."));
-    Serial.println(F("CSV send: addr,typeID,commandType,data0..data6"));
-    Serial.println(F("Request : request=<addr>  (e.g. request=8 or request=0x08)"));
+    Serial.println(F("CRUMBS Controller ready."));
+    Serial.println(F("Commands:"));
+    Serial.println(F("  SEND <addr> <green> <yellow> <red> <period_ms>"));
+    Serial.println(F("  REQUEST <addr>"));
 }
 
+// =======================================================
 void loop()
 {
-    handleSerialInput();
-    refreshLeds(); // keep activity pulse timing non-blocking
+    handleSerial();
+    refreshIndicators();
+
+    const unsigned long now = millis();
+    if (now - lastDisplayRefresh >= kDisplayIntervalMs)
+    {
+        lastDisplayRefresh = now;
+        drawDisplay();
+    }
 }
 
-// Utilities to update last message cache
-static void cacheTx(uint8_t addr, const CRUMBSMessage &m)
+// =======================================================
+void pulseActivity()
 {
-    lastMsg.isRx = false;
-    lastMsg.addr = addr;
-    lastMsg.typeID = m.typeID;
-    lastMsg.commandType = m.commandType;
-    for (size_t i = 0; i < CRUMBS_DATA_LENGTH; i++)
-        lastMsg.data[i] = m.data[i];
-    lastMsg.crc8 = m.crc8;
-    lastMsg.valid = true;
-    drawDisplay();
+    activityPulseUntil = millis() + kActivityPulseMs;
 }
 
-static void cacheRx(uint8_t addr, const CRUMBSMessage &m)
+void refreshIndicators()
 {
-    lastMsg.isRx = true;
-    lastMsg.addr = addr;
-    lastMsg.typeID = m.typeID;
-    lastMsg.commandType = m.commandType;
-    for (size_t i = 0; i < CRUMBS_DATA_LENGTH; i++)
-        lastMsg.data[i] = m.data[i];
-    lastMsg.crc8 = m.crc8;
-    lastMsg.valid = true;
-    drawDisplay();
+    digitalWrite(LED_YELLOW, (millis() < activityPulseUntil) ? HIGH : LOW);
 }
 
-// I2C send wrapper with LED/error handling
-static void sendCrumbs(uint8_t addr, const CRUMBSMessage &m)
+void setOk()
+{
+    hasError = false;
+    digitalWrite(LED_GREEN, HIGH);
+    digitalWrite(LED_RED, LOW);
+}
+
+void setError()
+{
+    hasError = true;
+    digitalWrite(LED_GREEN, LOW);
+    digitalWrite(LED_RED, HIGH);
+}
+
+void rememberExchange(bool wasRx, uint8_t address, const CRUMBSMessage &message, bool success)
+{
+    lastExchange.hasData = true;
+    lastExchange.wasRx = wasRx;
+    lastExchange.address = address;
+    lastExchange.success = success;
+    lastExchange.message = message;
+}
+
+void sendCrumbs(uint8_t address, CRUMBSMessage &message)
 {
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t n = crumbsController.encodeMessage(m, buffer, sizeof(buffer));
-    if (n == 0)
+    size_t bytes = crumbsController.encodeMessage(message, buffer, sizeof(buffer));
+    if (bytes == 0)
     {
-        Serial.println(F("Controller: encode failed."));
+        Serial.println(F("Encode failed (buffer too small)."));
+        rememberExchange(false, address, message, false);
         setError();
         return;
     }
-    Wire.beginTransmission(addr);
-    size_t written = Wire.write(buffer, n);
-    uint8_t err = Wire.endTransmission();
-    Serial.print(F("Controller: TX bytes="));
-    Serial.print(written);
-    Serial.print(F(" status="));
-    Serial.println(err);
 
-    if (err == 0)
+    message.crc8 = buffer[bytes - 1];
+
+    Wire.beginTransmission(address);
+    size_t written = Wire.write(buffer, bytes);
+    uint8_t err = Wire.endTransmission();
+
+    if (err == 0 && written == bytes)
     {
+        Serial.print(F("Sent to 0x"));
+        Serial.print(address, HEX);
+        Serial.print(F(" | ratios="));
+        Serial.print(message.data[0], 3);
+        Serial.print(' ');
+        Serial.print(message.data[1], 3);
+        Serial.print(' ');
+        Serial.print(message.data[2], 3);
+        Serial.print(F(" period_ms="));
+        Serial.println((unsigned long)message.data[3]);
+
+        rememberExchange(false, address, message, true);
         pulseActivity();
-        cacheTx(addr, m);
         setOk();
     }
     else
     {
+        Serial.print(F("I2C send failed. err="));
+        Serial.print(err);
+        Serial.print(F(" written="));
+        Serial.println(written);
+
+        rememberExchange(false, address, message, false);
         setError();
     }
-
-    reportCrcStatus(F("send"));
 }
 
-// I2C request wrapper with LED/error handling
-static bool requestCrumbs(uint8_t addr, CRUMBSMessage &out)
+void requestCrumbs(uint8_t address)
 {
-    Wire.requestFrom(addr, (uint8_t)CRUMBS_MESSAGE_SIZE);
-    delay(5); // small settle
-    uint8_t buf[CRUMBS_MESSAGE_SIZE];
-    int i = 0;
-    while (Wire.available() && i < CRUMBS_MESSAGE_SIZE)
-        buf[i++] = Wire.read();
+    Wire.requestFrom(address, (uint8_t)CRUMBS_MESSAGE_SIZE);
+    delay(5);
 
-    Serial.print(F("Controller: RX bytes="));
-    Serial.println(i);
-    if (i == 0)
+    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
+    size_t count = 0;
+    while (Wire.available() && count < CRUMBS_MESSAGE_SIZE)
     {
+        buffer[count++] = Wire.read();
+    }
+
+    if (count == 0)
+    {
+        Serial.println(F("No data received."));
+        rememberExchange(true, address, CRUMBSMessage{}, false);
         setError();
-        return false;
+        return;
     }
 
-    if (crumbsController.decodeMessage(buf, i, out))
+    CRUMBSMessage message = {};
+    if (crumbsController.decodeMessage(buffer, count, message))
     {
+        Serial.print(F("Response from 0x"));
+        Serial.print(address, HEX);
+        Serial.print(F(" | ratios="));
+        Serial.print(message.data[0], 3);
+        Serial.print(' ');
+        Serial.print(message.data[1], 3);
+        Serial.print(' ');
+        Serial.print(message.data[2], 3);
+        Serial.print(F(" period_ms="));
+        Serial.println((unsigned long)message.data[3]);
+
+        rememberExchange(true, address, message, true);
         pulseActivity();
-        cacheRx(addr, out);
         setOk();
-        reportCrcStatus(F("request"));
-        return true;
     }
-    Serial.println(F("Controller: decode failed."));
-    setError();
-    reportCrcStatus(F("request"));
-    return false;
+    else
+    {
+        Serial.println(F("CRC or length check failed."));
+        rememberExchange(true, address, message, false);
+        setError();
+    }
 }

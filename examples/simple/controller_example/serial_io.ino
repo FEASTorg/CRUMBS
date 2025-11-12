@@ -209,7 +209,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
 
     // Debugging output to verify parsed message
     Serial.println(F("Controller: Parsed input into CRUMBSMessage and target address."));
-    Serial.print(F("Target Address: "));
+    Serial.print(F("Target Address: 0x"));
     Serial.println(targetAddress, HEX);
     Serial.print(F("Parsed Message -> typeID: "));
     Serial.print(message.typeID);
@@ -221,8 +221,8 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
         Serial.print(message.data[i]);
         Serial.print(F(" "));
     }
-    Serial.print(F(", crc8: 0x"));
-    Serial.println(message.crc8, HEX);
+    Serial.println();
+    Serial.println(F("Note: CRC will be calculated during encoding."));
 
     return true;
 }
