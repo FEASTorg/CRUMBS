@@ -37,16 +37,16 @@ controller.sendMessage(msg, 0x08);
 
 ## Documentation
 
-Complete documentation is available in the [docs](docs/) directory:
+Documentation is available in the [docs](docs/) directory:
 
 - [Getting Started](docs/getting-started.md) - Installation and basic usage
-- [API Reference](docs/api-reference.md) - Complete class documentation
+- [API Reference](docs/api-reference.md) - Class documentation
 - [Protocol Specification](docs/protocol.md) - Message format details
 - [Examples](docs/examples.md) - Code examples and patterns
 
 ## Examples
 
-The library includes complete working examples:
+The library includes working examples to get you started:
 
 - **Controller Example**: Serial interface for sending commands and requesting data
 - **Peripheral Example**: Message handling and response generation
