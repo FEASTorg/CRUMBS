@@ -1,13 +1,14 @@
 # CRUMBS
 
-CRUMBS (Communications Router and Unified Message Broker System) is an Arduino library for I2C communication between a controller and multiple peripheral devices. It provides standardized 27-byte messaging with automatic serialization for modular systems.
+CRUMBS (Communications Router and Unified Message Broker System) is an Arduino library for I2C communication between a controller and multiple peripheral devices. It provides standardized 31-byte messaging with automatic serialization and CRC validation for modular systems.
 
 ## Features
 
-- **Fixed Message Format**: 27-byte messages with 6 float data fields
+- **Fixed Message Format**: 31-byte frames with 7 float data fields
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
 - **Event-Driven Communication**: Callback-based message handling
 - **Built-in Serialization**: Automatic encoding/decoding of message structures
+- **CRC-8 Protection**: Integrity check on every message
 - **Debug Support**: Optional debug output for development and troubleshooting
 
 ## Quick Start
@@ -17,7 +18,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is an Arduino l
 
 // Controller
 CRUMBS controller(true);
-CRUMBSMessage msg = {0, 1, 1, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0}, 0};
+CRUMBSMessage msg = {0, 1, 1, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f}, 0};
 controller.sendMessage(msg, 0x08);
 ```
 
@@ -25,7 +26,8 @@ controller.sendMessage(msg, 0x08);
 
 1. Download or clone this repository
 2. Place the CRUMBS folder in your Arduino `libraries` directory
-3. Include in your sketch: `#include <CRUMBS.h>`
+3. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
+4. Include in your sketch: `#include <CRUMBS.h>`
 
 ## Hardware Requirements
 

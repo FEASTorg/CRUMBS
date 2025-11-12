@@ -1,29 +1,32 @@
 # Protocol Specification
 
-## Message Format (27 bytes)
+## Message Format (31 bytes)
 
 ```yml
-┌──────────┬─────────────┬───────────────┬─────────────┐
-│  typeID  │ commandType │   data[6]     │ errorFlags  │
-│ (1 byte) │  (1 byte)   │  (24 bytes)   │  (1 byte)   │
-└──────────┴─────────────┴───────────────┴─────────────┘
+┌──────────┬─────────────┬──────────────────┬──────────┐
+│  typeID  │ commandType │     data[7]      │   crc8   │
+│ (1 byte) │  (1 byte)   │   (28 bytes)     │ (1 byte) │
+└──────────┴─────────────┴──────────────────┴──────────┘
 ```
 
 | Field         | Size     | Description                            |
 | ------------- | -------- | -------------------------------------- |
 | `typeID`      | 1 byte   | Module type (sensor=1, motor=2, etc.)  |
 | `commandType` | 1 byte   | Command (read=0, set=1, reset=2, etc.) |
-| `data[6]`     | 24 bytes | Payload data (6 floats)                |
-| `errorFlags`  | 1 byte   | Error/status flags                     |
+| `data[7]`     | 28 bytes | Payload data (7 floats)                |
+| `crc8`        | 1 byte   | CRC-8 over `typeID`, `commandType`, `data[7]` |
 
-**Note**: `sliceAddress` exists in struct but is not serialized.
+**Notes**:
+
+- `sliceAddress` exists in the struct but is not serialized.
+- CRC excludes `sliceAddress` and the CRC byte itself.
 
 ## Communication Patterns
 
 ```yml
-Controller [27-byte message]> Peripheral    # Send command
+Controller [31-byte message]> Peripheral    # Send command
 Controller [I2C request]> Peripheral        # Request data
-Controller <[27-byte response] Peripheral   # Response
+Controller <[31-byte response] Peripheral   # Response
 ```
 
 ## Standard Values
@@ -43,14 +46,11 @@ Controller <[27-byte response] Peripheral   # Response
 - `2`: Reset
 - `3`: Calibrate
 
-### Error Flags (bit flags)
+### CRC
 
-- `0x01`: General error
-- `0x02`: Communication error
-- `0x04`: Hardware fault
-- `0x08`: Invalid command
-- `0x10`: Out of range data
-- `0x20`: Calibration needed
+- Polynomial: 0x07 (CRC-8)
+- Calculated using `ace_crc::crc8_nibble`
+- Applied to serialized payload before padding
 
 ## Timing Guidelines
 

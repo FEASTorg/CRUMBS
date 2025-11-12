@@ -26,9 +26,9 @@ void setup()
     crumbsController.begin(); /**< Initialize CRUMBS communication */
 
     Serial.println(F("Controller ready. Enter messages in the format:"));
-    Serial.println(F("address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags"));
+    Serial.println(F("address,typeID,commandType,data0,data1,data2,data3,data4,data5,data6"));
     Serial.println(F("Example Serial Commands:"));
-    Serial.println(F("   8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0")); // Example: address 8, typeID 1, commandType 1, data..., errorFlags 0}
+    Serial.println(F("   8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,3.14")); // Example: address 8, typeID 1, commandType 1, data...
 }
 
 // Main loop that listens for serial input, parses commands, and sends CRUMBSMessages to the specified Slice.

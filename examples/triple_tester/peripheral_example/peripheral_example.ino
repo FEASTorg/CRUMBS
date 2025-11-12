@@ -33,14 +33,14 @@ void handleMessage(CRUMBSMessage &message)
     Serial.print(F("commandType: "));
     Serial.println(message.commandType);
     Serial.print(F("data: "));
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
         Serial.print(message.data[i]);
         Serial.print(F(" "));
     }
     Serial.println();
-    Serial.print(F("errorFlags: "));
-    Serial.println(message.errorFlags);
+    Serial.print(F("crc8: 0x"));
+    Serial.println(message.crc8, HEX);
 
     // Process the message based on commandType
     switch (message.commandType)
@@ -88,8 +88,8 @@ void handleRequest()
     responseMessage.data[3] = 3.0f;  /**< Example data3 */
     responseMessage.data[4] = 4.0f;  /**< Example data4 */
     responseMessage.data[5] = 5.0f;  /**< Example data5 */
-
-    responseMessage.errorFlags = 0; /**< No errors */
+    responseMessage.data[6] = 6.0f;  /**< Example data6 */
+    responseMessage.crc8 = 0;       /**< CRC set during encoding */
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t encodedSize = crumbsSlice.encodeMessage(responseMessage, buffer, sizeof(buffer));

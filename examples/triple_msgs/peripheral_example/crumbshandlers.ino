@@ -7,8 +7,8 @@ extern struct LastMsg
 {
     uint8_t typeID;
     uint8_t commandType;
-    float data[6];
-    uint8_t errorFlags;
+    float data[CRUMBS_DATA_LENGTH];
+    uint8_t crc8;
     bool valid;
 } lastRx;
 
@@ -27,29 +27,24 @@ void handleMessage(CRUMBSMessage &m)
     Serial.print(F(" cmd="));
     Serial.print(m.commandType);
     Serial.print(F(" data: "));
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
         Serial.print(m.data[i], 3);
         Serial.print(' ');
     }
-    Serial.print(F(" err="));
-    Serial.println(m.errorFlags);
+    Serial.print(F(" crc=0x"));
+    Serial.println(m.crc8, HEX);
 
     // Cache last RX for display
     lastRx.typeID = m.typeID;
     lastRx.commandType = m.commandType;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
         lastRx.data[i] = m.data[i];
-    lastRx.errorFlags = m.errorFlags;
+    lastRx.crc8 = m.crc8;
     lastRx.valid = true;
 
     pulseActivity();
-
-    // Error handling
-    if (m.errorFlags != 0)
-        setError();
-    else
-        setOk();
+    setOk();
 
     // Handle command types
     switch (m.commandType)
@@ -80,15 +75,16 @@ void handleRequest()
     CRUMBSMessage r;
     r.typeID = 1;      // slice type
     r.commandType = 0; // status response
-    // Example status payload: echo last ratios for three chans and basic flags
-    // d0..d2: desired duty for G,Y,R; d3: period(ms/1000), d4: uptime(s), d5: reserved
+    // Example status payload: echo last ratios for three channels and simple telemetry
+    // d0..d2: desired duty for G,Y,R; d3: period(ms/1000), d4: uptime(s), d5/d6: reserved
     r.data[0] = constrain((float)analogRead(A0) / 1023.0f, 0.0f, 1.0f); // sample source (or use chans[0].ratio)
     r.data[1] = 0.0f;
     r.data[2] = 0.0f;
     r.data[3] = (float)(millis() / 1000UL);
     r.data[4] = 0.0f;
     r.data[5] = 0.0f;
-    r.errorFlags = 0;
+    r.data[6] = 0.0f;
+    r.crc8 = 0;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t n = crumbsSlice.encodeMessage(r, buffer, sizeof(buffer));

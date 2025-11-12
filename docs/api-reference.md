@@ -16,7 +16,7 @@ CRUMBS(bool isController = false, uint8_t address = 0);
 ```cpp
 void begin();                                           // Initialize I2C
 void sendMessage(const CRUMBSMessage &msg, uint8_t addr);  // Send message
-void receiveMessage(CRUMBSMessage &msg);                // Receive message
+bool receiveMessage(CRUMBSMessage &msg);                // Receive message (returns success)
 void onReceive(void (*callback)(CRUMBSMessage &));      // Set receive callback
 void onRequest(void (*callback)());                     // Set request callback
 uint8_t getAddress() const;                             // Get device address
@@ -33,17 +33,18 @@ struct CRUMBSMessage {
     uint8_t sliceAddress;  // Target identifier (not serialized)
     uint8_t typeID;        // Module type (sensor=1, motor=2, etc.)
     uint8_t commandType;   // Command (read=0, set=1, etc.)
-    float data[6];         // Payload data (6 floats = 24 bytes)
-    uint8_t errorFlags;    // Error/status flags
+    float data[CRUMBS_DATA_LENGTH];  // Payload data (7 floats = 28 bytes)
+    uint8_t crc8;          // CRC-8 checksum over serialized payload
 };
 ```
 
-**Serialized size**: 27 bytes (typeID + commandType + data + errorFlags)
+**Serialized frame**: 31 bytes (typeID + commandType + data + crc8)
 
 ## Constants
 
 ```cpp
-#define CRUMBS_MESSAGE_SIZE 27     // Serialized message size
+#define CRUMBS_DATA_LENGTH 7       // Number of float data elements
+#define CRUMBS_MESSAGE_SIZE 31     // Serialized frame size
 #define TWI_CLOCK_FREQ 100000      // I2C clock frequency (100kHz)
 ```
 

@@ -8,14 +8,14 @@ Send commands via serial interface and request data from peripherals.
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
-3. Send: `address,typeID,commandType,data0,data1,data2,data3,data4,data5,errorFlags`
+3. Send: `address,typeID,commandType,data0,data1,data2,data3,data4,data5,data6`
 4. Request: `request=address`
 
 ### Example Commands
 
 ```cpp
-8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0     // Send to address 8
-request=8                              // Request data from address 8
+8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,3.14     // Send to address 8
+request=8                                 // Request data from address 8
 ```
 
 ## Peripheral Example
@@ -35,7 +35,7 @@ void handleMessage(CRUMBSMessage &message) {
 }
 
 void handleRequest() {
-    CRUMBSMessage response;
+    CRUMBSMessage response = {};
     response.data[0] = 42.0f;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
@@ -68,15 +68,17 @@ for (int i = 0; i < 3; i++) {
 Wire.requestFrom(address, CRUMBS_MESSAGE_SIZE);
 delay(50);
 CRUMBSMessage response;
-controller.receiveMessage(response);
+if (!controller.receiveMessage(response)) {
+    Serial.println("Failed to read response frame");
+}
 ```
 
-### Error Handling
+### CRC Validation
 
 ```cpp
-if (message.errorFlags != 0) {
-    Serial.print("Error: ");
-    Serial.println(message.errorFlags);
+if (!crumbsController.decodeMessage(buffer, bytesRead, response)) {
+    Serial.println("CRC mismatch or malformed frame");
+    return;
 }
 ```
 

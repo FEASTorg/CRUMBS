@@ -46,13 +46,13 @@ void handleSerialInput()
             Serial.print(F(" cmd="));
             Serial.print(resp.commandType);
             Serial.print(F(" data: "));
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
             {
                 Serial.print(resp.data[i], 3);
                 Serial.print(' ');
             }
-            Serial.print(F(" err="));
-            Serial.println(resp.errorFlags);
+            Serial.print(F(" crc=0x"));
+            Serial.println(resp.crc8, HEX);
         }
         else
         {
@@ -71,7 +71,7 @@ void handleSerialInput()
     }
     else
     {
-        Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data5,errorFlags"));
+    Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data6"));
     }
 }
 
@@ -79,9 +79,9 @@ bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
 {
     m.typeID = 0;
     m.commandType = 0;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
         m.data[i] = 0;
-    m.errorFlags = 0;
+    m.crc8 = 0;
 
     int field = 0, last = 0;
     for (int i = 0; i <= s.length(); i++)
@@ -102,32 +102,19 @@ bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
             case 2:
                 m.commandType = (uint8_t)v.toInt();
                 break;
-            case 3:
-                m.data[0] = v.toFloat();
-                break;
-            case 4:
-                m.data[1] = v.toFloat();
-                break;
-            case 5:
-                m.data[2] = v.toFloat();
-                break;
-            case 6:
-                m.data[3] = v.toFloat();
-                break;
-            case 7:
-                m.data[4] = v.toFloat();
-                break;
-            case 8:
-                m.data[5] = v.toFloat();
-                break;
-            case 9:
-                m.errorFlags = (uint8_t)v.toInt();
-                break;
             default:
+                if (field >= 3 && field < 3 + CRUMBS_DATA_LENGTH)
+                {
+                    m.data[field - 3] = v.toFloat();
+                }
+                else if (field == 3 + CRUMBS_DATA_LENGTH)
+                {
+                    m.crc8 = (uint8_t)strtol(v.c_str(), NULL, 0);
+                }
                 break;
             }
             field++;
         }
     }
-    return (field >= 4);
+    return (field >= 3 + CRUMBS_DATA_LENGTH);
 }
