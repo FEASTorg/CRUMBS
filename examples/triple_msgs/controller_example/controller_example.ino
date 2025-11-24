@@ -10,19 +10,23 @@
  */
 
 #include <Arduino.h>
-#include <Wire.h>
+
+#define CRUMBS_DEBUG
 #include <CRUMBS.h>
+#include <Wire.h>
 #include <U8g2lib.h>
 #include <SPI.h>
+
+// ---------- OLED (software I2C) ----------
+const uint8_t OLED_ADDR = 0x3C; // SSD1306 128x64 default
+const uint8_t OLED_SCL = 8;     // software I2C SCL
+const uint8_t OLED_SDA = 7;     // software I2C SDA
 
 // ---------- Hardware configuration ----------
 const uint8_t LED_GREEN = 4;
 const uint8_t LED_YELLOW = 6;
 const uint8_t LED_RED = 5;
 
-const uint8_t OLED_ADDR = 0x3C; // SSD1306 128x64 default
-const uint8_t OLED_SCL = 8;     // software I2C SCL
-const uint8_t OLED_SDA = 7;     // software I2C SDA
 
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, U8X8_PIN_NONE);
 

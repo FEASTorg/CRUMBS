@@ -14,10 +14,31 @@ namespace
             return false;
         }
 
-        long value = 0;
-        if (token.startsWith("0x") || token.startsWith("0X"))
+        uint8_t addr = 0;
+        if (a.startsWith("0x") || a.startsWith("0X"))
+            addr = (uint8_t)strtol(a.c_str(), NULL, 16);
+        else
+            addr = (uint8_t)a.toInt();
+
+        Serial.print(F("Controller: requesting from 0x"));
+        Serial.println(addr, HEX);
+
+        CRUMBSMessage resp;
+        if (requestCrumbs(addr, resp))
         {
-            value = strtol(token.c_str(), nullptr, 16);
+            Serial.println(F("Controller: response decoded:"));
+            Serial.print(F("typeID="));
+            Serial.print(resp.typeID);
+            Serial.print(F(" cmd="));
+            Serial.print(resp.commandType);
+            Serial.print(F(" data: "));
+            for (int i = 0; i < 6; i++)
+            {
+                Serial.print(resp.data[i], 3);
+                Serial.print(' ');
+            }
+            Serial.print(F(" err="));
+            Serial.println(resp.errorFlags);
         }
         else
         {
@@ -74,90 +95,68 @@ void handleSerial()
     line.trim();
     if (line.length() == 0)
     {
-        return;
+        sendCrumbs(addr, m);
+        Serial.println(F("Controller: message sent."));
     }
-
-    String upper = line;
-    upper.toUpperCase();
-
-    if (upper.startsWith("REQUEST"))
+    else
     {
-        int space = line.indexOf(' ');
-        if (space < 0)
-        {
-            Serial.println(F("Usage: REQUEST <addr>"));
-            return;
-        }
-
-        String token = line.substring(space + 1);
-        token.trim();
-
-        uint8_t address = 0;
-        if (!parseAddress(token, address))
-        {
-            Serial.println(F("Invalid address."));
-            return;
-        }
-
-        requestCrumbs(address);
-        return;
+        Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data5,errorFlags"));
     }
+}
 
-    if (upper.startsWith("SEND"))
+bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
+{
+    m.typeID = 0;
+    m.commandType = 0;
+    for (int i = 0; i < 6; i++)
+        m.data[i] = 0;
+    m.errorFlags = 0;
+
+    int field = 0, last = 0;
+    for (int i = 0; i <= s.length(); i++)
     {
-        int space = line.indexOf(' ');
-        if (space < 0)
+        if (i == s.length() || s[i] == ',')
         {
-            Serial.println(F("Usage: SEND <addr> <green> <yellow> <red> <period_ms>"));
-            return;
-        }
-
-        String args = line.substring(space + 1);
-        args.trim();
-
-        String tokens[5];
-        if (!collectTokens(args, tokens, 5))
-        {
-            Serial.println(F("Usage: SEND <addr> <green> <yellow> <red> <period_ms>"));
-            return;
-        }
-
-        uint8_t address = 0;
-        if (!parseAddress(tokens[0], address))
-        {
-            Serial.println(F("Invalid address."));
-            return;
-        }
-
-        float ratios[3];
-        for (int i = 0; i < 3; ++i)
-        {
-            ratios[i] = tokens[i + 1].toFloat();
-            if (!(ratios[i] >= 0.0f && ratios[i] <= 1.0f))
+            String v = s.substring(last, i);
+            v.trim();
+            last = i + 1;
+            switch (field)
             {
-                Serial.println(F("Ratios must be between 0.0 and 1.0."));
-                return;
+            case 0:
+                addr = (uint8_t)v.toInt();
+                break;
+            case 1:
+                m.typeID = (uint8_t)v.toInt();
+                break;
+            case 2:
+                m.commandType = (uint8_t)v.toInt();
+                break;
+            case 3:
+                m.data[0] = v.toFloat();
+                break;
+            case 4:
+                m.data[1] = v.toFloat();
+                break;
+            case 5:
+                m.data[2] = v.toFloat();
+                break;
+            case 6:
+                m.data[3] = v.toFloat();
+                break;
+            case 7:
+                m.data[4] = v.toFloat();
+                break;
+            case 8:
+                m.data[5] = v.toFloat();
+                break;
+            case 9:
+                m.errorFlags = (uint8_t)v.toInt();
+                break;
+            default:
+                break;
             }
+            field++;
         }
-
-        long periodMs = tokens[4].toInt();
-        if (periodMs <= 0)
-        {
-            Serial.println(F("Period must be positive."));
-            return;
-        }
-
-        CRUMBSMessage message = {};
-        message.typeID = 1;
-        message.commandType = 1;
-        message.data[0] = ratios[0];
-        message.data[1] = ratios[1];
-        message.data[2] = ratios[2];
-        message.data[3] = static_cast<float>(periodMs);
-
-        sendCrumbs(address, message);
-        return;
     }
-
-    Serial.println(F("Unknown command. Use SEND or REQUEST."));
+    return (field >= 4);
 }
