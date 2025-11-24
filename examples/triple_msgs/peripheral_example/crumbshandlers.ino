@@ -3,9 +3,15 @@
 #include <CRUMBS.h>
 
 extern CRUMBS crumbsSlice;
-extern LedChannel ledChannels[3];
-extern MessageSummary lastCommand;
-extern MessageSummary lastResponse;
+
+extern struct LastMsg
+{
+    uint8_t typeID;
+    uint8_t commandType;
+    float data[CRUMBS_DATA_LENGTH];
+    uint8_t crc8;
+    bool valid;
+} lastRx;
 
 extern void drawDisplay();
 extern void applyCommand(const CRUMBSMessage &message);
@@ -15,37 +21,70 @@ extern void setError();
 // Receive message from controller
 void handleMessage(CRUMBSMessage &message)
 {
-    Serial.print(F("Command from controller | ratios="));
-    Serial.print(message.data[0], 3);
-    Serial.print(' ');
-    Serial.print(message.data[1], 3);
-    Serial.print(' ');
-    Serial.print(message.data[2], 3);
-    Serial.print(F(" period_ms="));
-    Serial.println(static_cast<unsigned long>(message.data[3]));
+    Serial.println(F("Slice: message received."));
+    Serial.print(F("typeID="));
+    Serial.print(m.typeID);
+    Serial.print(F(" cmd="));
+    Serial.print(m.commandType);
+    Serial.print(F(" data: "));
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+    {
+        Serial.print(m.data[i], 3);
+        Serial.print(' ');
+    }
+    Serial.print(F(" crc=0x"));
+    Serial.println(m.crc8, HEX);
 
-    applyCommand(message);
+    // Cache last RX for display
+    lastRx.typeID = m.typeID;
+    lastRx.commandType = m.commandType;
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+        lastRx.data[i] = m.data[i];
+    lastRx.crc8 = m.crc8;
+    lastRx.valid = true;
 
-    lastCommand.valid = true;
-    lastCommand.message = message;
-
+    pulseActivity();
     setOk();
+
+    // Handle command types
+    switch (m.commandType)
+    {
+    case 0: // Request format/config: no immediate action, handled by onRequest
+        Serial.println(F("Slice: command=REQUEST format/status."));
+        break;
+
+    case 1: // Set parameters (map floats to LED behaviors)
+        Serial.println(F("Slice: command=SET parameters."));
+        applyDataToChannels(m);
+        break;
+
+    default:
+        Serial.println(F("Slice: Unknown command."));
+        break;
+    }
+
     drawDisplay();
 }
 
 // Respond to controller request
 void handleRequest()
 {
-    CRUMBSMessage response = {};
-    response.typeID = 1;
-    response.commandType = 0;
-    response.data[0] = ledChannels[0].ratio;
-    response.data[1] = ledChannels[1].ratio;
-    response.data[2] = ledChannels[2].ratio;
-    response.data[3] = static_cast<float>(ledChannels[0].periodMs);
-    response.data[4] = millis() / 1000.0f;
-    response.data[5] = 0.0f;
-    response.data[6] = 0.0f;
+    Serial.println(F("Slice: request event -> sending status"));
+    pulseActivity();
+
+    CRUMBSMessage r;
+    r.typeID = 1;      // slice type
+    r.commandType = 0; // status response
+    // Example status payload: echo last ratios for three channels and simple telemetry
+    // d0..d2: desired duty for G,Y,R; d3: period(ms/1000), d4: uptime(s), d5/d6: reserved
+    r.data[0] = constrain((float)analogRead(A0) / 1023.0f, 0.0f, 1.0f); // sample source (or use chans[0].ratio)
+    r.data[1] = 0.0f;
+    r.data[2] = 0.0f;
+    r.data[3] = (float)(millis() / 1000UL);
+    r.data[4] = 0.0f;
+    r.data[5] = 0.0f;
+    r.data[6] = 0.0f;
+    r.crc8 = 0;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
     size_t bytes = crumbsSlice.encodeMessage(response, buffer, sizeof(buffer));

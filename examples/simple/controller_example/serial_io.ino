@@ -26,7 +26,6 @@ namespace
         }
     }
 }
-#include <CRUMBS.h>
 
 /**
  * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
@@ -191,6 +190,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 break;
             case 9:
                 message.data[6] = value.toFloat(); /**< Parse data6 */
+                message.data[6] = value.toFloat(); /**< Parse data6 */
                 break;
             default:
                 // Extra fields are ignored
@@ -222,7 +222,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
         Serial.print(F(" "));
     }
     Serial.println();
-    Serial.println(F("Note: CRC will be calculated during encoding."));
+    Serial.println(F("CRC calculated during encoding."));
 
     return true;
 }
