@@ -1,4 +1,4 @@
-#include "crumbs_core.h"
+#include "crumbs.h"
 
 #include <string.h> /* memcpy, memset */
 
