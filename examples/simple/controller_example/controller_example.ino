@@ -3,15 +3,13 @@
  * @brief CRUMBS Controller example sketch to send messages to a CRUMBS Slice.
  */
 
-#define CRUMBS_DEBUG
-
 #include <crumbs.h>
 #include <crumbs_arduino.h>
 
 #include <Wire.h>
 
 // Instantiate CRUMBS as Controller, set to true for Controller mode
-static crumbs_context_t crumbsController;   // C struct
+static crumbs_context_t crumbsController; // C struct
 
 //  Maximum expected input length for serial commands.
 #define MAX_INPUT_LENGTH 60

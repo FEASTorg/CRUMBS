@@ -76,7 +76,7 @@ void handleSerialInput()
 
             // Attempt to decode the received response
             crumbs_message_t response;
-            
+
             if (crumbs_decode_message(responseBuffer, index, &response, &crumbsController))
             {
                 Serial.println(F("Controller: Decoded response:"));

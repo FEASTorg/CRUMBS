@@ -3,10 +3,8 @@
  * @brief CRUMBS Slice example sketch to receive messages from a CRUMBS Controller and respond to requests.
  */
 
-#define CRUMBS_DEBUG
-
-#include <crumbs/crumbs.h>
-#include <crumbs/crumbs_arduino.h>
+#include <crumbs.h>
+#include <crumbs_arduino.h>
 
 /**
  * @brief I2C address for this Slice device.
