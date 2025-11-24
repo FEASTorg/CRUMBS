@@ -41,7 +41,7 @@
 *.dwo
 
 # Distribution directory
-dist/
+#dist/
 
 # Custom directories
 ace_crc/
