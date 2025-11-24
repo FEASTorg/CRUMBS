@@ -11,7 +11,7 @@
  *
  * @note Ensure this matches the address specified by the Controller when sending messages.
  */
-#define SLICE_I2C_ADDRESS 0x09 // Example I2C address
+#define SLICE_I2C_ADDRESS 0x08 // Example I2C address
 
 static crumbs_context_t crumbsSlice;
 
@@ -44,25 +44,25 @@ namespace
  *
  * @param message The received crumbs_message_t.
  */
-void handleMessage(crumbs_message_t &message)
+void handleMessage(crumbs_context_t *ctx, crumbs_message_t *message)
 {
     Serial.println(F("Slice: Received Message:"));
     Serial.print(F("type_id: "));
-    Serial.println(message.type_id);
+    Serial.println(message->type_id);
     Serial.print(F("command_type: "));
-    Serial.println(message.command_type);
+    Serial.println(message->command_type);
     Serial.print(F("data: "));
     for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
-        Serial.print(message.data[i]);
+        Serial.print(message->data[i]);
         Serial.print(F(" "));
     }
     Serial.println();
     Serial.print(F("crc8: 0x"));
-    Serial.println(message.crc8, HEX);
+    Serial.println(message->crc8, HEX);
 
     // Process the message based on command_type
-    switch (message.command_type)
+    switch (message->command_type)
     {
     case 0:
         // command_type 0: Data Format Request
