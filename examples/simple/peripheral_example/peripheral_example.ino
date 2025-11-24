@@ -4,7 +4,9 @@
  */
 
 #define CRUMBS_DEBUG
-#include <CRUMBS.h>
+
+#include <crumbs/crumbs.h>
+#include <crumbs/crumbs_arduino.h>
 
 /**
  * @brief I2C address for this Slice device.
@@ -13,12 +15,7 @@
  */
 #define SLICE_I2C_ADDRESS 0x09 // Example I2C address
 
-/**
- * @brief Instantiate CRUMBS as a Slice (Peripheral).
- *
- * @note Pass 'false' to indicate Peripheral mode and provide the I2C address.
- */
-CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS); // Peripheral mode, I2C address 0x08
+static crumbs_context_t crumbsSlice;
 
 namespace
 {
@@ -27,8 +24,8 @@ namespace
 
     void reportCrcStatus(const __FlashStringHelper *context)
     {
-        const uint32_t current = crumbsSlice.getCrcErrorCount();
-        const bool lastValid = crumbsSlice.isLastCrcValid();
+        const uint32_t current = crumbs_get_crc_errors(&crumbsSlice);
+        const bool lastValid = crumbs_last_crc_valid(&crumbsSlice);
 
         if (current != lastCrcReport || lastValid != lastCrcValid)
         {
@@ -45,17 +42,17 @@ namespace
 }
 
 /**
- * @brief Callback function to handle received CRUMBSMessages from the Controller.
+ * @brief Callback function to handle received crumbs_message_ts from the Controller.
  *
- * @param message The received CRUMBSMessage.
+ * @param message The received crumbs_message_t.
  */
-void handleMessage(CRUMBSMessage &message)
+void handleMessage(crumbs_message_t &message)
 {
     Serial.println(F("Slice: Received Message:"));
-    Serial.print(F("typeID: "));
-    Serial.println(message.typeID);
-    Serial.print(F("commandType: "));
-    Serial.println(message.commandType);
+    Serial.print(F("type_id: "));
+    Serial.println(message.type_id);
+    Serial.print(F("command_type: "));
+    Serial.println(message.command_type);
     Serial.print(F("data: "));
     for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
@@ -66,22 +63,22 @@ void handleMessage(CRUMBSMessage &message)
     Serial.print(F("crc8: 0x"));
     Serial.println(message.crc8, HEX);
 
-    // Process the message based on commandType
-    switch (message.commandType)
+    // Process the message based on command_type
+    switch (message.command_type)
     {
     case 0:
-        // CommandType 0: Data Format Request
+        // command_type 0: Data Format Request
         Serial.println(F("Slice: Data Format Request Received."));
         // Perform actions to alter the data mapped to the callback message to be sent on wire request
         break;
 
     case 1:
-        // CommandType 1: Example Command (e.g., Set Parameters)
+        // command_type 1: Example Command (e.g., Set Parameters)
         Serial.println(F("Slice: Set Parameters Command Received."));
         // Example: Update internal state based on data
         break;
 
-        // Add more case blocks for different commandTypes as needed
+        // Add more case blocks for different command_types as needed
 
     default:
         Serial.println(F("Slice: Unknown Command Type."));
@@ -95,16 +92,16 @@ void handleMessage(CRUMBSMessage &message)
 /**
  * @brief Callback function to handle data requests from the Controller.
  *
- * @note This function sends a CRUMBSMessage back to the Controller in response to a request.
+ * @note This function sends a crumbs_message_t back to the Controller in response to a request.
  */
 void handleRequest()
 {
     Serial.println(F("Slice: Controller requested data, sending response..."));
 
     // Prepare response message
-    CRUMBSMessage responseMessage = {};
-    responseMessage.typeID = 1;      /**< SLICE type ID */
-    responseMessage.commandType = 0; /**< CommandType 0 for status response */
+    crumbs_message_t responseMessage = {};
+    responseMessage.type_id = 1;      /**< SLICE type ID */
+    responseMessage.command_type = 0; /**< command_type 0 for status response */
 
     // Populate data fields with example data
     responseMessage.data[0] = 42.0f; /**< Example data0 */
@@ -116,18 +113,18 @@ void handleRequest()
     responseMessage.data[6] = 6.0f;  /**< Example data6 */
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t encodedSize = crumbsSlice.encodeMessage(responseMessage, buffer, sizeof(buffer));
+    size_t encodedSize = crumbs_encode_message(&responseMessage, buffer, sizeof(buffer));
 
     if (encodedSize == 0)
     {
-        CRUMBS_DEBUG_PRINTLN(F("Slice: Failed to encode response message."));
+        Serial.println(F("Slice: Failed to encode response message."));
         reportCrcStatus(F("encode"));
         return;
     }
 
     // Send the encoded message back to the Controller
     Wire.write(buffer, encodedSize);
-    CRUMBS_DEBUG_PRINTLN(F("Slice: Response message sent."));
+    Serial.println(F("Slice: Response message sent."));
     reportCrcStatus(F("encode"));
 }
 
@@ -138,13 +135,13 @@ void setup()
 {
     Serial.begin(115200); /**< Initialize serial communication */
 
-    crumbsSlice.begin(); /**< Initialize CRUMBS communication */
-    crumbsSlice.resetCrcErrorCount();
+    crumbs_arduino_init_peripheral(&crumbsSlice, SLICE_I2C_ADDRESS);
+
+    crumbs_reset_crc_errors(&crumbsSlice);
     Serial.println(F("Slice: CRC diagnostics reset."));
     reportCrcStatus(F("startup"));
 
-    crumbsSlice.onRequest(handleRequest); // Register callback for data requests
-    crumbsSlice.onReceive(handleMessage); // Register callback for received messages
+    crumbs_set_callbacks(&crumbsSlice, handleMessage, handleRequest, nullptr);
 
     Serial.println(F("Slice ready and listening for messages..."));
 }

@@ -1,9 +1,3 @@
-#include <Arduino.h>
-#include <Wire.h>
-#include <CRUMBS.h>
-
-extern CRUMBS crumbsController;
-
 namespace
 {
     uint32_t lastCrcReport = 0;
@@ -11,8 +5,8 @@ namespace
 
     void reportCrcStatus(const __FlashStringHelper *context)
     {
-        const uint32_t current = crumbsController.getCrcErrorCount();
-        const bool lastValid = crumbsController.isLastCrcValid();
+        const uint32_t current = crumbs_get_crc_errors(&crumbsController);
+        const bool lastValid = crumbs_last_crc_valid(&crumbsController);
         if (current != lastCrcReport || lastValid != lastCrcValid)
         {
             Serial.print(F("Controller: CRC status ["));
@@ -28,7 +22,7 @@ namespace
 }
 
 /**
- * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
+ * @brief Handles serial input from the user to send crumbs_message_ts to a specified target address.
  * @return none
  */
 void handleSerialInput()
@@ -81,14 +75,14 @@ void handleSerialInput()
             Serial.println(F(" bytes from peripheral."));
 
             // Attempt to decode the received response
-            CRUMBSMessage response;
-            if (crumbsController.decodeMessage(responseBuffer, index, response))
+            crumbs_message_t response;
+            if (crumbs_decode_message(responseBuffer, index, &response))
             {
                 Serial.println(F("Controller: Decoded response:"));
-                Serial.print(F("typeID: "));
-                Serial.println(response.typeID);
-                Serial.print(F("commandType: "));
-                Serial.println(response.commandType);
+                Serial.print(F("type_id: "));
+                Serial.println(response.type_id);
+                Serial.print(F("command_type: "));
+                Serial.println(response.command_type);
                 Serial.print(F("data: "));
                 for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
                 {
@@ -111,13 +105,18 @@ void handleSerialInput()
 
         // Otherwise, assume the input is a comma-separated message.
         uint8_t targetAddress;
-        CRUMBSMessage message;
+        crumbs_message_t message;
         bool parseSuccess = parseSerialInput(input, targetAddress, message);
 
         if (parseSuccess)
         {
             // Send the message to the specified target address
-            crumbsController.sendMessage(message, targetAddress);
+            crumbs_controller_send(
+                &crumbsController,
+                targetAddress,
+                &message,
+                crumbs_arduino_wire_write,
+                &Wire);
             Serial.println(F("Controller: Message sent based on serial input."));
             reportCrcStatus(F("send"));
         }
@@ -129,22 +128,22 @@ void handleSerialInput()
 }
 
 /**
- * @brief Parses a comma-separated serial input string into a target address and CRUMBSMessage.
+ * @brief Parses a comma-separated serial input string into a target address and crumbs_message_t.
  *
  * @param input The input string from serial.
  * @param targetAddress Reference to store the parsed I2C address.
- * @param message Reference to store the parsed CRUMBSMessage.
+ * @param message Reference to store the parsed crumbs_message_t.
  * @return true If parsing was successful.
  * @return false If parsing failed due to incorrect format or insufficient fields.
  */
-bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage &message)
+bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_message_t &message)
 {
     int fieldCount = 0; /**< Number of fields parsed */
     int lastComma = 0;  /**< Position of the last comma */
 
     // Initialize message fields to default values
-    message.typeID = 0;
-    message.commandType = 0;
+    message.type_id = 0;
+    message.command_type = 0;
     for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
         message.data[i] = 0.0f;
@@ -165,10 +164,10 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 targetAddress = (uint8_t)value.toInt(); /**< Parse I2C address */
                 break;
             case 1:
-                message.typeID = (uint8_t)value.toInt(); /**< Parse typeID */
+                message.type_id = (uint8_t)value.toInt(); /**< Parse type_id */
                 break;
             case 2:
-                message.commandType = (uint8_t)value.toInt(); /**< Parse commandType */
+                message.command_type = (uint8_t)value.toInt(); /**< Parse command_type */
                 break;
             case 3:
                 message.data[0] = value.toFloat(); /**< Parse data0 */
@@ -190,7 +189,6 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 break;
             case 9:
                 message.data[6] = value.toFloat(); /**< Parse data6 */
-                message.data[6] = value.toFloat(); /**< Parse data6 */
                 break;
             default:
                 // Extra fields are ignored
@@ -208,13 +206,13 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     }
 
     // Debugging output to verify parsed message
-    Serial.println(F("Controller: Parsed input into CRUMBSMessage and target address."));
+    Serial.println(F("Controller: Parsed input into crumbs_message_t and target address."));
     Serial.print(F("Target Address: 0x"));
     Serial.println(targetAddress, HEX);
-    Serial.print(F("Parsed Message -> typeID: "));
-    Serial.print(message.typeID);
-    Serial.print(F(", commandType: "));
-    Serial.print(message.commandType);
+    Serial.print(F("Parsed Message -> type_id: "));
+    Serial.print(message.type_id);
+    Serial.print(F(", command_type: "));
+    Serial.print(message.command_type);
     Serial.print(F(", data: "));
     for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
