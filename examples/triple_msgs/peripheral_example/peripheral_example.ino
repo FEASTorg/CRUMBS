@@ -1,13 +1,13 @@
 /**
  * @file peripheral_example.ino
- * @brief CRUMBS Peripheral: receives messages from controller and answers status requests.
+ * @brief Minimal CRUMBS slice for the triple board rig.
  *
- * Define a unique I2C address for each peripheral board before flashing.
+ * Receives LED settings from the controller and replies with current state.
  */
 
-#define CRUMBS_DEBUG
-#include <CRUMBS.h>
+#include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 #include <U8g2lib.h>
 #include <SPI.h>
 
@@ -54,20 +54,27 @@ struct LastMsg
     float data[CRUMBS_DATA_LENGTH] = {};
     uint8_t crc8 = 0;
     bool valid = false;
-} lastRx;
+    CRUMBSMessage message = {};
+};
 
-// Prototypes (helpers in companions)
-void handleMessage(CRUMBSMessage &m);
-void handleRequest();
+MessageSummary lastCommand;
+MessageSummary lastResponse;
+
+bool hasError = false;
+
+unsigned long lastDisplayRefresh = 0;
+const unsigned long kDisplayIntervalMs = 100;
+
+// ---------- Helpers shared with companion files ----------
 void drawDisplay();
+void handleMessage(CRUMBSMessage &message);
+void handleRequest();
+void applyCommand(const CRUMBSMessage &message);
+void updateChannels(unsigned long now);
 void setOk();
 void setError();
-void pulseActivity();
-void refreshLeds();
-void applyDataToChannels(const CRUMBSMessage &m);
-void serviceBlinkLogic();
 
-// ================================
+// =======================================================
 void setup()
 {
     pinMode(LED_GREEN, OUTPUT);
@@ -96,6 +103,7 @@ void setup()
     Serial.println(kSliceI2cAddress, HEX);
 }
 
+// =======================================================
 void loop()
 {
     refreshLeds();

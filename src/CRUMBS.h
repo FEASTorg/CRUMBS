@@ -9,10 +9,10 @@
 
 /**
  * @def CRUMBS_DEBUG
- * @brief Uncomment to enable debugging messages.
+ * @brief Uncomment to enable debugging messages globally.
  */
 
-//#define CRUMBS_DEBUG
+#define CRUMBS_DEBUG
 
 #ifdef CRUMBS_DEBUG
 
@@ -90,6 +90,21 @@ public:
     uint8_t getAddress() const;
 
     /**
+     * @brief Retrieves the number of CRC mismatches detected during decoding.
+     */
+    uint32_t getCrcErrorCount() const;
+
+    /**
+     * @brief Indicates whether the most recent CRC check succeeded.
+     */
+    bool isLastCrcValid() const;
+
+    /**
+     * @brief Resets the CRC error counter to zero.
+     */
+    void resetCrcErrorCount();
+
+    /**
      * @brief Encodes a CRUMBSMessage into a byte buffer.
      *
      * @param message The message to encode.
@@ -112,9 +127,11 @@ public:
 
 private:
     uint8_t i2cAddress;                                 /**< I2C address of the device */
-    bool controllerMode;                                    /**< Indicates if the instance is controller */
+    bool controllerMode;                                /**< Indicates if the instance is controller */
     void (*receiveCallback)(CRUMBSMessage &) = nullptr; /**< Callback for received messages */
     void (*requestCallback)() = nullptr;                /**< Callback for request events */
+    uint32_t crcErrorCount = 0;                         /**< Counts CRC mismatches detected */
+    bool lastCrcValid = true;                           /**< Tracks outcome of the latest CRC check */
 
     /**
      * @brief Static I2C receive event handler.

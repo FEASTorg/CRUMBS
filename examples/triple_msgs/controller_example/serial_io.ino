@@ -1,32 +1,18 @@
 #include <Arduino.h>
-#include <Wire.h>
+#include <CRUMBS.h>
+#include <stdlib.h>
 
-extern CRUMBS crumbsController;
-extern void drawDisplay();
-extern void setOk();
-extern void setError();
-extern void pulseActivity();
-extern void refreshLeds();
-extern void cacheTx(uint8_t, const CRUMBSMessage &);
-extern void cacheRx(uint8_t, const CRUMBSMessage &);
-extern void sendCrumbs(uint8_t, const CRUMBSMessage &);
-extern bool requestCrumbs(uint8_t, CRUMBSMessage &);
+extern void sendCrumbs(uint8_t address, CRUMBSMessage &message);
+extern void requestCrumbs(uint8_t address);
 
-void handleSerialInput()
+namespace
 {
-    if (!Serial.available())
-        return;
-
-    String input = Serial.readStringUntil('\n');
-    input.trim();
-    if (input.length() == 0)
-        return;
-
-    // Request syntax: request=<addr or 0x..>
-    if (input.startsWith("request="))
+    bool parseAddress(const String &token, uint8_t &address)
     {
-        String a = input.substring(strlen("request="));
-        a.trim();
+        if (token.length() == 0)
+        {
+            return false;
+        }
 
         uint8_t addr = 0;
         if (a.startsWith("0x") || a.startsWith("0X"))
@@ -46,32 +32,75 @@ void handleSerialInput()
             Serial.print(F(" cmd="));
             Serial.print(resp.commandType);
             Serial.print(F(" data: "));
-            for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+            for (int i = 0; i < 6; i++)
             {
                 Serial.print(resp.data[i], 3);
                 Serial.print(' ');
             }
-            Serial.print(F(" crc=0x"));
-            Serial.println(resp.crc8, HEX);
+            Serial.print(F(" err="));
+            Serial.println(resp.errorFlags);
         }
         else
         {
-            Serial.println(F("Controller: request failed."));
+            value = token.toInt();
         }
+
+        if (value < 0 || value > 0x7F)
+        {
+            return false;
+        }
+
+        address = static_cast<uint8_t>(value);
+        return true;
+    }
+
+    bool collectTokens(const String &source, String *tokens, size_t expected)
+    {
+        size_t count = 0;
+        int index = 0;
+
+        while (count < expected && index < source.length())
+        {
+            while (index < source.length() && source[index] == ' ')
+            {
+                index++;
+            }
+            if (index >= source.length())
+            {
+                break;
+            }
+
+            int nextSpace = source.indexOf(' ', index);
+            if (nextSpace < 0)
+            {
+                nextSpace = source.length();
+            }
+
+            tokens[count++] = source.substring(index, nextSpace);
+            index = nextSpace + 1;
+        }
+
+        return count == expected;
+    }
+}
+
+void handleSerial()
+{
+    if (!Serial.available())
+    {
         return;
     }
 
-    // Otherwise parse CSV send
-    uint8_t addr;
-    CRUMBSMessage m;
-    if (parseSerialInput(input, addr, m))
+    String line = Serial.readStringUntil('\n');
+    line.trim();
+    if (line.length() == 0)
     {
         sendCrumbs(addr, m);
         Serial.println(F("Controller: message sent."));
     }
     else
     {
-    Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data6"));
+        Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data5,errorFlags"));
     }
 }
 
@@ -79,9 +108,9 @@ bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
 {
     m.typeID = 0;
     m.commandType = 0;
-    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+    for (int i = 0; i < 6; i++)
         m.data[i] = 0;
-    m.crc8 = 0;
+    m.errorFlags = 0;
 
     int field = 0, last = 0;
     for (int i = 0; i <= s.length(); i++)
@@ -102,19 +131,32 @@ bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
             case 2:
                 m.commandType = (uint8_t)v.toInt();
                 break;
+            case 3:
+                m.data[0] = v.toFloat();
+                break;
+            case 4:
+                m.data[1] = v.toFloat();
+                break;
+            case 5:
+                m.data[2] = v.toFloat();
+                break;
+            case 6:
+                m.data[3] = v.toFloat();
+                break;
+            case 7:
+                m.data[4] = v.toFloat();
+                break;
+            case 8:
+                m.data[5] = v.toFloat();
+                break;
+            case 9:
+                m.errorFlags = (uint8_t)v.toInt();
+                break;
             default:
-                if (field >= 3 && field < 3 + CRUMBS_DATA_LENGTH)
-                {
-                    m.data[field - 3] = v.toFloat();
-                }
-                else if (field == 3 + CRUMBS_DATA_LENGTH)
-                {
-                    m.crc8 = (uint8_t)strtol(v.c_str(), NULL, 0);
-                }
                 break;
             }
             field++;
         }
     }
-    return (field >= 3 + CRUMBS_DATA_LENGTH);
+    return (field >= 4);
 }

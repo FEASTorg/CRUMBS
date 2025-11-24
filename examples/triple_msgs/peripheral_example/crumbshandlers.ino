@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 
 extern CRUMBS crumbsSlice;
 
@@ -13,13 +14,12 @@ extern struct LastMsg
 } lastRx;
 
 extern void drawDisplay();
+extern void applyCommand(const CRUMBSMessage &message);
 extern void setOk();
 extern void setError();
-extern void pulseActivity();
-extern void applyDataToChannels(const CRUMBSMessage &m);
 
 // Receive message from controller
-void handleMessage(CRUMBSMessage &m)
+void handleMessage(CRUMBSMessage &message)
 {
     Serial.println(F("Slice: message received."));
     Serial.print(F("typeID="));
@@ -87,11 +87,27 @@ void handleRequest()
     r.crc8 = 0;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t n = crumbsSlice.encodeMessage(r, buffer, sizeof(buffer));
-    if (n == 0)
+    size_t bytes = crumbsSlice.encodeMessage(response, buffer, sizeof(buffer));
+    if (bytes == 0)
     {
-        Serial.println(F("Slice: encode status failed"));
+        Serial.println(F("Slice: failed to encode response."));
+        setError();
         return;
     }
-    Wire.write(buffer, n);
+
+    response.crc8 = buffer[bytes - 1];
+    size_t written = Wire.write(buffer, bytes);
+
+    if (written == bytes)
+    {
+        Serial.println(F("Slice: response sent."));
+        lastResponse.valid = true;
+        lastResponse.message = response;
+        setOk();
+    }
+    else
+    {
+        Serial.println(F("Slice: response write truncated."));
+        setError();
+    }
 }

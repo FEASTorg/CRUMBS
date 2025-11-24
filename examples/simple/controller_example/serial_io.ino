@@ -2,6 +2,31 @@
 #include <Wire.h>
 #include <CRUMBS.h>
 
+extern CRUMBS crumbsController;
+
+namespace
+{
+    uint32_t lastCrcReport = 0;
+    bool lastCrcValid = true;
+
+    void reportCrcStatus(const __FlashStringHelper *context)
+    {
+        const uint32_t current = crumbsController.getCrcErrorCount();
+        const bool lastValid = crumbsController.isLastCrcValid();
+        if (current != lastCrcReport || lastValid != lastCrcValid)
+        {
+            Serial.print(F("Controller: CRC status ["));
+            Serial.print(context);
+            Serial.print(F("] errors="));
+            Serial.print(current);
+            Serial.print(F(" lastValid="));
+            Serial.println(lastValid ? F("true") : F("false"));
+            lastCrcReport = current;
+            lastCrcValid = lastValid;
+        }
+    }
+}
+
 /**
  * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
  * @return none
@@ -73,10 +98,12 @@ void handleSerialInput()
                 Serial.println();
                 Serial.print(F("crc8: 0x"));
                 Serial.println(response.crc8, HEX);
+                reportCrcStatus(F("request decode"));
             }
             else
             {
                 Serial.println(F("Controller: Failed to decode response."));
+                reportCrcStatus(F("request decode"));
             }
 
             return; // Exit the function after handling the request command.
@@ -92,6 +119,7 @@ void handleSerialInput()
             // Send the message to the specified target address
             crumbsController.sendMessage(message, targetAddress);
             Serial.println(F("Controller: Message sent based on serial input."));
+            reportCrcStatus(F("send"));
         }
         else
         {
@@ -162,6 +190,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 break;
             case 9:
                 message.data[6] = value.toFloat(); /**< Parse data6 */
+                message.data[6] = value.toFloat(); /**< Parse data6 */
                 break;
             default:
                 // Extra fields are ignored
@@ -180,7 +209,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
 
     // Debugging output to verify parsed message
     Serial.println(F("Controller: Parsed input into CRUMBSMessage and target address."));
-    Serial.print(F("Target Address: "));
+    Serial.print(F("Target Address: 0x"));
     Serial.println(targetAddress, HEX);
     Serial.print(F("Parsed Message -> typeID: "));
     Serial.print(message.typeID);
@@ -192,8 +221,8 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
         Serial.print(message.data[i]);
         Serial.print(F(" "));
     }
-    Serial.print(F(", crc8: 0x"));
-    Serial.println(message.crc8, HEX);
+    Serial.println();
+    Serial.println(F("CRC calculated during encoding."));
 
     return true;
 }
