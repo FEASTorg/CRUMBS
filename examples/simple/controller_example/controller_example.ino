@@ -5,8 +5,8 @@
 
 #define CRUMBS_DEBUG
 
-#include <crumbs/crumbs.h>
-#include <crumbs/crumbs_arduino.h>
+#include <crumbs.h>
+#include <crumbs_arduino.h>
 
 #include <Wire.h>
 
