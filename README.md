@@ -26,7 +26,11 @@ controller.sendMessage(msg, 0x08);
 
 1. Download or clone this repository
 2. Place the CRUMBS folder in your Arduino `libraries` directory
-3. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
+3. No external CRC dependency required — the repository includes generated CRC implementations under `src/crc`.
+
+The CRC generation step uses [pycrc](https://github.com/tpircher/pycrc) and the generator scripts in `scripts/generate_crc8_arduino.py`.
+
+The generator and its approach are inspired by [AceCRC](https://github.com/bxparks/AceCRC), but CRUMBS includes a simplified local API so the library does not require that external dependency and additional namespace layers.
 4. Include in your sketch: `#include <CRUMBS.h>`
 
 ## Hardware Requirements

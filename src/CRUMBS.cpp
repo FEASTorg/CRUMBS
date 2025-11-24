@@ -116,7 +116,7 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
         index += sizeof(float);
     }
 
-    const uint8_t crc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
+    const crc8_nibble_t crc = crc8_nibble_calculate(buffer, kPayloadLength);
     buffer[index++] = crc;
 
     CRUMBS_DEBUG_PRINT(F("Message successfully encoded. CRC: 0x"));
@@ -144,8 +144,8 @@ bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessa
         return false;
     }
 
-    const uint8_t computedCrc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
-    const uint8_t receivedCrc = buffer[kPayloadLength];
+    const crc8_nibble_t computedCrc = crc8_nibble_calculate(buffer, kPayloadLength);
+    const crc8_nibble_t receivedCrc = buffer[kPayloadLength];
 
     if (computedCrc != receivedCrc)
     {

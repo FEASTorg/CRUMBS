@@ -5,7 +5,7 @@
 1. Download the CRUMBS library
 2. Place in Arduino `libraries` folder
 3. Include: `#include <CRUMBS.h>`
-4. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
+4. No external dependencies required.
 
 ## Basic Usage
 

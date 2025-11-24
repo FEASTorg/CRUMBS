@@ -49,7 +49,7 @@ Controller <[31-byte response] Peripheral   # Response
 ### CRC
 
 - Polynomial: 0x07 (CRC-8)
-- Calculated using `ace_crc::crc8_nibble`
+- Calculated using `crc8_nibble_calculate()` (crc8_nibble variant)
 - Applied to serialized payload before padding
 
 ## Timing Guidelines
