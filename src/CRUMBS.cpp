@@ -1,4 +1,15 @@
 #include "CRUMBS.h"
+#include <AceCRC.h>
+
+namespace
+{
+    constexpr size_t kDataFieldCount = CRUMBS_DATA_LENGTH;
+    constexpr size_t kHeaderLength = 2;                                             // typeID + commandType
+    constexpr size_t kPayloadLength = kHeaderLength + kDataFieldCount * sizeof(float);
+    constexpr size_t kCrcLength = 1;
+    constexpr size_t kFrameLength = kPayloadLength + kCrcLength;
+    static_assert(CRUMBS_MESSAGE_SIZE == kFrameLength, "CRUMBS_MESSAGE_SIZE must equal serialized frame length");
+}
 
 // Initialize the static singleton instance to nullptr
 CRUMBS *CRUMBS::instance = nullptr;
@@ -61,7 +72,7 @@ void CRUMBS::begin()
  */
 size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size_t bufferSize)
 {
-    if (bufferSize < CRUMBS_MESSAGE_SIZE)
+    if (bufferSize < kFrameLength)
     {
         CRUMBS_DEBUG_PRINTLN(F("Buffer size too small for encoding message."));
         return 0;
@@ -73,21 +84,22 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
     buffer[index++] = message.typeID;
     buffer[index++] = message.commandType;
 
-    // Serialize float data[6]
-    for (int i = 0; i < 6; i++)
+    // Serialize float data
+    for (size_t i = 0; i < kDataFieldCount; i++)
     {
-        uint8_t *floatPtr = (uint8_t *)&message.data[i];
-        for (int b = 0; b < sizeof(float); b++)
+        const uint8_t *floatPtr = reinterpret_cast<const uint8_t *>(&message.data[i]);
+        for (size_t b = 0; b < sizeof(float); b++)
         {
             buffer[index++] = floatPtr[b];
         }
     }
 
-    buffer[index++] = message.errorFlags;
+    const uint8_t crc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
+    buffer[index++] = crc;
 
     CRUMBS_DEBUG_PRINTLN(F("Message successfully encoded."));
 
-    return index; // Should be 28
+    return index;
 }
 
 /**
@@ -101,9 +113,20 @@ size_t CRUMBS::encodeMessage(const CRUMBSMessage &message, uint8_t *buffer, size
  */
 bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessage &message)
 {
-    if (bufferSize < CRUMBS_MESSAGE_SIZE)
+    const size_t minimumFrameSize = kFrameLength;
+
+    if (bufferSize < minimumFrameSize)
     {
         CRUMBS_DEBUG_PRINTLN(F("Buffer size too small for decoding message."));
+        return false;
+    }
+
+    const uint8_t computedCrc = ace_crc::crc8_nibble::crc_calculate(buffer, kPayloadLength);
+    const uint8_t receivedCrc = buffer[kPayloadLength];
+
+    if (computedCrc != receivedCrc)
+    {
+        CRUMBS_DEBUG_PRINTLN(F("CRC mismatch detected while decoding message."));
         return false;
     }
 
@@ -113,19 +136,19 @@ bool CRUMBS::decodeMessage(const uint8_t *buffer, size_t bufferSize, CRUMBSMessa
     message.typeID = buffer[index++];
     message.commandType = buffer[index++];
 
-    // Deserialize float data[6]
-    for (int i = 0; i < 6; i++)
+    // Deserialize float data
+    for (size_t i = 0; i < kDataFieldCount; i++)
     {
         float value = 0.0;
-        uint8_t *floatPtr = (uint8_t *)&value;
-        for (int b = 0; b < sizeof(float); b++)
+        uint8_t *floatPtr = reinterpret_cast<uint8_t *>(&value);
+        for (size_t b = 0; b < sizeof(float); b++)
         {
             floatPtr[b] = buffer[index++];
         }
         message.data[i] = value;
     }
 
-    message.errorFlags = buffer[index++];
+    message.crc8 = receivedCrc;
 
     CRUMBS_DEBUG_PRINTLN(F("Message successfully decoded."));
 
@@ -190,7 +213,7 @@ void CRUMBS::sendMessage(const CRUMBSMessage &message, uint8_t targetAddress)
  *
  * @param message Reference to store the received message.
  */
-void CRUMBS::receiveMessage(CRUMBSMessage &message)
+bool CRUMBS::receiveMessage(CRUMBSMessage &message)
 {
     CRUMBS_DEBUG_PRINTLN(F("Receiving message..."));
 
@@ -209,18 +232,18 @@ void CRUMBS::receiveMessage(CRUMBSMessage &message)
     if (index == 0)
     {
         CRUMBS_DEBUG_PRINTLN(F("No data received. Exiting receiveMessage."));
-        return;
+        return false;
     }
 
     // Decode the received message
     if (!decodeMessage(buffer, index, message))
     {
         CRUMBS_DEBUG_PRINTLN(F("Failed to decode message."));
+        return false;
     }
-    else
-    {
-        CRUMBS_DEBUG_PRINTLN(F("Message received and decoded successfully."));
-    }
+
+    CRUMBS_DEBUG_PRINTLN(F("Message received and decoded successfully."));
+    return true;
 }
 
 /**
@@ -275,8 +298,14 @@ void CRUMBS::receiveEvent(int bytes)
     if (instance && instance->receiveCallback)
     {
         CRUMBSMessage message;
-        instance->receiveMessage(message);
-        instance->receiveCallback(message);
+        if (instance->receiveMessage(message))
+        {
+            instance->receiveCallback(message);
+        }
+        else
+        {
+            CRUMBS_DEBUG_PRINTLN(F("receiveMessage failed; callback not invoked."));
+        }
     }
     else
     {

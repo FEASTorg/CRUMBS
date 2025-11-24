@@ -63,8 +63,10 @@ public:
      * @brief Receives a CRUMBSMessage from the I2C bus.
      *
      * @param message Reference to store the received message.
+     * @return true if a complete frame was read and decoded successfully.
+     * @return false if no data was available or decoding failed.
      */
-    void receiveMessage(CRUMBSMessage &message);
+    bool receiveMessage(CRUMBSMessage &message);
 
     /**
      * @brief Registers a callback function to handle received messages.

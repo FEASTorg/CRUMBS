@@ -5,6 +5,7 @@
 1. Download the CRUMBS library
 2. Place in Arduino `libraries` folder
 3. Include: `#include <CRUMBS.h>`
+4. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
 
 ## Basic Usage
 
@@ -18,11 +19,10 @@ CRUMBS controller(true);
 void setup() {
     controller.begin();
 
-    CRUMBSMessage msg;
+    CRUMBSMessage msg = {};
     msg.typeID = 1;
     msg.commandType = 1;
     msg.data[0] = 25.5;
-    msg.errorFlags = 0;
 
     controller.sendMessage(msg, 0x08);
 }
@@ -40,7 +40,7 @@ void onMessage(CRUMBSMessage &msg) {
 }
 
 void onRequest() {
-    CRUMBSMessage response;
+    CRUMBSMessage response = {};
     response.data[0] = 42.0;
 
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];

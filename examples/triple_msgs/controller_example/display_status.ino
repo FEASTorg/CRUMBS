@@ -16,8 +16,8 @@ extern struct LastMsg
     uint8_t addr;
     uint8_t typeID;
     uint8_t commandType;
-    float data[6];
-    uint8_t errorFlags;
+    float data[CRUMBS_DATA_LENGTH];
+    uint8_t crc8;
     bool valid;
 } lastMsg;
 
@@ -75,19 +75,19 @@ void drawDisplay()
         u8g2.drawStr(0, y, line);
         y += 12;
 
-        sprintf(line, "type:%u cmd:%u err:%u", lastMsg.typeID, lastMsg.commandType, lastMsg.errorFlags);
+        sprintf(line, "type:%u cmd:%u crc:%02X", lastMsg.typeID, lastMsg.commandType, lastMsg.crc8);
         u8g2.drawStr(0, y, line);
         y += 12;
 
         // data lines
-        char buf[24];
-        sprintf(buf, "d0:%0.2f d1:%0.2f", lastMsg.data[0], lastMsg.data[1]);
+        char buf[32];
+        snprintf(buf, sizeof(buf), "d0:%0.2f d1:%0.2f d2:%0.2f", lastMsg.data[0], lastMsg.data[1], lastMsg.data[2]);
         u8g2.drawStr(0, y, buf);
         y += 12;
-        sprintf(buf, "d2:%0.2f d3:%0.2f", lastMsg.data[2], lastMsg.data[3]);
+        snprintf(buf, sizeof(buf), "d3:%0.2f d4:%0.2f", lastMsg.data[3], lastMsg.data[4]);
         u8g2.drawStr(0, y, buf);
         y += 12;
-        sprintf(buf, "d4:%0.2f d5:%0.2f", lastMsg.data[4], lastMsg.data[5]);
+        snprintf(buf, sizeof(buf), "d5:%0.2f d6:%0.2f", lastMsg.data[5], lastMsg.data[6]);
         u8g2.drawStr(0, y, buf);
     } while (u8g2.nextPage());
 }

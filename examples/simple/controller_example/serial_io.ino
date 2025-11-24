@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <CRUMBS.h>
 
 /**
  * @brief Handles serial input from the user to send CRUMBSMessages to a specified target address.
@@ -64,14 +65,14 @@ void handleSerialInput()
                 Serial.print(F("commandType: "));
                 Serial.println(response.commandType);
                 Serial.print(F("data: "));
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
                 {
                     Serial.print(response.data[i]);
                     Serial.print(F(" "));
                 }
                 Serial.println();
-                Serial.print(F("errorFlags: "));
-                Serial.println(response.errorFlags);
+                Serial.print(F("crc8: 0x"));
+                Serial.println(response.crc8, HEX);
             }
             else
             {
@@ -116,11 +117,11 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     // Initialize message fields to default values
     message.typeID = 0;
     message.commandType = 0;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
         message.data[i] = 0.0f;
     }
-    message.errorFlags = 0;
+    message.crc8 = 0;
 
     // Iterate through the input string to parse fields
     for (int i = 0; i <= input.length(); i++) // <= to capture the last field
@@ -160,7 +161,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
                 message.data[5] = value.toFloat(); /**< Parse data5 */
                 break;
             case 9:
-                message.errorFlags = (uint8_t)value.toInt(); /**< Parse errorFlags */
+                message.data[6] = value.toFloat(); /**< Parse data6 */
                 break;
             default:
                 // Extra fields are ignored
@@ -171,7 +172,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     }
 
     // Check if the required number of fields are parsed
-    if (fieldCount < 4)
+    if (fieldCount < (3 + CRUMBS_DATA_LENGTH))
     {
         Serial.println(F("Controller: Not enough fields in input."));
         return false;
@@ -186,13 +187,13 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, CRUMBSMessage
     Serial.print(F(", commandType: "));
     Serial.print(message.commandType);
     Serial.print(F(", data: "));
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
     {
         Serial.print(message.data[i]);
         Serial.print(F(" "));
     }
-    Serial.print(F(", errorFlags: "));
-    Serial.println(message.errorFlags);
+    Serial.print(F(", crc8: 0x"));
+    Serial.println(message.crc8, HEX);
 
     return true;
 }

@@ -1,6 +1,6 @@
 # CRUMBS Documentation
 
-Arduino I2C communication library for controller/peripheral messaging with fixed 27-byte messages.
+Arduino I2C communication library for controller/peripheral messaging with fixed 31-byte frames and CRC validation.
 
 ## Quick Start
 
@@ -16,10 +16,11 @@ peripheral.onReceive(handleMessage);
 
 ## Features
 
-- Fixed 27-byte message format (6 float data fields)
+- Fixed 31-byte message format (7 float data fields)
 - Controller/peripheral architecture
 - Event-driven callbacks
 - Built-in serialization
+- CRC-8 data integrity
 - Debug support
 
 ## Documentation
@@ -31,4 +32,4 @@ peripheral.onReceive(handleMessage);
 | [Protocol](protocol.md)               | Message format specification   |
 | [Examples](examples.md)               | Code examples and patterns     |
 
-**Version**: 1.0.0 | **Author**: Cameron | **Dependencies**: Wire library
+**Version**: 1.0.0 | **Author**: Cameron | **Dependencies**: Wire library, AceCRC

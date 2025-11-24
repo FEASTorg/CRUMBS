@@ -12,49 +12,47 @@
 #include <SPI.h>
 
 // ---------- CONFIG: set each board's address ----------
-#define SLICE_I2C_ADDRESS 0x08 // Change to 0x09 on the second peripheral
+const uint8_t kSliceI2cAddress = 0x08; // Change to 0x09 on the second peripheral
 
 // ---------- OLED (software I2C) ----------
-constexpr uint8_t OLED_ADDR = 0x3C;
-constexpr uint8_t OLED_SCL = 8; // D8
-constexpr uint8_t OLED_SDA = 7; // D7
+const uint8_t OLED_ADDR = 0x3C;
+const uint8_t OLED_SCL = 8; // D8
+const uint8_t OLED_SDA = 7; // D7
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, U8X8_PIN_NONE);
 
 // ---------- LEDs ----------
-constexpr uint8_t LED_GREEN = 4;
-constexpr uint8_t LED_YELLOW = 6;
-constexpr uint8_t LED_RED = 5;
+const uint8_t LED_GREEN = 4;
+const uint8_t LED_YELLOW = 6;
+const uint8_t LED_RED = 5;
 
 // Activity pulse timing
 volatile unsigned long yellowPulseUntil = 0;
-constexpr unsigned long YELLOW_PULSE_MS = 120;
+const unsigned long YELLOW_PULSE_MS = 120;
 
 // ---------- CRUMBS ----------
-CRUMBS crumbsSlice(false, SLICE_I2C_ADDRESS);
+CRUMBS crumbsSlice(false, kSliceI2cAddress);
 
 // ---------- State controlled by incoming CRUMBS data ----------
 struct LedChan
 {
-    float ratio;          // 0.0..1.0 duty
-    unsigned long period; // ms
+    float ratio;               // 0.0..1.0 duty
+    unsigned long period;      // ms
     bool state;
     uint8_t pin;
+    unsigned long lastToggle;  // ms timestamp of last state change
 };
 LedChan chans[3] = {
-    {0.5f, 2000UL, false, LED_GREEN},  // We'll drive green as "OK" unless error overrides
-    {0.0f, 1000UL, false, LED_YELLOW}, // Yellow as activity pulse + optional CRUMBS control
-    {0.0f, 1000UL, false, LED_RED}     // Red indicates error if errorFlags!=0; can be CRUMBS driven
+    {0.5f, 2000UL, false, LED_GREEN, 0UL},  // We'll drive green as "OK" unless another mode overrides
+    {0.0f, 1000UL, false, LED_YELLOW, 0UL}, // Yellow as activity pulse + optional CRUMBS control
+    {0.0f, 1000UL, false, LED_RED, 0UL}     // Red can be CRUMBS driven for fault indication
 };
-
-unsigned long lastBlinkCheck = 0;
-
 // Last received message (for OLED)
 struct LastMsg
 {
     uint8_t typeID = 0;
     uint8_t commandType = 0;
-    float data[6] = {0, 0, 0, 0, 0, 0};
-    uint8_t errorFlags = 0;
+    float data[CRUMBS_DATA_LENGTH] = {};
+    uint8_t crc8 = 0;
     bool valid = false;
 } lastRx;
 
@@ -95,11 +93,90 @@ void setup()
     setOk();
     drawDisplay();
     Serial.print(F("Peripheral ready at 0x"));
-    Serial.println(SLICE_I2C_ADDRESS, HEX);
+    Serial.println(kSliceI2cAddress, HEX);
 }
 
 void loop()
 {
     refreshLeds();
     serviceBlinkLogic(); // optional: CRUMBS-driven blink patterns
+}
+
+void applyDataToChannels(const CRUMBSMessage &m)
+{
+    const unsigned long now = millis();
+    const unsigned long kDefaultPeriod = 1000UL;
+    const unsigned long kMinPeriod = 100UL;
+    const unsigned long kMaxPeriod = 10000UL;
+
+    unsigned long requestedPeriod = kDefaultPeriod;
+    if (m.data[3] > 0.0f)
+    {
+        requestedPeriod = static_cast<unsigned long>(m.data[3] * 1000.0f);
+    }
+    requestedPeriod = constrain(requestedPeriod, kMinPeriod, kMaxPeriod);
+
+    for (size_t i = 0; i < 3; i++)
+    {
+        LedChan &chan = chans[i];
+        const float raw = (i < CRUMBS_DATA_LENGTH) ? m.data[i] : 0.0f;
+        const float ratio = constrain(raw, 0.0f, 1.0f);
+
+        chan.ratio = ratio;
+        chan.period = requestedPeriod;
+        chan.lastToggle = now;
+
+        if (ratio <= 0.0f)
+        {
+            chan.state = false;
+            digitalWrite(chan.pin, LOW);
+        }
+        else if (ratio >= 1.0f)
+        {
+            chan.state = true;
+            digitalWrite(chan.pin, HIGH);
+        }
+        else
+        {
+            chan.state = true; // restart cycle in high phase
+            digitalWrite(chan.pin, HIGH);
+        }
+    }
+}
+
+void serviceBlinkLogic()
+{
+    const unsigned long now = millis();
+
+    for (size_t i = 0; i < 3; i++)
+    {
+        LedChan &chan = chans[i];
+
+        if (chan.ratio <= 0.0f)
+        {
+            continue; // forced low
+        }
+        if (chan.ratio >= 1.0f)
+        {
+            continue; // forced high
+        }
+
+        const unsigned long period = (chan.period < 2UL) ? 2UL : chan.period;
+        unsigned long highDuration = static_cast<unsigned long>(period * chan.ratio);
+        if (highDuration == 0)
+        {
+            highDuration = 1;
+        }
+        unsigned long lowDuration = (period > highDuration) ? (period - highDuration) : 1UL;
+
+        const unsigned long targetDuration = chan.state ? highDuration : lowDuration;
+        const unsigned long elapsed = now - chan.lastToggle;
+
+        if (elapsed >= targetDuration)
+        {
+            chan.state = !chan.state;
+            chan.lastToggle = now;
+            digitalWrite(chan.pin, chan.state ? HIGH : LOW);
+        }
+    }
 }

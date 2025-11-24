@@ -3,8 +3,8 @@
  * @brief CRUMBS Controller: sends messages and requests status from two peripherals.
  *
  * Serial commands:
- *   CSV send:      8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,0
- *                  ^ addr,typeID,commandType,data0..data5,errorFlags
+ *   CSV send:      8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,3.14
+ *                  ^ addr,typeID,commandType,data0..data6
  *   Request read:  request=8
  */
 
@@ -39,8 +39,8 @@ struct LastMsg
     uint8_t addr = 0;
     uint8_t typeID = 0;
     uint8_t commandType = 0;
-    float data[6] = {0, 0, 0, 0, 0, 0};
-    uint8_t errorFlags = 0;
+    float data[CRUMBS_DATA_LENGTH] = {};
+    uint8_t crc8 = 0;
     bool valid = false;
 } lastMsg;
 
@@ -80,7 +80,7 @@ void setup()
     setOk(); // system starts OK
 
     Serial.println(F("Controller ready."));
-    Serial.println(F("CSV send: addr,typeID,commandType,data0..data5,errorFlags"));
+    Serial.println(F("CSV send: addr,typeID,commandType,data0..data6"));
     Serial.println(F("Request : request=<addr>  (e.g. request=8 or request=0x08)"));
 }
 
@@ -97,9 +97,9 @@ static void cacheTx(uint8_t addr, const CRUMBSMessage &m)
     lastMsg.addr = addr;
     lastMsg.typeID = m.typeID;
     lastMsg.commandType = m.commandType;
-    for (int i = 0; i < 6; i++)
+    for (size_t i = 0; i < CRUMBS_DATA_LENGTH; i++)
         lastMsg.data[i] = m.data[i];
-    lastMsg.errorFlags = m.errorFlags;
+    lastMsg.crc8 = m.crc8;
     lastMsg.valid = true;
     drawDisplay();
 }
@@ -110,9 +110,9 @@ static void cacheRx(uint8_t addr, const CRUMBSMessage &m)
     lastMsg.addr = addr;
     lastMsg.typeID = m.typeID;
     lastMsg.commandType = m.commandType;
-    for (int i = 0; i < 6; i++)
+    for (size_t i = 0; i < CRUMBS_DATA_LENGTH; i++)
         lastMsg.data[i] = m.data[i];
-    lastMsg.errorFlags = m.errorFlags;
+    lastMsg.crc8 = m.crc8;
     lastMsg.valid = true;
     drawDisplay();
 }
