@@ -27,7 +27,6 @@ const uint8_t LED_GREEN = 4;
 const uint8_t LED_YELLOW = 6;
 const uint8_t LED_RED = 5;
 
-
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, U8X8_PIN_NONE);
 
 // ---------- CRUMBS controller (C API) ----------
@@ -202,7 +201,7 @@ void requestCrumbs(uint8_t address)
     if (count == 0)
     {
         Serial.println(F("No data received."));
-            rememberExchange(true, address, (crumbs_message_t){}, false);
+        rememberExchange(true, address, (crumbs_message_t){}, false);
         setError();
         return;
     }
@@ -221,7 +220,7 @@ void requestCrumbs(uint8_t address)
         Serial.print(F(" period_ms="));
         Serial.println((unsigned long)message.data[3]);
 
-            rememberExchange(true, address, message, true);
+        rememberExchange(true, address, message, true);
         pulseActivity();
         setOk();
     }

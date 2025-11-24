@@ -35,11 +35,11 @@ crumbs_context_t crumbs_ctx;
 // ---------- State controlled by incoming CRUMBS data ----------
 struct LedChan
 {
-    float ratio;               // 0.0..1.0 duty
-    unsigned long period;      // ms
+    float ratio;          // 0.0..1.0 duty
+    unsigned long period; // ms
     bool state;
     uint8_t pin;
-    unsigned long lastToggle;  // ms timestamp of last state change
+    unsigned long lastToggle; // ms timestamp of last state change
 };
 LedChan chans[3] = {
     {0.5f, 2000UL, false, LED_GREEN, 0UL},  // We'll drive green as "OK" unless another mode overrides

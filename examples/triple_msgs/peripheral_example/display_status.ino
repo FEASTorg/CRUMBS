@@ -51,8 +51,8 @@ void drawDisplay()
         u8g2.setFont(u8g2_font_6x10_tf);
 
         // Header "Peripheral 0x.."
-    char head[20];
-    sprintf(head, "Peripheral 0x%02X", kSliceI2cAddress);
+        char head[20];
+        sprintf(head, "Peripheral 0x%02X", kSliceI2cAddress);
         u8g2.drawStr(0, 10, head);
 
         // Error/OK
