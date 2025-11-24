@@ -4,6 +4,13 @@
 
 namespace
 {
+
+    // Internal helpers & constants: these items are placed in an anonymous
+    // namespace so they receive internal linkage (file-local scope).
+    // Prevents symbol collisions and keeps implementation details private.
+    // Placed near the top so functions in this file can use them directly.
+    // These symbols are not exported or part of the public API.
+
     constexpr size_t kDataFieldCount = CRUMBS_DATA_LENGTH;
     constexpr size_t kHeaderLength = 2; // typeID + commandType
     constexpr size_t kPayloadLength = kHeaderLength + kDataFieldCount * sizeof(float);
