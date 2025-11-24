@@ -5,7 +5,11 @@ This script copies the generated files from scripts/dist/crc/c99 and
 scripts/dist/crc/arduino into src/crc/c99 and src/crc/arduino respectively.
 
 It performs minimal checks and will create target directories if needed.
+
+Usage:
+    python scripts/validate_and_stage_crc8.py [--algos bit,nibble,nibblem,byte]
 """
+
 from pathlib import Path
 import shutil
 import sys
@@ -33,8 +37,6 @@ def copy_tree(src: Path, dst: Path):
             copied += 1
     print(f"{copied} files copied from {src} to {dst}")
     return 0
-
-
 
 
 def stage_variations(algos: list[str]) -> int:
