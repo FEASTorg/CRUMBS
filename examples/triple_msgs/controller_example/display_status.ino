@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
-#include <CRUMBS.h>
+#include "crumbs_arduino.h"
 #include <stdio.h>
 
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
@@ -12,18 +12,16 @@ extern const uint8_t LED_RED;
 extern volatile unsigned long yellowPulseUntil;
 extern const unsigned long YELLOW_PULSE_MS;
 
-extern struct LastMsg
+extern struct LastExchange
 {
-    bool isRx;
-    uint8_t addr;
-    uint8_t typeID;
-    uint8_t commandType;
-    float data[6];
-    uint8_t errorFlags;
-    bool valid;
-} lastMsg;
+    bool hasData;
+    bool wasRx;
+    uint8_t address;
+    bool success;
+    crumbs_message_t message;
+} lastExchange;
 
-static bool haveError = false;
+extern bool hasError;
 
 void setOk()
 {
@@ -62,29 +60,29 @@ void drawDisplay()
 
         if (!lastExchange.hasData)
         {
-            u8g2.drawStr(0, y, "No message yet");
+            u8g2.drawStr(0, 34, "No message yet");
             continue;
         }
 
         // TX/RX line
         char line[20];
-        sprintf(line, "%s 0x%02X", lastMsg.isRx ? "RX" : "TX", lastMsg.addr);
+        int y = 34;
+        sprintf(line, "%s 0x%02X", lastExchange.wasRx ? "RX" : "TX", lastExchange.address);
         u8g2.drawStr(0, y, line);
         y += 12;
-
-        sprintf(line, "type:%u cmd:%u err:%u", lastMsg.typeID, lastMsg.commandType, lastMsg.errorFlags);
+        sprintf(line, "type:%u cmd:%u ok:%u", lastExchange.message.type_id, lastExchange.message.command_type, (uint8_t)lastExchange.success);
         u8g2.drawStr(0, y, line);
         y += 12;
 
         // data lines
         char buf[24];
-        sprintf(buf, "d0:%0.2f d1:%0.2f", lastMsg.data[0], lastMsg.data[1]);
+        sprintf(buf, "d0:%0.2f d1:%0.2f", lastExchange.message.data[0], lastExchange.message.data[1]);
         u8g2.drawStr(0, y, buf);
         y += 12;
-        sprintf(buf, "d2:%0.2f d3:%0.2f", lastMsg.data[2], lastMsg.data[3]);
+        sprintf(buf, "d2:%0.2f d3:%0.2f", lastExchange.message.data[2], lastExchange.message.data[3]);
         u8g2.drawStr(0, y, buf);
         y += 12;
-        sprintf(buf, "d4:%0.2f d5:%0.2f", lastMsg.data[4], lastMsg.data[5]);
+        sprintf(buf, "d4:%0.2f d5:%0.2f", lastExchange.message.data[4], lastExchange.message.data[5]);
         u8g2.drawStr(0, y, buf);
     } while (u8g2.nextPage());
 }

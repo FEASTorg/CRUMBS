@@ -7,7 +7,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <CRUMBS.h>
+#include "crumbs_arduino.h"
 #include <U8g2lib.h>
 #include <SPI.h>
 
@@ -29,8 +29,8 @@ const uint8_t LED_RED = 5;
 volatile unsigned long yellowPulseUntil = 0;
 const unsigned long YELLOW_PULSE_MS = 120;
 
-// ---------- CRUMBS ----------
-CRUMBS crumbsSlice(false, kSliceI2cAddress);
+// ---------- CRUMBS (C API) ----------
+crumbs_context_t crumbs_ctx;
 
 // ---------- State controlled by incoming CRUMBS data ----------
 struct LedChan
@@ -46,19 +46,12 @@ LedChan chans[3] = {
     {0.0f, 1000UL, false, LED_YELLOW, 0UL}, // Yellow as activity pulse + optional CRUMBS control
     {0.0f, 1000UL, false, LED_RED, 0UL}     // Red can be CRUMBS driven for fault indication
 };
-// Last received message (for OLED)
-struct LastMsg
-{
-    uint8_t typeID = 0;
-    uint8_t commandType = 0;
-    float data[CRUMBS_DATA_LENGTH] = {};
-    uint8_t crc8 = 0;
-    bool valid = false;
-    CRUMBSMessage message = {};
-};
+// Last received/response messages (for the display)
+crumbs_message_t lastRxMessage = {};
+bool lastRxValid = false;
 
-MessageSummary lastCommand;
-MessageSummary lastResponse;
+crumbs_message_t lastResponseMessage = {};
+bool lastResponseValid = false;
 
 bool hasError = false;
 
@@ -67,9 +60,9 @@ const unsigned long kDisplayIntervalMs = 100;
 
 // ---------- Helpers shared with companion files ----------
 void drawDisplay();
-void handleMessage(CRUMBSMessage &message);
-void handleRequest();
-void applyCommand(const CRUMBSMessage &message);
+void handleMessage(crumbs_context_t *ctx, const crumbs_message_t *message);
+void handleRequest(crumbs_context_t *ctx, crumbs_message_t *response);
+void applyCommand(const crumbs_message_t &message);
 void updateChannels(unsigned long now);
 void setOk();
 void setError();
@@ -93,9 +86,9 @@ void setup()
     u8g2.setI2CAddress(OLED_ADDR << 1);
     u8g2.begin();
 
-    crumbsSlice.begin();
-    crumbsSlice.onReceive(handleMessage);
-    crumbsSlice.onRequest(handleRequest);
+    // Initialize peripheral and register callbacks
+    crumbs_arduino_init_peripheral(&crumbs_ctx, kSliceI2cAddress);
+    crumbs_set_callbacks(&crumbs_ctx, handleMessage, handleRequest, NULL);
 
     setOk();
     drawDisplay();
@@ -110,7 +103,7 @@ void loop()
     serviceBlinkLogic(); // optional: CRUMBS-driven blink patterns
 }
 
-void applyDataToChannels(const CRUMBSMessage &m)
+void applyDataToChannels(const crumbs_message_t &m)
 {
     const unsigned long now = millis();
     const unsigned long kDefaultPeriod = 1000UL;

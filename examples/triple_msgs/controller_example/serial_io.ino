@@ -1,162 +1,65 @@
 #include <Arduino.h>
-#include <CRUMBS.h>
-#include <stdlib.h>
+#include "crumbs.h"
 
-extern void sendCrumbs(uint8_t address, CRUMBSMessage &message);
+extern void sendCrumbs(uint8_t address, crumbs_message_t &message);
 extern void requestCrumbs(uint8_t address);
 
-namespace
-{
-    bool parseAddress(const String &token, uint8_t &address)
-    {
-        if (token.length() == 0)
-        {
-            return false;
-        }
-
-        uint8_t addr = 0;
-        if (a.startsWith("0x") || a.startsWith("0X"))
-            addr = (uint8_t)strtol(a.c_str(), NULL, 16);
-        else
-            addr = (uint8_t)a.toInt();
-
-        Serial.print(F("Controller: requesting from 0x"));
-        Serial.println(addr, HEX);
-
-        CRUMBSMessage resp;
-        if (requestCrumbs(addr, resp))
-        {
-            Serial.println(F("Controller: response decoded:"));
-            Serial.print(F("typeID="));
-            Serial.print(resp.typeID);
-            Serial.print(F(" cmd="));
-            Serial.print(resp.commandType);
-            Serial.print(F(" data: "));
-            for (int i = 0; i < 6; i++)
-            {
-                Serial.print(resp.data[i], 3);
-                Serial.print(' ');
-            }
-            Serial.print(F(" err="));
-            Serial.println(resp.errorFlags);
-        }
-        else
-        {
-            value = token.toInt();
-        }
-
-        if (value < 0 || value > 0x7F)
-        {
-            return false;
-        }
-
-        address = static_cast<uint8_t>(value);
-        return true;
-    }
-
-    bool collectTokens(const String &source, String *tokens, size_t expected)
-    {
-        size_t count = 0;
-        int index = 0;
-
-        while (count < expected && index < source.length())
-        {
-            while (index < source.length() && source[index] == ' ')
-            {
-                index++;
-            }
-            if (index >= source.length())
-            {
-                break;
-            }
-
-            int nextSpace = source.indexOf(' ', index);
-            if (nextSpace < 0)
-            {
-                nextSpace = source.length();
-            }
-
-            tokens[count++] = source.substring(index, nextSpace);
-            index = nextSpace + 1;
-        }
-
-        return count == expected;
-    }
-}
+// Accept commands on serial in the following formats (space-separated):
+//   SEND <addr> <type_id> <command> <d0> <d1> <d2> <d3> <d4> <d5> <d6>
+//   REQUEST <addr>
 
 void handleSerial()
 {
     if (!Serial.available())
-    {
         return;
-    }
 
     String line = Serial.readStringUntil('\n');
     line.trim();
     if (line.length() == 0)
-    {
-        sendCrumbs(addr, m);
-        Serial.println(F("Controller: message sent."));
-    }
-    else
-    {
-        Serial.println(F("Controller: parse failed. Use addr,typeID,commandType,data0..data5,errorFlags"));
-    }
-}
+        return;
 
-bool parseSerialInput(const String &s, uint8_t &addr, CRUMBSMessage &m)
-{
-    m.typeID = 0;
-    m.commandType = 0;
-    for (int i = 0; i < 6; i++)
-        m.data[i] = 0;
-    m.errorFlags = 0;
-
-    int field = 0, last = 0;
-    for (int i = 0; i <= s.length(); i++)
+    // Split tokens by whitespace
+    const size_t maxTokens = 12;
+    String toks[maxTokens];
+    size_t tokenCount = 0;
+    int idx = 0;
+    while (tokenCount < maxTokens && idx < (int)line.length())
     {
-        if (i == s.length() || s[i] == ',')
+        while (idx < (int)line.length() && isspace(line[idx]))
+            idx++;
+        if (idx >= (int)line.length())
+            break;
+        int next = line.indexOf(' ', idx);
+        if (next < 0)
+            next = line.length();
+        toks[tokenCount++] = line.substring(idx, next);
+        idx = next + 1;
+    }
+
+    if (tokenCount == 0)
+        return;
+
+    toks[0].toUpperCase();
+    if (toks[0] == "REQUEST" && tokenCount >= 2)
+    {
+        uint8_t addr = (uint8_t)strtoul(toks[1].c_str(), NULL, 0);
+        requestCrumbs(addr);
+        return;
+    }
+
+    if (toks[0] == "SEND" && tokenCount >= 4)
+    {
+        uint8_t addr = (uint8_t)strtoul(toks[1].c_str(), NULL, 0);
+        crumbs_message_t m = {};
+        m.type_id = (uint8_t)atoi(toks[2].c_str());
+        m.command_type = (uint8_t)atoi(toks[3].c_str());
+        for (size_t i = 0; i < CRUMBS_DATA_LENGTH && (4 + (int)i) < (int)tokenCount; ++i)
         {
-            String v = s.substring(last, i);
-            v.trim();
-            last = i + 1;
-            switch (field)
-            {
-            case 0:
-                addr = (uint8_t)v.toInt();
-                break;
-            case 1:
-                m.typeID = (uint8_t)v.toInt();
-                break;
-            case 2:
-                m.commandType = (uint8_t)v.toInt();
-                break;
-            case 3:
-                m.data[0] = v.toFloat();
-                break;
-            case 4:
-                m.data[1] = v.toFloat();
-                break;
-            case 5:
-                m.data[2] = v.toFloat();
-                break;
-            case 6:
-                m.data[3] = v.toFloat();
-                break;
-            case 7:
-                m.data[4] = v.toFloat();
-                break;
-            case 8:
-                m.data[5] = v.toFloat();
-                break;
-            case 9:
-                m.errorFlags = (uint8_t)v.toInt();
-                break;
-            default:
-                break;
-            }
-            field++;
+            m.data[i] = (float)atof(toks[4 + i].c_str());
         }
+        sendCrumbs(addr, m);
+        return;
     }
-    return (field >= 4);
+
+    Serial.println(F("Invalid command. Use: REQUEST <addr> or SEND <addr> <type> <cmd> <d0>.."));
 }

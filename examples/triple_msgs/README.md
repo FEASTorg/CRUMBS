@@ -23,7 +23,7 @@ Pull-ups only here                        (no extra pull-ups)
 
 ## Flashing the Sketches
 
-1. Install **CRUMBS**, **U8g2**, and **AceCRC (v1.1.1)**.
+1. Install **CRUMBS** and **U8g2**.
 2. Set `kSliceI2cAddress` per slice (e.g. `0x08`, `0x09`) in `peripheral_example.ino`.
 3. Upload `controller_example` to the controller Nano and the slice sketch (with its address) to each peripheral Nano.
 

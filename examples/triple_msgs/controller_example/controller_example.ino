@@ -12,7 +12,7 @@
 #include <Arduino.h>
 
 #define CRUMBS_DEBUG
-#include <CRUMBS.h>
+#include "crumbs_arduino.h"
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <SPI.h>
@@ -30,8 +30,8 @@ const uint8_t LED_RED = 5;
 
 U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, U8X8_PIN_NONE);
 
-// ---------- CRUMBS controller ----------
-CRUMBS crumbsController(true);
+// ---------- CRUMBS controller (C API) ----------
+crumbs_context_t crumbs_ctx;
 
 // ---------- Runtime state exposed to helper files ----------
 struct LastExchange
@@ -40,7 +40,7 @@ struct LastExchange
     bool wasRx = false; // false = last action was SEND
     uint8_t address = 0;
     bool success = false; // true when wire transaction succeeded
-    CRUMBSMessage message = {};
+    crumbs_message_t message = {};
 } lastExchange;
 
 bool hasError = false;
@@ -51,9 +51,9 @@ const unsigned long kActivityPulseMs = 120;
 void handleSerial();
 void drawDisplay();
 
-void sendCrumbs(uint8_t address, CRUMBSMessage &message);
+void sendCrumbs(uint8_t address, crumbs_message_t &message);
 void requestCrumbs(uint8_t address);
-void rememberExchange(bool wasRx, uint8_t address, const CRUMBSMessage &message, bool success);
+void rememberExchange(bool wasRx, uint8_t address, const crumbs_message_t &message, bool success);
 void pulseActivity();
 void refreshIndicators();
 void setOk();
@@ -82,7 +82,8 @@ void setup()
     u8g2.setI2CAddress(OLED_ADDR << 1);
     u8g2.begin();
 
-    crumbsController.begin();
+    // Initialize CRUMBS controller using Arduino HAL
+    crumbs_arduino_init_controller(&crumbs_ctx);
     setOk();
 
     Serial.println(F("CRUMBS Controller ready."));
@@ -130,7 +131,7 @@ void setError()
     digitalWrite(LED_RED, HIGH);
 }
 
-void rememberExchange(bool wasRx, uint8_t address, const CRUMBSMessage &message, bool success)
+void rememberExchange(bool wasRx, uint8_t address, const crumbs_message_t &message, bool success)
 {
     lastExchange.hasData = true;
     lastExchange.wasRx = wasRx;
@@ -139,10 +140,10 @@ void rememberExchange(bool wasRx, uint8_t address, const CRUMBSMessage &message,
     lastExchange.message = message;
 }
 
-void sendCrumbs(uint8_t address, CRUMBSMessage &message)
+void sendCrumbs(uint8_t address, crumbs_message_t &message)
 {
     uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t bytes = crumbsController.encodeMessage(message, buffer, sizeof(buffer));
+    size_t bytes = crumbs_encode_message(&message, buffer, sizeof(buffer));
     if (bytes == 0)
     {
         Serial.println(F("Encode failed (buffer too small)."));
@@ -201,13 +202,13 @@ void requestCrumbs(uint8_t address)
     if (count == 0)
     {
         Serial.println(F("No data received."));
-        rememberExchange(true, address, CRUMBSMessage{}, false);
+            rememberExchange(true, address, (crumbs_message_t){}, false);
         setError();
         return;
     }
 
-    CRUMBSMessage message = {};
-    if (crumbsController.decodeMessage(buffer, count, message))
+    crumbs_message_t message = {};
+    if (crumbs_decode_message(buffer, count, &message, &crumbs_ctx) == 0)
     {
         Serial.print(F("Response from 0x"));
         Serial.print(address, HEX);
@@ -220,7 +221,7 @@ void requestCrumbs(uint8_t address)
         Serial.print(F(" period_ms="));
         Serial.println((unsigned long)message.data[3]);
 
-        rememberExchange(true, address, message, true);
+            rememberExchange(true, address, message, true);
         pulseActivity();
         setOk();
     }
