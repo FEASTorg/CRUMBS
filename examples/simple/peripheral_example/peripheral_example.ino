@@ -92,38 +92,19 @@ void handleMessage(crumbs_message_t &message)
  *
  * @note This function sends a crumbs_message_t back to the Controller in response to a request.
  */
-void handleRequest()
+void handleRequest(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
-    Serial.println(F("Slice: Controller requested data, sending response..."));
+    // User fills reply, nothing more.
+    reply->type_id = 1;
+    reply->command_type = 0;
 
-    // Prepare response message
-    crumbs_message_t responseMessage = {};
-    responseMessage.type_id = 1;      /**< SLICE type ID */
-    responseMessage.command_type = 0; /**< command_type 0 for status response */
-
-    // Populate data fields with example data
-    responseMessage.data[0] = 42.0f; /**< Example data0 */
-    responseMessage.data[1] = 1.0f;  /**< Example data1 */
-    responseMessage.data[2] = 2.0f;  /**< Example data2 */
-    responseMessage.data[3] = 3.0f;  /**< Example data3 */
-    responseMessage.data[4] = 4.0f;  /**< Example data4 */
-    responseMessage.data[5] = 5.0f;  /**< Example data5 */
-    responseMessage.data[6] = 6.0f;  /**< Example data6 */
-
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t encodedSize = crumbs_encode_message(&responseMessage, buffer, sizeof(buffer));
-
-    if (encodedSize == 0)
-    {
-        Serial.println(F("Slice: Failed to encode response message."));
-        reportCrcStatus(F("encode"));
-        return;
-    }
-
-    // Send the encoded message back to the Controller
-    Wire.write(buffer, encodedSize);
-    Serial.println(F("Slice: Response message sent."));
-    reportCrcStatus(F("encode"));
+    reply->data[0] = 42.0f;
+    reply->data[1] = 1.0f;
+    reply->data[2] = 2.0f;
+    reply->data[3] = 3.0f;
+    reply->data[4] = 4.0f;
+    reply->data[5] = 5.0f;
+    reply->data[6] = 6.0f;
 }
 
 /**
