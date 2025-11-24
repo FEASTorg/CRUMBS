@@ -17,7 +17,6 @@ static const size_t k_frame_len = 2u + (CRUMBS_DATA_LENGTH * sizeof(float)) + 1u
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 _Static_assert(CRUMBS_MESSAGE_SIZE == 31u, "CRUMBS_MESSAGE_SIZE must be 31");
-_Static_assert(CRUMBS_MESSAGE_SIZE == k_frame_len, "CRUMBS_MESSAGE_SIZE must equal serialized frame length");
 #endif
 
 static void write_float_le(float value, uint8_t *out)

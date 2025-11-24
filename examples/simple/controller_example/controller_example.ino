@@ -27,7 +27,7 @@ void setup()
     }
 
     crumbs_arduino_init_controller(&crumbsController);
-    crumbs_reset_crc_errors(&crumbsController);
+    crumbs_reset_crc_stats(&crumbsController);
 
     Serial.println(F("Controller: CRC diagnostics reset."));
 

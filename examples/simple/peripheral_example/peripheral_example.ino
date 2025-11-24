@@ -24,8 +24,8 @@ namespace
 
     void reportCrcStatus(const __FlashStringHelper *context)
     {
-        const uint32_t current = crumbs_get_crc_errors(&crumbsSlice);
-        const bool lastValid = crumbs_last_crc_valid(&crumbsSlice);
+        const uint32_t current = crumbs_get_crc_error_count(&crumbsSlice);
+        const bool lastValid = crumbs_last_crc_ok(&crumbsSlice);
 
         if (current != lastCrcReport || lastValid != lastCrcValid)
         {
@@ -137,7 +137,7 @@ void setup()
 
     crumbs_arduino_init_peripheral(&crumbsSlice, SLICE_I2C_ADDRESS);
 
-    crumbs_reset_crc_errors(&crumbsSlice);
+    crumbs_reset_crc_stats(&crumbsSlice);
     Serial.println(F("Slice: CRC diagnostics reset."));
     reportCrcStatus(F("startup"));
 

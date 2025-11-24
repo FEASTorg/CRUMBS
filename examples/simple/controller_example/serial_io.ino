@@ -5,8 +5,8 @@ namespace
 
     void reportCrcStatus(const __FlashStringHelper *context)
     {
-        const uint32_t current = crumbs_get_crc_errors(&crumbsController);
-        const bool lastValid = crumbs_last_crc_valid(&crumbsController);
+        const uint32_t current = crumbs_get_crc_error_count(&crumbsController);
+        const bool lastValid = crumbs_last_crc_ok(&crumbsController);
         if (current != lastCrcReport || lastValid != lastCrcValid)
         {
             Serial.print(F("Controller: CRC status ["));
@@ -76,7 +76,8 @@ void handleSerialInput()
 
             // Attempt to decode the received response
             crumbs_message_t response;
-            if (crumbs_decode_message(responseBuffer, index, &response))
+            
+            if (crumbs_decode_message(responseBuffer, index, &response, &crumbsController))
             {
                 Serial.println(F("Controller: Decoded response:"));
                 Serial.print(F("type_id: "));
