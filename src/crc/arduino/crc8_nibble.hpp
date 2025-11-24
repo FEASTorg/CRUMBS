@@ -2,7 +2,7 @@
  * \file
  * Functions and types for CRC checks.
  *
- * Generated on Sun Nov 23 18:39:47 2025
+ * Generated on Sun Nov 23 19:17:54 2025
  * by pycrc v0.11.0, https://pycrc.org
  * using the configuration:
  *  - Width         = 8
@@ -36,18 +36,18 @@
  * }
  * crc = crc_finalize(crc);
  * \endcode
- * Auto converted to Arduino C++ on Sun Nov 23 18:58:58 2025
+ * Auto converted to Arduino C++ on Sun Nov 23 19:17:56 2025
  * by AceCRC (https://github.com/bxparks/AceCRC).
  * DO NOT EDIT
  */
-#ifndef ACE_CRC_CRC8_NIBBLEM_HPP
-#define ACE_CRC_CRC8_NIBBLEM_HPP
+#ifndef ACE_CRC_CRC8_NIBBLE_HPP
+#define ACE_CRC_CRC8_NIBBLE_HPP
 
 #include <stdlib.h>
 #include <stdint.h>
 
 namespace ace_crc {
-namespace crc8_nibblem {
+namespace crc8_nibble {
 
 
 /**
@@ -112,7 +112,7 @@ inline crc_t crc_calculate(const void *data, size_t data_len) {
   crc = crc_update(crc, data, data_len);
   return crc_finalize(crc);
 }
-} // crc8_nibblem
+} // crc8_nibble
 } // ace_crc
 
-#endif      /* ACE_CRC_CRC8_NIBBLEM_HPP */
+#endif      /* ACE_CRC_CRC8_NIBBLE_HPP */

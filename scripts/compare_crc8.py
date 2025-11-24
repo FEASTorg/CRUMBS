@@ -5,7 +5,9 @@ import argparse
 
 SCRIPT_DIR = Path(__file__).parent
 REF = SCRIPT_DIR / "ace_crc8"
-OUT = SCRIPT_DIR / "arduino_crc8"
+# Compare against repo-root dist outputs
+REPO_ROOT = SCRIPT_DIR.parent
+OUT = REPO_ROOT / "dist" / "crc" / "arduino"
 REPORT = SCRIPT_DIR / "comparison_crc8"
 
 IGNORE_PATTERNS = [

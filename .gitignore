@@ -40,6 +40,9 @@
 # debug information files
 *.dwo
 
+# Distribution directory
+dist/
+
 # Custom directories
 ace_crc/
 comparison_*/

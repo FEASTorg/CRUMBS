@@ -1,5 +1,5 @@
 #include "CRUMBS.h"
-#include <AceCRC.h>
+#include "crc/arduino/crc8_nibble.hpp"
 #include <string.h>
 
 namespace

@@ -5,9 +5,15 @@ from datetime import datetime
 import re
 
 SCRIPT_DIR = Path(__file__).parent
-C99_DIR = SCRIPT_DIR / "c99_crc8"
-ARD_DIR = SCRIPT_DIR / "arduino_crc8"
-ARD_DIR.mkdir(exist_ok=True)
+# C99 generator input dir remains the original c99_crc8. Put Arduino
+# outputs under the repository root dist/crc/arduino so all generated
+# outputs live under <repo-root>/dist/crc.
+REPO_ROOT = SCRIPT_DIR.parent
+# Use the generated C99 outputs from repo-root dist so that the
+# Arduino conversion works from the same, canonical generated C99 files.
+C99_DIR = REPO_ROOT / "dist" / "crc" / "c99"
+ARD_DIR = REPO_ROOT / "dist" / "crc" / "arduino"
+ARD_DIR.mkdir(parents=True, exist_ok=True)
 
 CONVERT_TO_PROGMEM = True
 

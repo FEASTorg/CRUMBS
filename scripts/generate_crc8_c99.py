@@ -4,8 +4,11 @@ import subprocess
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
-C99_DIR = SCRIPT_DIR / "c99_crc8"
-C99_DIR.mkdir(exist_ok=True)
+# Put generated C99 outputs under the repository root dist/crc/c99 so tests/CI
+# can find them at a stable location: <repo-root>/dist/crc/c99
+REPO_ROOT = SCRIPT_DIR.parent
+C99_DIR = REPO_ROOT / "dist" / "crc" / "c99"
+C99_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL = "crc-8"
 ALGOS = ["bit", "nibble", "nibblem", "byte"]

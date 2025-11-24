@@ -2,7 +2,7 @@
  * \file
  * Functions and types for CRC checks.
  *
- * Generated on Sun Nov 23 18:39:47 2025
+ * Generated on Sun Nov 23 19:17:54 2025
  * by pycrc v0.11.0, https://pycrc.org
  * using the configuration:
  *  - Width         = 8
@@ -11,7 +11,7 @@
  *  - ReflectIn     = False
  *  - XorOut        = 0x00
  *  - ReflectOut    = False
- *  - Algorithm     = bit-by-bit-fast
+ *  - Algorithm     = table-driven
  *
  * This file defines the functions crc_init(), crc_update() and crc_finalize().
  *
@@ -36,18 +36,16 @@
  * }
  * crc = crc_finalize(crc);
  * \endcode
- * Auto converted to Arduino C++ on Sun Nov 23 18:58:58 2025
- * by AceCRC (https://github.com/bxparks/AceCRC).
- * DO NOT EDIT
  */
-#ifndef ACE_CRC_CRC8_BIT_HPP
-#define ACE_CRC_CRC8_BIT_HPP
+#ifndef CRC8_NIBBLE_H
+#define CRC8_NIBBLE_H
 
 #include <stdlib.h>
 #include <stdint.h>
 
-namespace ace_crc {
-namespace crc8_bit {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /**
@@ -56,7 +54,7 @@ namespace crc8_bit {
  * This is not used anywhere in the generated code, but it may be used by the
  * application code to call algorithm-specific code, if desired.
  */
-const uint8_t CRC_ALGO_BIT_BY_BIT_FAST = 1;
+#define CRC_ALGO_TABLE_DRIVEN 1
 
 
 /**
@@ -64,7 +62,7 @@ const uint8_t CRC_ALGO_BIT_BY_BIT_FAST = 1;
  *
  * This type must be big enough to contain at least 8 bits.
  */
-typedef uint8_t crc_t;
+typedef uint_fast8_t crc_t;
 
 
 /**
@@ -72,7 +70,7 @@ typedef uint8_t crc_t;
  *
  * \return     The initial crc value.
  */
-inline crc_t crc_init(void)
+static inline crc_t crc_init(void)
 {
     return 0x00;
 }
@@ -95,24 +93,14 @@ crc_t crc_update(crc_t crc, const void *data, size_t data_len);
  * \param[in] crc  The current crc value.
  * \return     The final crc value.
  */
-inline crc_t crc_finalize(crc_t crc)
+static inline crc_t crc_finalize(crc_t crc)
 {
     return crc;
 }
 
 
-/**
- * Calculate the crc in one-shot.
- * This is a convenience function added by AceCRC.
- *
- * \param[in] data     Pointer to a buffer of \a data_len bytes.
- * \param[in] data_len Number of bytes in the \a data buffer.
-inline crc_t crc_calculate(const void *data, size_t data_len) {
-  crc_t crc = crc_init();
-  crc = crc_update(crc, data, data_len);
-  return crc_finalize(crc);
-}
-} // crc8_bit
-} // ace_crc
+#ifdef __cplusplus
+}           /* closing brace for extern "C" */
+#endif
 
-#endif      /* ACE_CRC_CRC8_BIT_HPP */
+#endif      /* CRC8_NIBBLE_H */
