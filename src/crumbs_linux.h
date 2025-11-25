@@ -1,0 +1,96 @@
+#ifndef CRUMBS_LINUX_H
+#define CRUMBS_LINUX_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include <stdint.h>
+#include <stddef.h>
+
+#include "crumbs.h"     /* crumbs_context_t, crumbs_message_t */
+#include "crumbs_i2c.h" /* crumbs_i2c_write_fn */
+
+    /**
+     * Opaque Linux I2C handle for CRUMBS.
+     *
+     * Implementation details are private to crumbs_i2c_linux.c.
+     * On Linux, this wraps a linux-wire lw_i2c_bus.
+     */
+    typedef struct crumbs_linux_i2c_s crumbs_linux_i2c_t;
+
+    /**
+     * Initialize a CRUMBS context as a CONTROLLER on a Linux I2C bus.
+     *
+     * @param ctx          Pointer to CRUMBS context (will be initialized).
+     * @param i2c          Pointer to Linux I2C handle (will be initialized).
+     * @param device_path  Path to I2C device, e.g. "/dev/i2c-1".
+     * @param timeout_us   Optional timeout hint in microseconds (0 = no timeout).
+     *
+     * @return 0 on success.
+     *        -1 if arguments are invalid.
+     *        -2 if opening the bus failed.
+     */
+    int crumbs_linux_init_controller(crumbs_context_t *ctx,
+                                     crumbs_linux_i2c_t *i2c,
+                                     const char *device_path,
+                                     uint32_t timeout_us);
+
+    /**
+     * Close the underlying Linux I2C bus and clear the handle.
+     * Safe to call multiple times.
+     */
+    void crumbs_linux_close(crumbs_linux_i2c_t *i2c);
+
+    /**
+     * I2C write adapter for CRUMBS on Linux, compatible with crumbs_i2c_write_fn.
+     *
+     * This uses linux-wire to:
+     *   - select the slave address with lw_set_slave()
+     *   - write the frame with lw_write(..., send_stop=1)
+     *
+     * @param user_ctx     Must be a (crumbs_linux_i2c_t*).
+     * @param target_addr  7-bit I2C address.
+     * @param data         Frame buffer to send.
+     * @param len          Length of frame.
+     *
+     * @return 0 on success.
+     *        -1 invalid args
+     *        -2 failed to set slave address
+     *        -3 low-level write error
+     *        -4 partial write
+     */
+    int crumbs_linux_i2c_write(void *user_ctx,
+                               uint8_t target_addr,
+                               const uint8_t *data,
+                               size_t len);
+
+    /**
+     * Helper: read a CRUMBS reply message from a peripheral.
+     *
+     * This is analogous to Arduino's `Wire.requestFrom()` + `crumbs_decode_message`.
+     * It performs:
+     *
+     *   1. lw_set_slave()
+     *   2. one or more lw_read() calls until 0 or error, or buffer filled
+     *   3. crumbs_decode_message() on the bytes actually read
+     *
+     * @param i2c          Linux I2C handle (initialized).
+     * @param target_addr  7-bit I2C address to read from.
+     * @param ctx          CRUMBS context (for CRC stats), may be NULL.
+     * @param out_msg      Output message struct.
+     *
+     * @return 0 on success (message decoded and stored in out_msg).
+     *        <0 on error (I2C failure or decode/CRC failure).
+     */
+    int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
+                                  uint8_t target_addr,
+                                  crumbs_context_t *ctx,
+                                  crumbs_message_t *out_msg);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CRUMBS_LINUX_H */
