@@ -206,10 +206,12 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
     /* Ensure we select the correct TwoWire overload on various cores by
        explicitly casting the length to int (Wire.requestFrom has variants
        taking int or uint8_t on different platforms). */
+    /* Choose the int,int overload unambiguously on cores that provide
+       multiple overloads by casting both args to int. */
 #if ARDUINO >= 100
-    size_t available = wire->requestFrom(static_cast<uint8_t>(addr), (int)requested);
+    size_t available = wire->requestFrom((int)static_cast<uint8_t>(addr), (int)requested);
 #else
-    size_t available = wire->requestFrom(addr, (int)requested);
+    size_t available = wire->requestFrom((int)addr, (int)requested);
 #endif
 
     unsigned long start = micros();

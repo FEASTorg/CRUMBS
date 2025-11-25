@@ -58,8 +58,8 @@ void handleSerialInput()
 
             // Request CRUMBS_MESSAGE_SIZE bytes from the peripheral
             uint8_t numBytes = CRUMBS_MESSAGE_SIZE;
-            /* Cast the length to int to match TwoWire overloads on AVR cores */
-            Wire.requestFrom(targetAddress, (int)numBytes);
+            /* Ensure we select the int,int overload explicitly on all cores. */
+            Wire.requestFrom((int)targetAddress, (int)numBytes);
 
             // Allow some time for the peripheral to send the response
             delay(50);
