@@ -203,10 +203,13 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
     // Request len bytes from the peripheral. Wire.requestFrom may block
     // depending on the platform; use a timeout loop to be defensive.
     int requested = (int)len;
+    /* Ensure we select the correct TwoWire overload on various cores by
+       explicitly casting the length to int (Wire.requestFrom has variants
+       taking int or uint8_t on different platforms). */
 #if ARDUINO >= 100
-    size_t available = wire->requestFrom(static_cast<uint8_t>(addr), requested);
+    size_t available = wire->requestFrom(static_cast<uint8_t>(addr), (int)requested);
 #else
-    size_t available = wire->requestFrom(addr, requested);
+    size_t available = wire->requestFrom(addr, (int)requested);
 #endif
 
     unsigned long start = micros();
