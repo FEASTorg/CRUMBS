@@ -10,6 +10,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 - **Built-in Serialization**: Automatic encoding/decoding of message structures
 - **CRC-8 Protection**: Integrity check on every message
 - **Debug Support**: Optional debug output for development and troubleshooting
+- **CRUMBS-aware discovery**: Core scanner helper and HAL read adapters to discover devices that actually speak the CRUMBS protocol
 
 ## Quick Start (Arduino — C API)
 

@@ -70,3 +70,28 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c, uint8_t target_addr, crum
 ```
 
 Note: Most functions return `0` on success and negative or non-zero codes on error — consult the headers for specific return values.
+
+## Scanner & read primitive
+
+The core provides a CRUMBS-aware scanner which attempts to read a full CRUMBS frame from candidate addresses and accepts only CRC-valid frames. This lets controllers reliably discover devices that actually run the CRUMBS protocol (not merely devices that ACK the bus).
+
+```c
+/* Read primitive used by the core scanner and HALs */
+typedef int (*crumbs_i2c_read_fn)(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
+
+/* Perform a CRUMBS-aware scan: returns count of discovered CRUMBS devices */
+int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
+                                     uint8_t start_addr,
+                                     uint8_t end_addr,
+                                     int strict,
+                                     crumbs_i2c_write_fn write_fn,
+                                     crumbs_i2c_read_fn read_fn,
+                                     void *io_ctx,
+                                     uint8_t *found,
+                                     size_t max_found,
+                                     uint32_t timeout_us);
+
+/* HAL read helpers (Arduino / Linux) */
+int crumbs_arduino_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
+int crumbs_linux_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
+```
