@@ -9,11 +9,11 @@
 └──────────┴─────────────┴──────────────────┴──────────┘
 ```
 
-| Field         | Size     | Description                            |
-| ------------- | -------- | -------------------------------------- |
-| `typeID`      | 1 byte   | Module type (sensor=1, motor=2, etc.)  |
-| `commandType` | 1 byte   | Command (read=0, set=1, reset=2, etc.) |
-| `data[7]`     | 28 bytes | Payload data (7 floats)                |
+| Field         | Size     | Description                                   |
+| ------------- | -------- | --------------------------------------------- |
+| `typeID`      | 1 byte   | Module type (sensor=1, motor=2, etc.)         |
+| `commandType` | 1 byte   | Command (read=0, set=1, reset=2, etc.)        |
+| `data[7]`     | 28 bytes | Payload data (7 floats)                       |
 | `crc8`        | 1 byte   | CRC-8 over `typeID`, `commandType`, `data[7]` |
 
 **Notes**:

@@ -7,7 +7,7 @@
 3. Include the headers your target requires:
 
 - Arduino sketches: `#include <crumbs_arduino.h>` (this pulls in `crumbs.h`)
--- Linux projects: `#include "crumbs.h"` and `#include "crumbs_linux.h"` as needed
+  -- Linux projects: `#include "crumbs.h"` and `#include "crumbs_linux.h"` as needed
 
 1. No external dependencies required.
 
