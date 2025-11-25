@@ -141,6 +141,35 @@ extern "C"
                                void *write_ctx);
 
     /**
+     * @brief Scan for CRUMBS-capable devices on the bus.
+     *
+     * This helper performs a probe for each address in [start_addr, end_addr]
+     * attempting to read a CRUMBS message and decode it. If a read yields a
+     * valid CRUMBS message (CRC OK and decode succeeded) the address is
+     * considered to be running CRUMBS.
+     *
+     * The function uses the provided @p read_fn to request data from a remote
+     * device. In non-strict mode the function may issue a small write via
+     * @p write_fn to stimulate a reply before reading (useful for devices that
+     * only respond after receiving a command). Use @p timeout_us to control
+     * read timeouts when supported by HALs.
+     *
+     * @return number of discovered CRUMBS device addresses (>=0) or negative
+     *         on error (invalid args, etc.). Discovered addresses are written
+     *         into @p found up to @p max_found entries.
+     */
+    int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
+                                          uint8_t start_addr,
+                                          uint8_t end_addr,
+                                          int strict,
+                                          crumbs_i2c_write_fn write_fn,
+                                          crumbs_i2c_read_fn read_fn,
+                                          void *io_ctx,
+                                          uint8_t *found,
+                                          size_t max_found,
+                                          uint32_t timeout_us);
+
+    /**
      * @brief Peripheral-side entry point for raw bytes received over I²C.
      *
      * HALs (e.g. Arduino's onReceive callback, linux-wire read handler) should call

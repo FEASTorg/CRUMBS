@@ -76,3 +76,22 @@ Common issues:
 - **No response**: Check wiring, addresses, pull-ups
 - **Data corruption**: Verify timing, use delays between operations
 - **Address conflicts**: Use I2C scanner to verify addresses
+
+### Scanning for CRUMBS devices
+
+The HALs expose a generic I²C scanner (address ACK probing) and the CRUMBS core provides a CRUMBS-aware scanner that attempts to read and decode a CRUMBS frame from each address. Use the CRUMBS scanner when you want to discover devices that actually speak the CRUMBS protocol.
+
+Arduino example (Serial):
+
+```cpp
+// Use crumbs_controller_scan_for_crumbs from the core
+uint8_t found[32];
+int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, &Wire, found, sizeof(found), 50000);
+```
+
+Linux example (CLI):
+
+```bash
+// Run the provided example binary with 'scan' or 'scan strict'
+./crumbs_simple_linux_controller scan
+```

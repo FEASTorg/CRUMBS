@@ -9,7 +9,7 @@
 // Default address of slice peripheral
 #define DEFAULT_SLICE_ADDR 0x08
 
-int main(void)
+int main(int argc, char **argv)
 {
     printf("CRUMBS Linux Controller Example\n");
 
@@ -41,6 +41,35 @@ int main(void)
     {
         fprintf(stderr, "ERROR: crumbs_linux_init_controller failed (%d)\n", rc);
         return 1;
+    }
+
+    // If user asked for scan mode, run a CRUMBS-specific scan and exit.
+    if (argc >= 2 && strcmp(argv[1], "scan") == 0)
+    {
+        int strict = 0;
+        if (argc >= 3 && strcmp(argv[2], "strict") == 0)
+            strict = 1;
+
+        printf("Running CRUMBS-specific scan (strict=%d)...\n", strict);
+        uint8_t found[128];
+        int n = crumbs_controller_scan_for_crumbs(
+            &ctx, 0x03, 0x77, strict, crumbs_linux_i2c_write, crumbs_linux_read, &lw, found, sizeof(found), 25000);
+
+        if (n < 0)
+        {
+            fprintf(stderr, "ERROR: scan failed (%d)\n", n);
+            crumbs_linux_close(&lw);
+            return 1;
+        }
+
+        printf("Found %d CRUMBS device(s):\n", n);
+        for (int i = 0; i < n; ++i)
+        {
+            printf("  0x%02X\n", found[i]);
+        }
+
+        crumbs_linux_close(&lw);
+        return 0;
     }
 
     //----------------------------------------------------------------------

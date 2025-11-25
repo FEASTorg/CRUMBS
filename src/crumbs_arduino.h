@@ -52,6 +52,36 @@ extern "C"
                                   const uint8_t *data,
                                   size_t len);
 
+    /**
+     * @brief Scan the I2C bus using the provided TwoWire instance (or default Wire when user_ctx==NULL).
+     *
+     * @param user_ctx     Pointer to TwoWire instance or NULL to use &Wire
+     * @param start_addr   Start address (inclusive) to probe, typically 0x03
+     * @param end_addr     End address (inclusive) to probe, typically 0x77
+     * @param strict       Non-zero to require a data-phase ACK (stricter), 0 for address-only probe
+     * @param found        Output buffer to receive found addresses
+     * @param max_found    Capacity of @p found buffer
+     * @return number of addresses found (>=0) or negative on error
+     */
+    int crumbs_arduino_scan(void *user_ctx,
+                            uint8_t start_addr,
+                            uint8_t end_addr,
+                            int strict,
+                            uint8_t *found,
+                            size_t max_found);
+
+    /**
+     * @brief Read up to @p len bytes from @p addr using TwoWire (or provided
+     *        TwoWire via user_ctx). Honors @p timeout_us as a microsecond hint.
+     *
+     * @return number of bytes read (>=0) or negative on error.
+     */
+    int crumbs_arduino_read(void *user_ctx,
+                            uint8_t addr,
+                            uint8_t *buffer,
+                            size_t len,
+                            uint32_t timeout_us);
+
 #ifdef __cplusplus
 }
 #endif

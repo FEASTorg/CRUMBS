@@ -13,12 +13,24 @@ extern "C"
 #include "crumbs_i2c.h" /* crumbs_i2c_write_fn */
 
     /**
-     * Opaque Linux I2C handle for CRUMBS.
+     * Linux I2C handle for CRUMBS.
      *
-     * Implementation details are private to crumbs_i2c_linux.c.
-     * On Linux, this wraps a linux-wire lw_i2c_bus.
+     * On native Linux builds this contains a linux-wire lw_i2c_bus. On other
+     * platforms we provide a small placeholder so the type can be stack
+     * allocated in examples while remaining harmless for Arduino builds.
      */
-    typedef struct crumbs_linux_i2c_s crumbs_linux_i2c_t;
+#if defined(__linux__)
+#include <linux_wire.h>
+    typedef struct crumbs_linux_i2c_s
+    {
+        lw_i2c_bus bus;
+    } crumbs_linux_i2c_t;
+#else
+typedef struct crumbs_linux_i2c_s
+{
+    int _placeholder;
+} crumbs_linux_i2c_t;
+#endif
 
     /**
      * Initialize a CRUMBS context as a CONTROLLER on a Linux I2C bus.
@@ -88,6 +100,44 @@ extern "C"
                                   uint8_t target_addr,
                                   crumbs_context_t *ctx,
                                   crumbs_message_t *out_msg);
+
+    /**
+     * @brief Read up to @p len bytes from the specified address using linux-wire.
+     *
+     * @return number of bytes read (>=0) or negative on error.
+     */
+    int crumbs_linux_read(void *user_ctx,
+                          uint8_t addr,
+                          uint8_t *buffer,
+                          size_t len,
+                          uint32_t timeout_us);
+
+    /**
+     * Scan for I2C devices on the bus for addresses in [start_addr, end_addr]
+     *
+     * The scanner supports two modes:
+     *   - strict (strict != 0): attempt a small read from the address. This
+     *     performs a data-phase read which is stronger at detecting devices
+     *     that only respond to reads.
+     *   - non-strict (strict == 0): send an address probe (zero-length write)
+     *     to detect devices that ACK on address phase.
+     *
+     * @param user_ctx    (crumbs_linux_i2c_t*) I2C handle
+     * @param start_addr  start of address range (inclusive)
+     * @param end_addr    end of address range (inclusive)
+     * @param strict      non-zero = strict read probe, 0 = non-strict probe
+     * @param found       buffer to receive discovered addresses
+     * @param max_found   maximum number of entries the buffer can hold
+     *
+     * @return number of found addresses (>=0), or <0 on error (invalid args,
+     *         or platform not supported)
+     */
+    int crumbs_linux_scan(void *user_ctx,
+                          uint8_t start_addr,
+                          uint8_t end_addr,
+                          int strict,
+                          uint8_t *found,
+                          size_t max_found);
 
 #ifdef __cplusplus
 }

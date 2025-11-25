@@ -257,6 +257,75 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
     return 0;
 }
 
+int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
+                                      uint8_t start_addr,
+                                      uint8_t end_addr,
+                                      int strict,
+                                      crumbs_i2c_write_fn write_fn,
+                                      crumbs_i2c_read_fn read_fn,
+                                      void *io_ctx,
+                                      uint8_t *found,
+                                      size_t max_found,
+                                      uint32_t timeout_us)
+{
+    if (!ctx || !read_fn || !found || max_found == 0u)
+        return -1; /* invalid args */
+
+    if (start_addr > end_addr)
+        return -1;
+
+    uint8_t buf[CRUMBS_MESSAGE_SIZE];
+    size_t count = 0u;
+
+    for (int addr = start_addr; addr <= end_addr; ++addr)
+    {
+        /* Attempt a direct read first (many peripherals reply on request).
+           read_fn returns number of bytes read on success, negative on error. */
+        int n = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_SIZE, timeout_us);
+        if (n == (int)CRUMBS_MESSAGE_SIZE)
+        {
+            crumbs_message_t m;
+            if (crumbs_decode_message(buf, (size_t)n, &m, NULL) == 0)
+            {
+                if (count < max_found)
+                    found[count] = (uint8_t)addr;
+                ++count;
+                if (count >= max_found)
+                    break;
+                continue; /* next address */
+            }
+        }
+
+        /* In non-strict mode we try to stimulate a reply by sending a small
+           CRUMBS frame then attempting to read again. This helps with
+           peripherals that only respond after being written to. */
+        if (!strict && write_fn)
+        {
+            crumbs_message_t probe;
+            memset(&probe, 0, sizeof(probe));
+
+            /* Send a probe message; ignore any error from send. */
+            (void)crumbs_controller_send(ctx, (uint8_t)addr, &probe, write_fn, io_ctx);
+
+            int n2 = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_SIZE, timeout_us);
+            if (n2 == (int)CRUMBS_MESSAGE_SIZE)
+            {
+                crumbs_message_t m2;
+                if (crumbs_decode_message(buf, (size_t)n2, &m2, NULL) == 0)
+                {
+                    if (count < max_found)
+                        found[count] = (uint8_t)addr;
+                    ++count;
+                    if (count >= max_found)
+                        break;
+                }
+            }
+        }
+    }
+
+    return (int)count;
+}
+
 /* ---- CRC stats helpers ------------------------------------------------- */
 
 uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx)

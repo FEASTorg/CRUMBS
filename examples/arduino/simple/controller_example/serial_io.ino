@@ -104,6 +104,58 @@ void handleSerialInput()
             return; // Exit the function after handling the request command.
         }
 
+        // Allow user to run a CRUMBS-specific scan via "scan" or "scan strict"
+        if (input.startsWith("scan"))
+        {
+            bool strictMode = false;
+            if (input.indexOf("strict") >= 0)
+                strictMode = true;
+
+            Serial.print(F("Controller: Performing CRUMBS scan (strict="));
+            Serial.print(strictMode ? F("true") : F("false"));
+            Serial.println(F(")"));
+
+            uint8_t found[32];
+            int n = crumbs_controller_scan_for_crumbs(
+                &crumbsController,
+                0x03,
+                0x77,
+                strictMode ? 1 : 0,
+                crumbs_arduino_wire_write,
+                crumbs_arduino_read,
+                &Wire,
+                found,
+                sizeof(found),
+                50000 /* timeout_us */
+            );
+
+            if (n < 0)
+            {
+                Serial.print(F("Controller: scan failed ("));
+                Serial.print(n);
+                Serial.println(F(")"));
+            }
+            else if (n == 0)
+            {
+                Serial.println(F("Controller: no CRUMBS devices found"));
+            }
+            else
+            {
+                Serial.print(F("Controller: found "));
+                Serial.print(n);
+                Serial.println(F(" CRUMBS device(s):"));
+                for (int i = 0; i < n; ++i)
+                {
+                    Serial.print(F("  0x"));
+                    if (found[i] < 16)
+                        Serial.print(F("0"));
+                    Serial.println(found[i], HEX);
+                }
+            }
+
+            return;
+        }
+
         // Otherwise, assume the input is a comma-separated message.
         uint8_t targetAddress;
         crumbs_message_t message;

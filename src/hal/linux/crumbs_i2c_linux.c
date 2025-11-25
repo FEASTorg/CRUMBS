@@ -160,6 +160,101 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
     return rc; /* 0 on success, <0 on decode/CRC error */
 }
 
+int crumbs_linux_scan(void *user_ctx,
+                      uint8_t start_addr,
+                      uint8_t end_addr,
+                      int strict,
+                      uint8_t *found,
+                      size_t max_found)
+{
+    if (!user_ctx || !found || max_found == 0u)
+    {
+        return -1; /* invalid args */
+    }
+
+    crumbs_linux_i2c_t *i2c = (crumbs_linux_i2c_t *)user_ctx;
+    lw_i2c_bus *bus = &i2c->bus;
+    if (bus->fd < 0)
+    {
+        return -1; /* bus not open */
+    }
+
+    size_t count = 0u;
+    uint8_t dummy = 0u;
+
+    for (int addr = start_addr; addr <= end_addr; ++addr)
+    {
+        /* Select the slave address. If this fails, move on. */
+        if (lw_set_slave(bus, (uint8_t)addr) != 0)
+            continue;
+
+        if (strict)
+        {
+            /* Strict probe: attempt a small read and treat any positive
+               result as a present device. */
+            ssize_t r = lw_read(bus, &dummy, 1);
+            if (r > 0)
+            {
+                if (count < max_found)
+                    found[count] = (uint8_t)addr;
+                ++count;
+            }
+        }
+        else
+        {
+            /* Non-strict probe: perform a zero-length write (address-only)
+               which many adapters will ACK if a device responds to the
+               address phase. Treat any non-negative return as success. */
+            ssize_t w = lw_write(bus, NULL, 0, 1);
+            if (w >= 0)
+            {
+                if (count < max_found)
+                    found[count] = (uint8_t)addr;
+                ++count;
+            }
+        }
+
+        if (count >= max_found)
+            break;
+    }
+
+    return (int)count;
+}
+
+int crumbs_linux_read(void *user_ctx,
+                      uint8_t addr,
+                      uint8_t *buffer,
+                      size_t len,
+                      uint32_t timeout_us)
+{
+    if (!user_ctx || !buffer || len == 0u)
+        return -1;
+
+    crumbs_linux_i2c_t *i2c = (crumbs_linux_i2c_t *)user_ctx;
+    lw_i2c_bus *bus = &i2c->bus;
+    if (bus->fd < 0)
+        return -1;
+
+    if (timeout_us > 0u)
+        lw_set_timeout(bus, timeout_us);
+
+    if (lw_set_slave(bus, addr) != 0)
+        return -2;
+
+    size_t total = 0u;
+    while (total < len)
+    {
+        ssize_t r = lw_read(bus, buffer + total, len - total);
+        if (r < 0)
+            return -3;
+        if (r == 0)
+            break;
+        total += (size_t)r;
+    }
+
+    return (int)total;
+}
+
 #else /* non-Linux builds */
 
 /* Stubs for non-Linux builds (Arduino/embedded). They return errors so
@@ -206,6 +301,36 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
     (void)target_addr;
     (void)ctx;
     (void)out_msg;
+    return -1;
+}
+
+int crumbs_linux_scan(void *user_ctx,
+                      uint8_t start_addr,
+                      uint8_t end_addr,
+                      int strict,
+                      uint8_t *found,
+                      size_t max_found)
+{
+    (void)user_ctx;
+    (void)start_addr;
+    (void)end_addr;
+    (void)strict;
+    (void)found;
+    (void)max_found;
+    return -1; /* not supported on this platform */
+}
+
+int crumbs_linux_read(void *user_ctx,
+                      uint8_t addr,
+                      uint8_t *buffer,
+                      size_t len,
+                      uint32_t timeout_us)
+{
+    (void)user_ctx;
+    (void)addr;
+    (void)buffer;
+    (void)len;
+    (void)timeout_us;
     return -1;
 }
 

@@ -151,3 +151,83 @@ extern "C" int crumbs_arduino_wire_write(void *user_ctx,
     }
     return 0;
 }
+
+extern "C" int crumbs_arduino_scan(void *user_ctx,
+                                   uint8_t start_addr,
+                                   uint8_t end_addr,
+                                   int strict,
+                                   uint8_t *found,
+                                   size_t max_found)
+{
+    TwoWire *wire = &Wire;
+    if (user_ctx != nullptr)
+        wire = static_cast<TwoWire *>(user_ctx);
+
+    if (found == nullptr || max_found == 0)
+        return -1;
+
+    size_t count = 0;
+    for (int addr = start_addr; addr <= end_addr; ++addr)
+    {
+        wire->beginTransmission(static_cast<uint8_t>(addr));
+        if (strict)
+        {
+            // Write a single dummy byte to ensure data-phase ack
+            wire->write((uint8_t)0x00);
+        }
+        uint8_t err = wire->endTransmission();
+        if (err == 0)
+        {
+            if (count < max_found)
+                found[count] = (uint8_t)addr;
+            ++count;
+        }
+    }
+
+    return (int)count;
+}
+
+extern "C" int crumbs_arduino_read(void *user_ctx,
+                                   uint8_t addr,
+                                   uint8_t *buffer,
+                                   size_t len,
+                                   uint32_t timeout_us)
+{
+    TwoWire *wire = &Wire;
+    if (user_ctx != nullptr)
+        wire = static_cast<TwoWire *>(user_ctx);
+
+    if (!buffer || len == 0)
+        return -1;
+
+    // Request len bytes from the peripheral. Wire.requestFrom may block
+    // depending on the platform; use a timeout loop to be defensive.
+    int requested = (int)len;
+#if ARDUINO >= 100
+    size_t available = wire->requestFrom(static_cast<uint8_t>(addr), requested);
+#else
+    size_t available = wire->requestFrom(addr, requested);
+#endif
+
+    unsigned long start = micros();
+    size_t idx = 0;
+
+    while (idx < len)
+    {
+        if (wire->available())
+        {
+            buffer[idx++] = static_cast<uint8_t>(wire->read());
+            continue;
+        }
+
+        if (timeout_us == 0u)
+            break; /* no waiting */
+
+        if ((unsigned long)(micros() - start) >= timeout_us)
+            break; /* timed out */
+
+        delayMicroseconds(50);
+    }
+
+    return (int)idx; /* number of bytes read (may be less than requested) */
+}
