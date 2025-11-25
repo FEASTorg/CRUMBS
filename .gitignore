@@ -42,9 +42,3 @@
 
 # Distribution directory
 dist/
-
-# Custom directories
-ace_crc/
-comparison_*/
-output*/
-_reference/
