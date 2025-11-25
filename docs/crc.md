@@ -1,4 +1,6 @@
-# CRC Variant Selection for CRUMBS Protocol (ATmega328P Target)
+# CRC Variants
+
+CRC Variant Selection for CRUMBS Protocol (ATmega328P Target).
 
 | Variant        | Flash (bytes) | RAM (bytes) | Speed (μs/kiB) | Suitability                             |
 | -------------- | ------------- | ----------- | -------------- | --------------------------------------- |
