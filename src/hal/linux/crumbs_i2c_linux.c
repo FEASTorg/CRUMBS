@@ -1,9 +1,18 @@
+/* The Linux HAL relies on the linux-wire helper and is only intended to
+ * be compiled on native Linux builds. Arduino toolchains (and other
+ * embedded targets) compile everything under src/ by default, so we
+ * provide guarded implementations below to avoid build failures on
+ * non-Linux platforms.
+ */
+
 #include "crumbs_linux.h"
 
 #include <string.h> /* memset */
 #include <errno.h>
 
 #include "crumbs_crc.h" /* for CRUMBS_MESSAGE_SIZE, etc., via crumbs.h tree */
+
+#if defined(__linux__)
 
 #include <linux_wire.h> /* linux-wire C API */
 
@@ -150,3 +159,54 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
     int rc = crumbs_decode_message(buf, total, out_msg, ctx);
     return rc; /* 0 on success, <0 on decode/CRC error */
 }
+
+#else /* non-Linux builds */
+
+/* Stubs for non-Linux builds (Arduino/embedded). They return errors so
+ * callers on those platforms fail cleanly instead of triggering a compile
+ * or link-time error. This keeps the file present in the Arduino package
+ * without bringing a Linux-only dependency into Arduino builds.
+ */
+
+int crumbs_linux_init_controller(crumbs_context_t *ctx,
+                                 crumbs_linux_i2c_t *i2c,
+                                 const char *device_path,
+                                 uint32_t timeout_us)
+{
+    (void)ctx;
+    (void)i2c;
+    (void)device_path;
+    (void)timeout_us;
+    return -1; /* not supported on this platform */
+}
+
+void crumbs_linux_close(crumbs_linux_i2c_t *i2c)
+{
+    (void)i2c;
+}
+
+int crumbs_linux_i2c_write(void *user_ctx,
+                           uint8_t target_addr,
+                           const uint8_t *data,
+                           size_t len)
+{
+    (void)user_ctx;
+    (void)target_addr;
+    (void)data;
+    (void)len;
+    return -1;
+}
+
+int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
+                              uint8_t target_addr,
+                              crumbs_context_t *ctx,
+                              crumbs_message_t *out_msg)
+{
+    (void)i2c;
+    (void)target_addr;
+    (void)ctx;
+    (void)out_msg;
+    return -1;
+}
+
+#endif /* defined(__linux__) */
