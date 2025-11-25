@@ -12,7 +12,7 @@
  *
  * Usage: Upload to your microcontroller and run the scanner (Arduino serial
  * `scan` or Linux `scan`) — this peripheral intentionally does NOT implement
- * the CRUMBS protocol.
+ * the CRUMBS protocol. Used to test the crumbs device auto-scanner.
  */
 
 #include <Arduino.h>
