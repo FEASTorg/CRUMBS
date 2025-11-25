@@ -31,5 +31,6 @@ peripheral.onReceive(handleMessage);
 | [API Reference](api-reference.md)     | Class and method documentation |
 | [Protocol](protocol.md)               | Message format specification   |
 | [Examples](examples.md)               | Code examples and patterns     |
+| [Linux HAL](linux.md)                 | Linux build & example notes    |
 
-**Version**: 1.0.0 | **Author**: Cameron | **Dependencies**: Wire library, AceCRC
+**Version**: 1.0.0 | **Author**: Cameron | **Dependencies**: Wire library (Arduino) — CRC code is included in-tree (no AceCRC runtime required)

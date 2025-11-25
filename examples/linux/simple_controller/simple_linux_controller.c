@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 #include "crumbs.h"
-#include "crumbs_linux.h" // The Linux HAL you just created
+#include "crumbs_linux.h"
 
-// Address of your slice peripheral (match your Arduino example)
-#define SLICE_ADDR 0x08
+// Default address of slice peripheral
+#define DEFAULT_SLICE_ADDR 0x08
 
 int main(void)
 {
@@ -17,9 +17,26 @@ int main(void)
     crumbs_linux_i2c_t lw;
 
     //----------------------------------------------------------------------
-    // Initialize the controller on /dev/i2c-1
+    // Parse optional arguments: device path, slice address
+    // Usage: ./crumbs_simple_linux_controller [i2c-device] [slice-addr]
+    // Example: ./crumbs_simple_linux_controller /dev/i2c-1 0x08
     //----------------------------------------------------------------------
-    int rc = crumbs_linux_init_controller(&ctx, &lw, "/dev/i2c-1", 25000);
+    const char *device_path = "/dev/i2c-1";
+    uint8_t slice_addr = DEFAULT_SLICE_ADDR;
+
+    if (argc >= 2 && argv[1] && argv[1][0] != '\0')
+    {
+        device_path = argv[1];
+    }
+    if (argc >= 3 && argv[2])
+    {
+        unsigned long val = strtoul(argv[2], NULL, 0);
+        if (val <= 0x7F)
+            slice_addr = (uint8_t)val;
+    }
+
+    // Initialize the controller
+    int rc = crumbs_linux_init_controller(&ctx, &lw, device_path, 25000);
     if (rc != 0)
     {
         fprintf(stderr, "ERROR: crumbs_linux_init_controller failed (%d)\n", rc);
@@ -47,11 +64,11 @@ int main(void)
     //----------------------------------------------------------------------
     // Send message to slice
     //----------------------------------------------------------------------
-    printf("Sending message to slice (0x%02X)...\n", SLICE_ADDR);
+    printf("Sending message to slice (0x%02X) via %s...\n", slice_addr, device_path);
 
     rc = crumbs_controller_send(
         &ctx,
-        SLICE_ADDR,
+        slice_addr,
         &msg,
         crumbs_linux_i2c_write, // Linux HAL write adapter
         &lw                     // Linux I2C context
@@ -72,7 +89,7 @@ int main(void)
     printf("Requesting reply from slice...\n");
 
     crumbs_message_t reply;
-    rc = crumbs_linux_read_message(&lw, SLICE_ADDR, &ctx, &reply);
+    rc = crumbs_linux_read_message(&lw, slice_addr, &ctx, &reply);
 
     if (rc != 0)
     {
