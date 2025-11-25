@@ -2,13 +2,13 @@
 
 ## Controller Example
 
-Send commands via serial interface and request data from peripherals.
+Send commands via serial interface and request data from peripherals. The examples in `examples/arduino` show both controller and peripheral sketches using the C core API (see `crumbs_arduino.h`).
 
 ### Usage
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
-3. Send: `address,typeID,commandType,data0,data1,data2,data3,data4,data5,data6`
+3. Send: `address,type_id,command_type,data0,data1,data2,data3,data4,data5,data6`
 4. Request: `request=address`
 
 ### Example Commands
@@ -20,33 +20,32 @@ request=8                                 // Request data from address 8
 
 ## Peripheral Example
 
-Respond to controller commands and data requests.
+Respond to controller commands and data requests. The C core uses callbacks with signatures `on_message(ctx, const crumbs_message_t*)` and `on_request(ctx, crumbs_message_t*)`.
 
-### Key Code Patterns
+### Key Code Patterns (C API — Arduino HAL)
 
 ```cpp
-void handleMessage(CRUMBSMessage &message) {
-    switch (message.commandType) {
-        case 0: // Data request
+// Message callback from the core
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
+    switch (m->command_type) {
+        case 0: // Data request (handled in on_request instead)
             break;
         case 1: // Set parameters
+            // read floats from m->data[] and apply
             break;
     }
 }
 
-void handleRequest() {
-    CRUMBSMessage response = {};
-    response.data[0] = 42.0f;
-
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t size = peripheral.encodeMessage(response, buffer, sizeof(buffer));
-    Wire.write(buffer, size);
+// Build reply for onRequest — the framework will encode and Wire.write the result
+void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
+    reply->type_id = 1;
+    reply->command_type = 0;
+    reply->data[0] = 42.0f;
 }
 
 void setup() {
-    peripheral.begin();
-    peripheral.onReceive(handleMessage);
-    peripheral.onRequest(handleRequest);
+    crumbs_arduino_init_peripheral(&ctx, 0x08);
+    crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
 }
 ```
 
@@ -57,30 +56,20 @@ void setup() {
 ```cpp
 uint8_t addresses[] = {0x08, 0x09, 0x0A};
 for (int i = 0; i < 3; i++) {
-    controller.sendMessage(msg, addresses[i]);
+    crumbs_controller_send(&ctx, addresses[i], &msg, crumbs_arduino_wire_write, NULL);
     delay(10);
 }
 ```
 
 ### Data Requests
 
-```cpp
-Wire.requestFrom(address, CRUMBS_MESSAGE_SIZE);
-delay(50);
-CRUMBSMessage response;
-if (!controller.receiveMessage(response)) {
-    Serial.println("Failed to read response frame");
-}
-```
+On Arduino, use `Wire.requestFrom()` and the core API helper to decode; e.g. read bytes and call `crumbs_decode_message()`.
+
+On Linux, the HAL helper `crumbs_linux_read_message()` wraps the low-level reads and decoding for you.
 
 ### CRC Validation
 
-```cpp
-if (!crumbsController.decodeMessage(buffer, bytesRead, response)) {
-    Serial.println("CRC mismatch or malformed frame");
-    return;
-}
-```
+Use `crumbs_decode_message(buffer, bytesRead, &out, ctx)` which returns 0 on success, -1 if too small and -2 on CRC mismatch.
 
 ### I2C Scanning
 

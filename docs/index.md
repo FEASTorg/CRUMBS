@@ -4,14 +4,16 @@ Arduino I2C communication library for controller/peripheral messaging with fixed
 
 ## Quick Start
 
-```cpp
-// Controller
-CRUMBS controller(true);
-controller.sendMessage(message, address);
+```c
+// Controller (Arduino HAL)
+#include <crumbs_arduino.h>
+crumbs_context_t ctx;
+crumbs_arduino_init_controller(&ctx);
 
-// Peripheral
-CRUMBS peripheral(false, 0x08);
-peripheral.onReceive(handleMessage);
+// Peripheral (Arduino HAL)
+// attach callbacks and initialise the peripheral
+crumbs_context_t pctx;
+crumbs_arduino_init_peripheral(&pctx, 0x08);
 ```
 
 ## Features
@@ -28,7 +30,7 @@ peripheral.onReceive(handleMessage);
 | File                                  | Description                    |
 | ------------------------------------- | ------------------------------ |
 | [Getting Started](getting-started.md) | Installation and basic usage   |
-| [API Reference](api-reference.md)     | Class and method documentation |
+| [API Reference](api-reference.md)     | Core C API and platform HAL docs |
 | [Protocol](protocol.md)               | Message format specification   |
 | [Examples](examples.md)               | Code examples and patterns     |
 | [Linux HAL](linux.md)                 | Linux build & example notes    |

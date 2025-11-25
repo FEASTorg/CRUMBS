@@ -31,14 +31,13 @@ cmake --build . --parallel
 sudo ./crumbs_simple_linux_controller
 ```
 
-
 Notes & troubleshooting
 
 - linux-wire availability: run the linux-wire install guide or use `-DCMAKE_PREFIX_PATH` to point CMake at a local linux-wire build (developer workflow). See `docs/linux-wire-install.md` for details.
 
 - Device permissions: accessing `/dev/i2c-X` usually requires root or membership in the `i2c` group. You can either add your user to that group, configure a udev rule to adjust the node permissions, or run the example with `sudo`.
 
-- I²C driver: confirm the kernel exports /dev/i2c-* devices (e.g. `modprobe i2c_dev`), and that the bus number matches what you pass to the example.
+- I²C driver: confirm the kernel exports /dev/i2c-\* devices (e.g. `modprobe i2c_dev`), and that the bus number matches what you pass to the example.
 
 - Example device/address: the Linux example accepts an optional device path and target address on the command line. For example:
 
