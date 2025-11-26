@@ -14,16 +14,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            git \
+            pkg-config \
+            libi2c-dev \
+            libudev-dev
 
-      - name: Configure CMake
-        run: cmake -S . -B build -DCRUMBS_ENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build and install linux-wire
+        run: |
+          git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
+          cmake -S third_party/linux-wire -B third_party/linux-wire/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/third_party/linux-wire/install
+          cmake --build third_party/linux-wire/build --parallel
+          cmake --install third_party/linux-wire/build
 
-      - name: Build
-        run: cmake --build build --config Release -- -j 2
+      - name: Configure CRUMBS
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCRUMBS_ENABLE_TESTS=ON \
+            -DCRUMBS_ENABLE_LINUX_HAL=ON \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
 
-      - name: Run tests
+      - name: Build CRUMBS
+        run: cmake --build build --parallel
+
+      - name: Run CRUMBS tests
         run: ctest --test-dir build --output-on-failure

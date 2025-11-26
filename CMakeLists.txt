@@ -115,7 +115,15 @@ if(CRUMBS_ENABLE_TESTS)
     )
 
     add_test(NAME encode_decode_test COMMAND test_encode_decode)
+    add_executable(test_crc_failure
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_crc_failure.c
+    )
+
+    target_link_libraries(test_crc_failure
+        PRIVATE crumbs
+    )
     add_test(NAME scan_fake_test COMMAND test_scan_fake)
+    add_test(NAME crc_failure_test COMMAND test_crc_failure)
 endif()
 
 # ---------------------------------------------------------------------------
