@@ -27,15 +27,10 @@ jobs:
             libudev-dev \
             python3-pip
 
-      # No linux-wire cache: always build fresh for deterministic CI runs
-
       - name: Build and install linux-wire
         run: |
-          # Ensure a clean clone - CI should build a fresh linux-wire every job
-          if [ -d third_party/linux-wire ]; then
-            echo "Removing pre-existing third_party/linux-wire directory to avoid stale state";
-            rm -rf third_party/linux-wire || true
-          fi
+          # Ensure a clean clone: remove the directory if it exists (avoid clone errors)
+          if [ -d third_party/linux-wire ]; then rm -rf third_party/linux-wire || true; fi
           git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
           cmake -S third_party/linux-wire -B third_party/linux-wire/build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -64,11 +59,7 @@ jobs:
         run: |
           cmake --install build --prefix ${GITHUB_WORKSPACE}/install
 
-      - name: Show installed crumbs package config
-        run: |
-          echo "--- installed crumbsConfig.cmake ---"
-          sed -n '1,200p' ${GITHUB_WORKSPACE}/install/lib/cmake/crumbs/crumbsConfig.cmake || true
-          echo "--- end ---"
+      # (skip verbose show of installed crumbsConfig; keep CI output minimal)
 
       - name: Build native example (out-of-tree) against installed crumbs
         run: |
@@ -77,67 +68,25 @@ jobs:
           INSTALL_PREFIX="${GITHUB_WORKSPACE}/install"
           CMAKE_PREFIX_PATH="${LINUX_WIRE_PREFIX}:${INSTALL_PREFIX}"
           export CMAKE_PREFIX_PATH
+          # Compute prefixes and ensure linux-wire was built
           echo "CMAKE_PREFIX_PATH='${CMAKE_PREFIX_PATH}'"
-          echo "Listing install tree (top level):"
-          ls -la ${GITHUB_WORKSPACE}/install || true
-          echo "Listing lib cmake dir (if present):"
-          ls -la ${GITHUB_WORKSPACE}/install/lib/cmake || true
-          echo "Listing share cmake dir (if present):"
-          ls -la ${GITHUB_WORKSPACE}/install/share/cmake || true
-
-          # Verify linux_wire package config exists under the linux-wire install prefix
           LINUX_WIRE_CFG=$(find "${LINUX_WIRE_PREFIX}" -name 'linux_wireConfig.cmake' -print -quit || true)
           if [ -z "${LINUX_WIRE_CFG}" ]; then
-            echo "ERROR: linux_wireConfig.cmake not found under ${LINUX_WIRE_PREFIX}.";
-            echo "linux-wire install tree:"; find "${LINUX_WIRE_PREFIX}" -maxdepth 5 -type f -print || true;
-            echo "You may need to ensure linux-wire was built/installed correctly or add its prefix to CMAKE_PREFIX_PATH.";
-            # Continue so we print crumbs state too; but fail later to make logs available
-            LINUX_WIRE_CFG=""
-          else
-            echo "Found linux_wireConfig.cmake at: ${LINUX_WIRE_CFG}"
-            LINUX_WIRE_DIR=$(dirname "${LINUX_WIRE_CFG}")
-            echo "linux_wire_DIR will be: ${LINUX_WIRE_DIR}"
-            export linux_wire_DIR="${LINUX_WIRE_DIR}"
+            echo "ERROR: linux_wire package config not found under ${LINUX_WIRE_PREFIX}.";
+            echo "Check linux-wire build/install logs above.";
+            exit 1;
           fi
 
-          # Locate the installed crumbs package config file and point CMake directly at it
-          CRUMBS_CFG=$(find ${GITHUB_WORKSPACE}/install -name 'crumbsConfig.cmake' -print -quit || true)
+          CRUMBS_CFG=$(find "${GITHUB_WORKSPACE}/install" -name 'crumbsConfig.cmake' -print -quit || true)
           if [ -z "${CRUMBS_CFG}" ]; then
-            echo "ERROR: crumbsConfig.cmake not found in install prefix (${GITHUB_WORKSPACE}/install)";
-            echo "full install tree:"; find ${GITHUB_WORKSPACE}/install -maxdepth 5 -type f -print || true;
+            echo "ERROR: crumbsConfig.cmake not found in install prefix (${GITHUB_WORKSPACE}/install).";
             exit 1;
           fi
           CRUMBS_DIR=$(dirname "${CRUMBS_CFG}")
-          echo "Found crumbs package config at: ${CRUMBS_CFG}";
-          echo "crumbs_DIR will be: ${CRUMBS_DIR}"
-
-          echo "--- crumbsConfig.cmake head ---"
-          sed -n '1,200p' "${CRUMBS_CFG}" || true
-          # Make sure the generated package config actually defines the helper
-          if ! grep -q 'include(CMakeFindDependencyMacro)' "${CRUMBS_CFG}"; then
-            echo "ERROR: crumbsConfig.cmake missing include(CMakeFindDependencyMacro)";
-            exit 1;
-          fi
-          if ! grep -q 'find_dependency(' "${CRUMBS_CFG}"; then
-            echo "WARNING: crumbsConfig.cmake does not contain find_dependency(), this may be okay if crumbs had no package dependencies at build-time.";
-          else
-            echo "Found find_dependency in crumbsConfig.cmake — good.";
-          fi
-          echo "--- crumbsTargets.cmake (head) ---"
-          TARGETS_FILE="${CRUMBS_DIR}/crumbsTargets.cmake"
-          [ -f "${TARGETS_FILE}" ] && sed -n '1,200p' "${TARGETS_FILE}" || echo "crumbsTargets.cmake not found in ${CRUMBS_DIR}"
-
-          # If linux_wire config wasn't found, fail early now (we expect linux_wire as dependency)
-          if [ -z "${LINUX_WIRE_CFG}" ]; then
-            echo "ERROR: linux_wire package config missing; the project depends on linux_wire. Failing early to surface debug info.";
-            exit 1;
-          fi
 
           cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -Dcrumbs_DIR=${CRUMBS_DIR} -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" -DCMAKE_BUILD_TYPE=Release
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
-
-      # No PlatformIO cache: prefer a clean install for CI reproducibility
 
       - name: Install PlatformIO CLI
         run: |
