@@ -1,4 +1,4 @@
-# PlatformIO library publishing (short guide)
+# PlatformIO Publishing
 
 This project includes a PlatformIO library manifest (`library.json`) and PlatformIO examples. Follow the quick steps below to publish and maintain the package on the PlatformIO Registry so the `examples/platformio/*` builds work in CI and for downstream users.
 
@@ -9,20 +9,19 @@ This project includes a PlatformIO library manifest (`library.json`) and Platfor
 
 ## Publish to PlatformIO Registry (CLI)
 
-1. Install PlatformIO CLI (if you don't have it):
+1. Install PlatformIO CLI:
 
    pip install -U platformio
 
 2. (Optional) Create or log in to your PlatformIO account.
 
-   Either log in from the GUI, or
-   From the CLI using: pio account login
+   pio account login
 
 3. Publish from your repo checkout (user must have permission):
 
    pio pkg publish
 
-   Notes:
+   **Notes**:
 
    - PlatformIO uses `library.json` as the manifest. The CLI will guide you for required fields.
    - Every time the library source changes you should increment the `version` in `library.json` and re-run `pio pkg publish`.
@@ -34,7 +33,7 @@ This project includes a PlatformIO library manifest (`library.json`) and Platfor
 ## Keeping the registry package up to date
 
 - Bump the `version` field in `library.json` for every published release.
-- Optionally tag your release (e.g., `git tag v0.6.2` and push tags). This helps users and CI track versions.
+- Optionally tag your release (e.g., `git tag v0.6.3` and push tags). This helps users and CI track versions.
 - Consider adding automated CI release steps (for example a GitHub Actions workflow) that call `pio pkg publish` when a new release tag is pushed. That requires storing a PlatformIO token/credentials in GitHub secrets.
 
 ## Local development & CI fallback
