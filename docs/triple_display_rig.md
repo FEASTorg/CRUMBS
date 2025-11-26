@@ -1,6 +1,6 @@
-# Triple Messages Example
+# Triple Display Rig
 
-Minimal three-board demo for CRUMBS: `controller_example` issues SEND/REQUEST commands, while each `peripheral_example` slice drives three LEDs and reports its state.
+Minimal three-board demo for CRUMBS: `display_controller_example` issues SEND/REQUEST commands, while each `display_peripheral_example` slice drives three LEDs and reports its state.
 
 ## Rig at a Glance
 

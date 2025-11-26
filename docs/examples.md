@@ -106,3 +106,20 @@ find_package(crumbs CONFIG REQUIRED)
 add_executable(myprog main.c)
 target_link_libraries(myprog PRIVATE crumbs::crumbs)
 ```
+
+## PlatformIO examples (Arduino Nano)
+
+There are two small PlatformIO examples that target the Arduino Nano:
+
+- `examples/platformio/controller` — controller sketch that reads serial CSV commands (addr,type_id,command_type,data...) and sends them to a peripheral.
+- `examples/platformio/peripheral` — peripheral sketch (address 0x08) that prints received commands to Serial and returns a sample reply for requests.
+
+Build with PlatformIO CLI inside the example directories:
+
+```bash
+cd examples/platformio/controller
+pio run -e nanoatmega328
+
+cd ../peripheral
+pio run -e nanoatmega328
+```

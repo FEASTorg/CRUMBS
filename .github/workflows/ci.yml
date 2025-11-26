@@ -24,7 +24,8 @@ jobs:
             git \
             pkg-config \
             libi2c-dev \
-            libudev-dev
+            libudev-dev \
+            python3-pip
 
       - name: Build and install linux-wire
         run: |
@@ -51,3 +52,30 @@ jobs:
 
       - name: Run CRUMBS tests
         run: ctest --test-dir build --output-on-failure
+
+      - name: Install CRUMBS locally for out-of-tree example test
+        run: |
+          cmake --install build --prefix ${GITHUB_WORKSPACE}/install
+
+      - name: Build native example (out-of-tree) against installed crumbs
+        run: |
+          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --parallel
+          ./build-native/crumbs_native_example
+
+      - name: Install PlatformIO CLI
+        run: |
+          python3 -m pip install -U pip
+          python3 -m pip install -U platformio
+
+      - name: Build PlatformIO controller example (Nano)
+        run: |
+          pushd examples/platformio/controller
+          pio run -e nanoatmega328
+          popd
+
+      - name: Build PlatformIO peripheral example (Nano)
+        run: |
+          pushd examples/platformio/peripheral
+          pio run -e nanoatmega328
+          popd
