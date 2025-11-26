@@ -11,6 +11,7 @@ project(CRUMBS
 
 option(CRUMBS_ENABLE_LINUX_HAL "Enable Linux I2C HAL (requires linux-wire)" ON)
 option(CRUMBS_BUILD_EXAMPLES   "Build Linux example programs"               ON)
+option(CRUMBS_ENABLE_TESTS "Build and run the lightweight C tests" ON)
 
 # ---------------------------------------------------------------------------
 # Global C settings
@@ -91,6 +92,30 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
+endif()
+
+if(CRUMBS_ENABLE_TESTS)
+    # Add a tiny test suite that does not require linux-wire or hardware.
+    enable_testing()
+
+    add_executable(test_encode_decode
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_encode_decode.c
+    )
+
+    target_link_libraries(test_encode_decode
+        PRIVATE crumbs
+    )
+
+    add_executable(test_scan_fake
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_scan_fake.c
+    )
+
+    target_link_libraries(test_scan_fake
+        PRIVATE crumbs
+    )
+
+    add_test(NAME encode_decode_test COMMAND test_encode_decode)
+    add_test(NAME scan_fake_test COMMAND test_scan_fake)
 endif()
 
 # ---------------------------------------------------------------------------
