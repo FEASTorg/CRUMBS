@@ -1,6 +1,13 @@
 # CRUMBS
 
-CRUMBS (Communications Router and Unified Message Broker System) is an Arduino library for I2C communication between a controller and multiple peripheral devices. It provides standardized 31-byte messaging with automatic serialization and CRC validation for modular systems.
+[![CI](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml/badge.svg)](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](./LICENSE)
+[![Language](https://img.shields.io/badge/language-C%20%7C%20C%2B%2B-00599C)](./)
+[![CMake](https://img.shields.io/badge/build-CMake-064F8C)](./)
+[![Arduino](https://img.shields.io/badge/platform-Arduino-00979D.svg)](docs/getting-started.md)
+[![Linux](https://img.shields.io/badge/platform-Linux-FCC624.svg)](docs/getting-started.md)
+
+CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
 ## Features
 
@@ -10,24 +17,33 @@ CRUMBS (Communications Router and Unified Message Broker System) is an Arduino l
 - **Built-in Serialization**: Automatic encoding/decoding of message structures
 - **CRC-8 Protection**: Integrity check on every message
 - **Debug Support**: Optional debug output for development and troubleshooting
+- **CRUMBS-aware discovery**: Core scanner helper and HAL read adapters to discover devices that actually speak the CRUMBS protocol
 
-## Quick Start
+## Quick Start (Arduino — C API)
 
-```cpp
-#include <CRUMBS.h>
+```c
+#include <crumbs_arduino.h>
 
-// Controller
-CRUMBS controller(true);
-CRUMBSMessage msg = {0, 1, 1, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f}, 0};
-controller.sendMessage(msg, 0x08);
+crumbs_context_t controller_ctx;
+crumbs_arduino_init_controller(&controller_ctx);
+
+crumbs_message_t m = {};
+m.type_id = 1;
+m.command_type = 1;
+m.data[0] = 1.0f;
+
+crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```
 
 ## Installation
 
 1. Download or clone this repository
 2. Place the CRUMBS folder in your Arduino `libraries` directory
-3. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
-4. Include in your sketch: `#include <CRUMBS.h>`
+3. No external CRC runtime dependency required — generated CRC implementations are included under `src/crc`.
+
+The CRC code is generated with `pycrc` using the generator scripts in `scripts/` (see `scripts/generate_crc8_*`). The generator approach is inspired by AceCRC, but CRUMBS ships its own local API and does not require AceCRC at runtime.
+
+1. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
 
 ## Hardware Requirements
 
@@ -40,16 +56,16 @@ controller.sendMessage(msg, 0x08);
 Documentation is available in the [docs](docs/) directory:
 
 - [Getting Started](docs/getting-started.md) - Installation and basic usage
-- [API Reference](docs/api-reference.md) - Class documentation
+- [API Reference](docs/api-reference.md) - Core C API and platform HALs
 - [Protocol Specification](docs/protocol.md) - Message format details
 - [Examples](docs/examples.md) - Code examples and patterns
 
 ## Examples
 
-The library includes working examples to get you started:
+Working examples for both Arduino and Linux are provided under `examples/`:
 
-- **Controller Example**: Serial interface for sending commands and requesting data
-- **Peripheral Example**: Message handling and response generation
+- `examples/arduino` — controller and peripheral sketches using the C API and `crumbs_arduino.h`
+- `examples/linux` — native controller example using the Linux HAL
 
 ## License
 

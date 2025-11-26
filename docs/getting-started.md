@@ -2,56 +2,60 @@
 
 ## Installation
 
-1. Download the CRUMBS library
-2. Place in Arduino `libraries` folder
-3. Include: `#include <CRUMBS.h>`
-4. Install the [AceCRC](https://github.com/bxparks/AceCRC) library (Arduino Library Manager)
+1. Download or clone the CRUMBS repository.
+2. Place the folder in your Arduino `libraries` directory (or use the platform's library manager).
+3. Include the headers your target requires:
+
+- Arduino sketches: `#include <crumbs_arduino.h>` (this pulls in `crumbs.h`)
+  -- Linux projects: `#include "crumbs.h"` and `#include "crumbs_linux.h"` as needed
+
+1. No external dependencies required.
 
 ## Basic Usage
 
-### Controller
+### Controller (Arduino — C API)
 
 ```cpp
-#include <CRUMBS.h>
+#include <crumbs_arduino.h>
 
-CRUMBS controller(true);
+crumbs_context_t ctx;
 
 void setup() {
-    controller.begin();
+    // Initialize the Arduino HAL for controller mode
+    crumbs_arduino_init_controller(&ctx);
 
-    CRUMBSMessage msg = {};
-    msg.typeID = 1;
-    msg.commandType = 1;
-    msg.data[0] = 25.5;
+    crumbs_message_t m = {};
+    m.type_id = 1;
+    m.command_type = 1;
+    m.data[0] = 25.5f;
 
-    controller.sendMessage(msg, 0x08);
+    // Send to target address 0x08 using the Wire HAL via crumbs_controller_send
+    crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 }
 ```
 
-### Peripheral
+### Peripheral (Arduino — C API)
 
 ```cpp
-#include <CRUMBS.h>
+#include <crumbs_arduino.h>
 
-CRUMBS peripheral(false, 0x08);
+crumbs_context_t ctx;
 
-void onMessage(CRUMBSMessage &msg) {
-    // Process received message
+// Message receive callback
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
+    // process the message (peek m->data[] etc.)
 }
 
-void onRequest() {
-    CRUMBSMessage response = {};
-    response.data[0] = 42.0;
-
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
-    size_t size = peripheral.encodeMessage(response, buffer, sizeof(buffer));
-    Wire.write(buffer, size);
+// Request callback — fill reply message
+void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
+    reply->type_id = 1;
+    reply->command_type = 0;
+    reply->data[0] = 42.0f;
 }
 
 void setup() {
-    peripheral.begin();
-    peripheral.onReceive(onMessage);
-    peripheral.onRequest(onRequest);
+    crumbs_arduino_init_peripheral(&ctx, 0x08);
+    crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
 }
 ```
 
@@ -72,3 +76,22 @@ Common issues:
 - **No response**: Check wiring, addresses, pull-ups
 - **Data corruption**: Verify timing, use delays between operations
 - **Address conflicts**: Use I2C scanner to verify addresses
+
+### Scanning for CRUMBS devices
+
+The HALs expose a generic I²C scanner (address ACK probing) and the CRUMBS core provides a CRUMBS-aware scanner that attempts to read and decode a CRUMBS frame from each address. Use the CRUMBS scanner when you want to discover devices that actually speak the CRUMBS protocol.
+
+Arduino example (Serial):
+
+```cpp
+// Use crumbs_controller_scan_for_crumbs from the core
+uint8_t found[32];
+int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, &Wire, found, sizeof(found), 50000);
+```
+
+Linux example (CLI):
+
+```bash
+// Run the provided example binary with 'scan' or 'scan strict'
+./crumbs_simple_linux_controller scan
+```

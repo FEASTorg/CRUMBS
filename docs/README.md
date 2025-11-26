@@ -1,5 +1,5 @@
 # CRUMBS Documentation
 
-CRUMBS is an Arduino library for I2C communication between a controller and multiple peripheral devices in a modular system. It provides standardized 27-byte messaging with automatic serialization.
+CRUMBS is a C99-based protocol library with thin platform HALs (Arduino, Linux). It provides standardized 31-byte messaging with automatic serialization and CRC-8 validation.
 
 For complete documentation, see [index.md](index.md).

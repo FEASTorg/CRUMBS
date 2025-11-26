@@ -1,65 +1,97 @@
-# API Reference
+# API Reference (C core + platform HALs)
 
-## CRUMBS Class
+This section documents the public C API exposed by the CRUMBS core and the platform HALs (Arduino and Linux).
 
-### Constructor
+The core is intentionally C-friendly and small so it is easy to reuse in both Arduino and native Linux code.
 
-```cpp
-CRUMBS(bool isController = false, uint8_t address = 0);
+## Key types and constants
+
+- `crumbs_message_t` — fixed-size message struct (see `src/crumbs_message.h`). Fields include `slice_address`, `type_id`, `command_type`, `data[7]`, `crc8`.
+- `crumbs_context_t` — per-endpoint context used by the core (role, address, CRC stats, callbacks).
+- `CRUMBS_DATA_LENGTH` — number of float payload elements (7).
+- `CRUMBS_MESSAGE_SIZE` — serialized frame size in bytes (31).
+
+**Serialized frame**: 31 bytes (type_id + command_type + data + crc8)
+
+## Core API (selected)
+
+```c
+/* Initialize a context */
+void crumbs_init(crumbs_context_t *ctx, crumbs_role_t role, uint8_t address);
+
+/* Install callbacks */
+void crumbs_set_callbacks(crumbs_context_t *ctx,
+                          crumbs_message_cb_t on_message,
+                          crumbs_request_cb_t on_request,
+                          void *user_data);
+
+/* Encoding/decoding */
+size_t crumbs_encode_message(const crumbs_message_t *msg, uint8_t *buffer, size_t buffer_len);
+int crumbs_decode_message(const uint8_t *buffer, size_t buffer_len, crumbs_message_t *msg, crumbs_context_t *ctx);
+
+/* Controller send adapter */
+int crumbs_controller_send(const crumbs_context_t *ctx,
+                           uint8_t target_addr,
+                           const crumbs_message_t *msg,
+                           crumbs_i2c_write_fn write_fn,
+                           void *write_ctx);
+
+/* Peripheral helpers */
+int crumbs_peripheral_handle_receive(crumbs_context_t *ctx, const uint8_t *buffer, size_t len);
+int crumbs_peripheral_build_reply(crumbs_context_t *ctx, uint8_t *out_buf, size_t out_buf_len, size_t *out_len);
+
+/* CRC stats */
+uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx);
+int crumbs_last_crc_ok(const crumbs_context_t *ctx);
+void crumbs_reset_crc_stats(crumbs_context_t *ctx);
 ```
 
-- `isController`: `true` for controller, `false` for peripheral
-- `address`: I2C address for peripheral mode (ignored for controller)
+## Arduino HAL (high level)
 
-### Methods
+```c
+/* Initialize controller/peripheral using default Wire instance */
+void crumbs_arduino_init_controller(crumbs_context_t *ctx);
+void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t address);
 
-```cpp
-void begin();                                           // Initialize I2C
-void sendMessage(const CRUMBSMessage &msg, uint8_t addr);  // Send message
-bool receiveMessage(CRUMBSMessage &msg);                // Receive message (returns success)
-void onReceive(void (*callback)(CRUMBSMessage &));      // Set receive callback
-void onRequest(void (*callback)());                     // Set request callback
-uint8_t getAddress() const;                             // Get device address
-
-// Encoding/Decoding
-size_t encodeMessage(const CRUMBSMessage &msg, uint8_t *buffer, size_t size);
-bool decodeMessage(const uint8_t *buffer, size_t size, CRUMBSMessage &msg);
+/* Wire-based write function for crumbs_controller_send */
+int crumbs_arduino_wire_write(void *user_ctx, uint8_t addr, const uint8_t *data, size_t len);
 ```
 
-## CRUMBSMessage Structure
+## Linux HAL (selected)
 
-```cpp
-struct CRUMBSMessage {
-    uint8_t sliceAddress;  // Target identifier (not serialized)
-    uint8_t typeID;        // Module type (sensor=1, motor=2, etc.)
-    uint8_t commandType;   // Command (read=0, set=1, etc.)
-    float data[CRUMBS_DATA_LENGTH];  // Payload data (7 floats = 28 bytes)
-    uint8_t crc8;          // CRC-8 checksum over serialized payload
-};
+```c
+int crumbs_linux_init_controller(crumbs_context_t *ctx,
+                                 crumbs_linux_i2c_t *i2c,
+                                 const char *device_path,
+                                 uint32_t timeout_us);
+void crumbs_linux_close(crumbs_linux_i2c_t *i2c);
+int crumbs_linux_i2c_write(void *user_ctx, uint8_t target_addr, const uint8_t *data, size_t len);
+int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c, uint8_t target_addr, crumbs_context_t *ctx, crumbs_message_t *out_msg);
 ```
 
-**Serialized frame**: 31 bytes (typeID + commandType + data + crc8)
+Note: Most functions return `0` on success and negative or non-zero codes on error — consult the headers for specific return values.
 
-## Constants
+## Scanner & read primitive
 
-```cpp
-#define CRUMBS_DATA_LENGTH 7       // Number of float data elements
-#define CRUMBS_MESSAGE_SIZE 31     // Serialized frame size
-#define TWI_CLOCK_FREQ 100000      // I2C clock frequency (100kHz)
+The core provides a CRUMBS-aware scanner which attempts to read a full CRUMBS frame from candidate addresses and accepts only CRC-valid frames. This lets controllers reliably discover devices that actually run the CRUMBS protocol (not merely devices that ACK the bus).
+
+```c
+/* Read primitive used by the core scanner and HALs */
+typedef int (*crumbs_i2c_read_fn)(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
+
+/* Perform a CRUMBS-aware scan: returns count of discovered CRUMBS devices */
+int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
+                                     uint8_t start_addr,
+                                     uint8_t end_addr,
+                                     int strict,
+                                     crumbs_i2c_write_fn write_fn,
+                                     crumbs_i2c_read_fn read_fn,
+                                     void *io_ctx,
+                                     uint8_t *found,
+                                     size_t max_found,
+                                     uint32_t timeout_us);
+
+/* HAL read helpers (Arduino / Linux) */
+int crumbs_arduino_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
+int crumbs_linux_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
 ```
-
-## Debug Macros
-
-```cpp
-#define CRUMBS_DEBUG               // Enable debug output
-CRUMBS_DEBUG_PRINT(...)           // Print with "CRUMBS: " prefix
-CRUMBS_DEBUG_PRINTLN(...)         // Print line with "CRUMBS: " prefix
-```
-
-## Error Codes (sendMessage)
-
-- `0`: Success
-- `1`: Data too long for transmit buffer
-- `2`: NACK on address (device not found)
-- `3`: NACK on data transmission
-- `4`: Other I2C error

@@ -9,11 +9,11 @@
 └──────────┴─────────────┴──────────────────┴──────────┘
 ```
 
-| Field         | Size     | Description                            |
-| ------------- | -------- | -------------------------------------- |
-| `typeID`      | 1 byte   | Module type (sensor=1, motor=2, etc.)  |
-| `commandType` | 1 byte   | Command (read=0, set=1, reset=2, etc.) |
-| `data[7]`     | 28 bytes | Payload data (7 floats)                |
+| Field         | Size     | Description                                   |
+| ------------- | -------- | --------------------------------------------- |
+| `typeID`      | 1 byte   | Module type (sensor=1, motor=2, etc.)         |
+| `commandType` | 1 byte   | Command (read=0, set=1, reset=2, etc.)        |
+| `data[7]`     | 28 bytes | Payload data (7 floats)                       |
 | `crc8`        | 1 byte   | CRC-8 over `typeID`, `commandType`, `data[7]` |
 
 **Notes**:
@@ -49,7 +49,7 @@ Controller <[31-byte response] Peripheral   # Response
 ### CRC
 
 - Polynomial: 0x07 (CRC-8)
-- Calculated using `ace_crc::crc8_nibble`
+- Calculated using `crc8_nibble_calculate()` (crc8_nibble variant)
 - Applied to serialized payload before padding
 
 ## Timing Guidelines
