@@ -58,8 +58,10 @@ jobs:
           cmake --install build --prefix ${GITHUB_WORKSPACE}/install
 
       - name: Build native example (out-of-tree) against installed crumbs
+        env:
+          CMAKE_PREFIX_PATH: ${GITHUB_WORKSPACE}/third_party/linux-wire/install:${GITHUB_WORKSPACE}/install
         run: |
-          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release
+          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -DCMAKE_BUILD_TYPE=Release
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
 

@@ -1,4 +1,7 @@
 @PACKAGE_INIT@
 
+# Let CMake locate any package dependencies that were required at build time
+@CRUMBS_PACKAGE_DEPENDENCIES@
+
 # Load targets
 include("${CMAKE_CURRENT_LIST_DIR}/crumbsTargets.cmake")

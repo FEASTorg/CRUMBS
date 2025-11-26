@@ -165,6 +165,8 @@ configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/crumbsConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfig.cmake"
     INSTALL_DESTINATION ${config_install_dir}
+    # pass the CRUMBS_PACKAGE_DEPENDENCIES variable for substitution
+    NO_CHECK_REQUIRED_COMPONENTS
 )
 
 write_basic_package_version_file(
@@ -172,6 +174,15 @@ write_basic_package_version_file(
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
+
+# If Linux HAL was enabled at build time, record a find_dependency snippet so
+# installed crumbsConfig.cmake will require linux_wire when a consumer uses
+# find_package(crumbs CONFIG).
+if(CRUMBS_ENABLE_LINUX_HAL)
+    set(CRUMBS_PACKAGE_DEPENDENCIES "find_dependency(linux_wire CONFIG REQUIRED)")
+else()
+    set(CRUMBS_PACKAGE_DEPENDENCIES "# no extra package dependencies")
+endif()
 
 install(EXPORT crumbsTargets
     FILE crumbsTargets.cmake
