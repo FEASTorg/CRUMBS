@@ -1,7 +1,8 @@
 # CRUMBS
 
 [![CI](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml/badge.svg)](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml)
-[![Docs](https://github.com/FEASTorg/FEASTorg.github.io/actions/workflows/pages.yml/badge.svg)](https://feastorg.github.io/crumbs/)
+[![Pages](https://github.com/FEASTorg/FEASTorg.github.io/actions/workflows/pages.yml/badge.svg)](https://feastorg.github.io/crumbs/)
+[![Doc-check](https://github.com/FEASTorg/CRUMBS/actions/workflows/doccheck.yml/badge.svg)](https://github.com/FEASTorg/CRUMBS/actions/workflows/doccheck.yml)
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](./LICENSE)
 [![Language](https://img.shields.io/badge/language-C%20%7C%20C%2B%2B-00599C)](./)
