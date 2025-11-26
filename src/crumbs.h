@@ -13,6 +13,14 @@ extern "C"
 {
 #endif
 
+    /** @file
+     * @brief CRUMBS core public API declarations.
+     *
+     * CRUMBS is a minimal fixed-size I²C message protocol. This header
+     * declares the public types and functions used by both controller and
+     * peripheral roles.
+     */
+
     /**
      * @brief Role of a CRUMBS endpoint on the I²C bus.
      */
@@ -26,32 +34,32 @@ extern "C"
     typedef struct crumbs_context_s crumbs_context_t;
 
     /**
-     * @brief Called when a complete, CRC-valid message is received by a peripheral.
+     * @brief Called when a complete, CRC-valid message is received (peripheral).
      *
-     * @param ctx  Pointer to the active CRUMBS context.
-     * @param msg  Pointer to the decoded message (valid during callback).
+     * @param ctx Pointer to the active CRUMBS context.
+     * @param msg Pointer to the decoded message (valid only for callback duration).
      */
     typedef void (*crumbs_message_cb_t)(
         crumbs_context_t *ctx,
         const crumbs_message_t *msg);
 
     /**
-     * @brief Called when the bus master requests data from a peripheral.
+     * @brief Called when the bus master requests a reply from a peripheral.
      *
-     * The callback should populate @p msg with the reply to be sent.
+     * Callback must populate @p msg with the reply message.
      *
-     * @param ctx  Pointer to the active CRUMBS context.
-     * @param msg  Pointer to a message to be filled as the reply.
+     * @param ctx Pointer to the active CRUMBS context.
+     * @param msg Pointer to message object to fill with the reply.
      */
     typedef void (*crumbs_request_cb_t)(
         crumbs_context_t *ctx,
         crumbs_message_t *msg);
 
     /**
-     * @brief State and configuration for a single CRUMBS endpoint.
+     * @brief State and configuration for a CRUMBS endpoint.
      *
-     * This is intentionally small and POD so it can live on the stack
-     * or in static storage on both Arduino and Linux.
+     * This structure is plain-old-data so it is safe to allocate on the
+     * stack or in static storage across supported platforms.
      */
     struct crumbs_context_s
     {
@@ -69,21 +77,20 @@ extern "C"
     /**
      * @brief Initialize a CRUMBS context.
      *
-     * Does not touch any underlying hardware. HALs (Arduino, linux-wire, etc.)
-     * should perform their own I²C setup separately.
+     * Hardware setup is the responsibility of the platform HAL.
      *
-     * @param ctx     Context to initialize.
-     * @param role    Role of this endpoint.
-     * @param address Peripheral I²C address (ignored in controller mode).
+     * @param ctx Context to initialize (must not be NULL).
+     * @param role Role for this endpoint.
+     * @param address Peripheral I²C address (ignored for controller).
      */
     void crumbs_init(crumbs_context_t *ctx,
                      crumbs_role_t role,
                      uint8_t address);
 
     /**
-     * @brief Install callbacks and user_data for a context.
+     * @brief Install callbacks and user data for a context.
      *
-     * All fields are optional; pass NULL for callbacks you don't use.
+     * Pass NULL for callbacks you do not need.
      */
     void crumbs_set_callbacks(crumbs_context_t *ctx,
                               crumbs_message_cb_t on_message,
@@ -91,31 +98,29 @@ extern "C"
                               void *user_data);
 
     /**
-     * @brief Encode a message into a flat byte buffer using the CRUMBS wire format.
+     * @brief Encode a message into the CRUMBS wire frame.
      *
-     * The slice_address field is *not* serialized.
+     * Note: msg->slice_address is not serialized on the wire.
      *
-     * @param msg        Pointer to message to encode.
-     * @param buffer     Destination buffer.
-     * @param buffer_len Length of @p buffer in bytes.
-     * @return Number of bytes written on success (CRUMBS_MESSAGE_SIZE), 0 on error.
+     * @param msg Pointer to message to encode.
+     * @param buffer Destination buffer.
+     * @param buffer_len Size of @p buffer in bytes.
+     * @return Number of bytes written (CRUMBS_MESSAGE_SIZE) or 0 on error.
      */
     size_t crumbs_encode_message(const crumbs_message_t *msg,
                                  uint8_t *buffer,
                                  size_t buffer_len);
 
     /**
-     * @brief Decode a message from a flat byte buffer.
+     * @brief Decode a CRUMBS frame into a message object.
      *
-     * On success, fills @p msg and updates CRC stats in @p ctx (if non-NULL).
+     * Updates CRC-related statistics in @p ctx when provided.
      *
-     * @param buffer     Pointer to serialized frame.
-     * @param buffer_len Length of @p buffer in bytes.
-     * @param msg        Output message struct.
-     * @param ctx        Optional context for updating CRC stats (may be NULL).
-     * @return 0 on success;
-     *         -1 if buffer too small;
-     *         -2 if CRC mismatch.
+     * @param buffer Input buffer containing a serialized frame.
+     * @param buffer_len Length in bytes of @p buffer.
+     * @param msg Output message struct (must not be NULL).
+     * @param ctx Optional context updated with CRC stats (may be NULL).
+     * @return 0 on success, -1 if buffer too small, -2 on CRC mismatch.
      */
     int crumbs_decode_message(const uint8_t *buffer,
                               size_t buffer_len,
@@ -123,15 +128,13 @@ extern "C"
                               crumbs_context_t *ctx);
 
     /**
-     * @brief Convenience helper for controller: send a message over I²C.
+     * @brief Send a CRUMBS message to a 7-bit I²C target (controller helper).
      *
-     * This is a thin adapter around a platform-provided write primitive.
-     *
-     * @param ctx        Initialized CRUMBS context in controller mode.
+     * @param ctx Initialized CRUMBS context in controller mode.
      * @param target_addr 7-bit I²C address of the peripheral.
-     * @param msg        Message to send.
-     * @param write_fn   I²C write function (see crumbs_i2c_write_fn).
-     * @param write_ctx  Opaque pointer passed to @p write_fn (Wire*, linux bus handle, etc.).
+     * @param msg Message to send.
+     * @param write_fn I²C write function (crumbs_i2c_write_fn).
+     * @param write_ctx Opaque pointer passed to @p write_fn (Wire*, linux handle, etc.).
      * @return 0 on success, non-zero on error.
      */
     int crumbs_controller_send(const crumbs_context_t *ctx,
@@ -141,22 +144,22 @@ extern "C"
                                void *write_ctx);
 
     /**
-     * @brief Scan for CRUMBS-capable devices on the bus.
+     * @brief Probe an I²C address range for CRUMBS-capable devices.
      *
-     * This helper performs a probe for each address in [start_addr, end_addr]
-     * attempting to read a CRUMBS message and decode it. If a read yields a
-     * valid CRUMBS message (CRC OK and decode succeeded) the address is
-     * considered to be running CRUMBS.
+     * The function attempts to read a CRUMBS frame and decode it. In
+     * non-strict mode a small probe write may be issued to stimulate a reply.
      *
-     * The function uses the provided @p read_fn to request data from a remote
-     * device. In non-strict mode the function may issue a small write via
-     * @p write_fn to stimulate a reply before reading (useful for devices that
-     * only respond after receiving a command). Use @p timeout_us to control
-     * read timeouts when supported by HALs.
-     *
-     * @return number of discovered CRUMBS device addresses (>=0) or negative
-     *         on error (invalid args, etc.). Discovered addresses are written
-     *         into @p found up to @p max_found entries.
+     * @param ctx Optional controller context pointer (may be NULL).
+     * @param start_addr Address range start (inclusive).
+     * @param end_addr Address range end (inclusive).
+     * @param strict Non-zero to require a strict read; 0 to use a probe write.
+     * @param write_fn Optional write function used to stimulate replies.
+     * @param read_fn Read function to use for data-phase reads.
+     * @param io_ctx Opaque I/O context forwarded to read/write callbacks.
+     * @param found Output buffer to receive discovered addresses.
+     * @param max_found Capacity of @p found buffer.
+     * @param timeout_us Read timeout hint in microseconds.
+     * @return Number of discovered devices (>=0) or negative on error.
      */
     int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
                                           uint8_t start_addr,
@@ -170,35 +173,31 @@ extern "C"
                                           uint32_t timeout_us);
 
     /**
-     * @brief Peripheral-side entry point for raw bytes received over I²C.
+     * @brief Process raw bytes received by a peripheral HAL.
      *
-     * HALs (e.g. Arduino's onReceive callback, linux-wire read handler) should call
-     * this with the bytes read from the bus. On success, the on_message() callback
-     * (if configured) is invoked.
+     * HALs should pass the raw frame bytes into this function so the core can
+     * decode them and invoke on_message() when valid.
      *
-     * @param ctx    Active CRUMBS context (peripheral role).
-     * @param buffer Pointer to raw bytes received.
-     * @param len    Number of bytes in @p buffer.
-     * @return 0 on success; negative on decode error.
+     * @param ctx Active CRUMBS context (peripheral role).
+     * @param buffer Raw bytes received.
+     * @param len Number of bytes in @p buffer.
+     * @return 0 on success, negative on decode error.
      */
     int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
                                          const uint8_t *buffer,
                                          size_t len);
 
     /**
-     * @brief Peripheral-side helper for generating a reply frame on request.
+     * @brief Build an encoded reply frame for use inside an I²C request handler.
      *
-     * HALs should call this inside their I²C request callback to obtain the
-     * next reply frame (if any) to send over the bus.
+     * If no on_request callback is configured the function returns success with
+     * *out_len set to 0.
      *
-     * If no on_request callback is configured, @p out_len is set to 0 and
-     * 0 is returned.
-     *
-     * @param ctx       Active CRUMBS context (peripheral role).
-     * @param out_buf   Destination buffer for the encoded reply frame.
-     * @param out_buf_len Size of @p out_buf.
-     * @param out_len   On success, number of bytes to send (may be 0).
-     * @return 0 on success; negative on error.
+     * @param ctx Active CRUMBS context (peripheral role).
+     * @param out_buf Buffer to receive encoded frame.
+     * @param out_buf_len Length of @p out_buf in bytes.
+     * @param out_len On success, set to the encoded byte count (may be 0).
+     * @return 0 on success, negative on error.
      */
     int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
                                       uint8_t *out_buf,

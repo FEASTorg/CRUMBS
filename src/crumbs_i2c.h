@@ -4,23 +4,26 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ * @file
+ * @brief Lightweight HAL I²C primitive signatures used by CRUMBS adapters.
+ */
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
     /**
-     * @brief Signature for a simple "write a frame" I²C primitive.
+     * @brief I²C write primitive signature used by controller helpers.
      *
-     * Implementations should perform:
-     *   START + address(w) + data[0..len-1] + STOP
+     * Implementations should perform a START + address(w) + data + STOP.
      *
-     * Return 0 on success, non-zero on error.
-     *
-     * @param user_ctx  Opaque pointer for the implementation (e.g., Wire*, linux handle).
-     * @param addr      7-bit I²C address.
-     * @param data      Pointer to bytes to send.
-     * @param len       Number of bytes to send.
+     * @param user_ctx Opaque implementation pointer (e.g., TwoWire* or linux handle).
+     * @param addr 7-bit I²C address.
+     * @param data Pointer to bytes to send.
+     * @param len Number of bytes to send.
+     * @return 0 on success, non-zero on error.
      */
     typedef int (*crumbs_i2c_write_fn)(
         void *user_ctx,

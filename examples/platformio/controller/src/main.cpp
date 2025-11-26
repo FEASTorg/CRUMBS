@@ -1,8 +1,13 @@
+/**
+ * @file
+ * @brief Small PlatformIO Arduino controller demo for CRUMBS.
+ */
+
 #include <Arduino.h>
 #include <crumbs_arduino.h>
 #include <stdlib.h> // atof
 
-// Minimal PlatformIO-compatible Arduino example showing CRUMBS controller init
+// Minimal controller example demonstrating sending CRUMBS messages from Serial
 
 crumbs_context_t controller_ctx;
 

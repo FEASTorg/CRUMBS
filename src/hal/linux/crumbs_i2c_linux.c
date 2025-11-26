@@ -1,8 +1,10 @@
-/* The Linux HAL relies on the linux-wire helper and is only intended to
- * be compiled on native Linux builds. Arduino toolchains (and other
- * embedded targets) compile everything under src/ by default, so we
- * provide guarded implementations below to avoid build failures on
- * non-Linux platforms.
+/**
+ * @file
+ * @brief Linux HAL using linux-wire for CRUMBS (platform native I²C helpers).
+ *
+ * This file provides native Linux implementations when compiled on Linux
+ * and stubbed fallbacks for other platforms so the whole repo can be
+ * included in non-Linux builds.
  */
 
 #include "crumbs_linux.h"
@@ -30,17 +32,17 @@ int crumbs_linux_init_controller(crumbs_context_t *ctx,
 
     memset(i2c, 0, sizeof(*i2c));
 
-    /* Initialize CRUMBS context as controller. Address is unused in this role. */
+    /* Initialize CRUMBS context as controller. Address unused in this role. */
     crumbs_init(ctx, CRUMBS_ROLE_CONTROLLER, 0u);
 
-    /* Open the Linux I2C bus. */
+    /* Open the Linux I²C bus. */
     if (lw_open_bus(&i2c->bus, device_path) != 0)
     {
         /* lw_open_bus already sets errno and bus.fd = -1 on error. */
         return -2;
     }
 
-    /* Optional timeout hint. Currently informational in linux-wire. */
+    /* Optional timeout hint (informational in linux-wire). */
     if (timeout_us > 0u)
     {
         lw_set_timeout(&i2c->bus, timeout_us);
@@ -120,8 +122,7 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
         return -2;
     }
 
-    /* We expect a fixed-size CRUMBS frame, but we defensively loop until
-       read() returns 0 or error, or the buffer is full. */
+    /* Expect a fixed-size CRUMBS frame; loop until no more data or buffer fills. */
     uint8_t buf[CRUMBS_MESSAGE_SIZE];
     size_t total = 0u;
 
@@ -143,12 +144,11 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
 
     if (total == 0u)
     {
-        /* Nothing received. */
+        /* No bytes read. */
         return -4;
     }
 
-    /* Decode using the shared CRUMBS core. This validates CRC and updates
-       CRC stats in ctx (if non-NULL). */
+    /* Decode with CRUMBS core -- validates CRC and updates ctx stats. */
     int rc = crumbs_decode_message(buf, total, out_msg, ctx);
     return rc; /* 0 on success, <0 on decode/CRC error */
 }
@@ -177,14 +177,13 @@ int crumbs_linux_scan(void *user_ctx,
 
     for (int addr = start_addr; addr <= end_addr; ++addr)
     {
-        /* Select the slave address. If this fails, move on. */
+        /* Select the slave address; skip if selection fails. */
         if (lw_set_slave(bus, (uint8_t)addr) != 0)
             continue;
 
         if (strict)
         {
-            /* Strict probe: attempt a small read and treat any positive
-               result as a present device. */
+            /* Strict probe: attempt a small read and treat positive results as present. */
             ssize_t r = lw_read(bus, &dummy, 1);
             if (r > 0)
             {
@@ -195,9 +194,8 @@ int crumbs_linux_scan(void *user_ctx,
         }
         else
         {
-            /* Non-strict probe: perform a zero-length write (address-only)
-               which many adapters will ACK if a device responds to the
-               address phase. Treat any non-negative return as success. */
+            /* Non-strict probe: perform a zero-length write (address-only) and treat
+               any non-negative return as success (address ACK). */
             ssize_t w = lw_write(bus, NULL, 0, 1);
             if (w >= 0)
             {

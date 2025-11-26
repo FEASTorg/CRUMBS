@@ -9,15 +9,14 @@ extern "C"
 #endif
 
 /**
- * @brief Number of float payload elements in a CRUMBS message.
+ * @file
+ * @brief CRUMBS message layout and serialization constants.
  *
- * The wire format is:
+ * The wire frame is a fixed-size 31-byte sequence:
  *   - type_id      : 1 byte
  *   - command_type : 1 byte
  *   - data[7]      : 7 * 4 bytes (float32, little-endian)
  *   - crc8         : 1 byte
- *
- * Total serialized payload length = 31 bytes.
  */
 #define CRUMBS_DATA_LENGTH 7u
 #define CRUMBS_MESSAGE_SIZE 31u
@@ -25,8 +24,8 @@ extern "C"
     /**
      * @brief Fixed-size message structure for CRUMBS communication.
      *
-     * Note: slice_address is *not* serialized by the core encoder/decoder;
-     * it is a logical address your application can use for routing.
+     * The `slice_address` field is a logical address and is not serialized
+     * by the encoder/decoder; it is left for user-level routing.
      */
     typedef struct crumbs_message_s
     {

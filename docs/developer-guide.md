@@ -149,6 +149,22 @@ Maintenance notes for contributors
   - Use `scripts/generate_crc8.py` to regenerate CRC-8 C99 variants (default staging is `nibble` which is the project default). The script writes generated C99 outputs into `dist/crc/c99` and will stage selected variants into `src/crc` when invoked without `--no-stage`.
 - Use guarded implementations in HALs for platform-specific includes (example: linux-wire guarded under **linux** so Arduino builds stay clean).
 
+## Documentation & contributor workflow
+
+We now follow a concise in-source documentation style documented in `docs/developer-doc-style.md`.
+
+Guidelines and recommended workflow for contributors:
+
+- Add or update in-source docblocks following the Doxygen-friendly rules in `docs/developer-doc-style.md`.
+- Make small, focused pull requests grouped by area (one header or module per PR).
+- Run the doc-check locally before submitting a PR:
+
+```bash
+./scripts/doccheck.sh
+```
+
+- The repository's CI runs a non-blocking doc-check that reports Doxygen warnings. We aim to address warnings incrementally and later tighten CI to fail on warnings once the baseline is clean.
+
 Where to start reading code for contributions
 
 - Start in `src/core/crumbs_core.c` for the core logic and message handling

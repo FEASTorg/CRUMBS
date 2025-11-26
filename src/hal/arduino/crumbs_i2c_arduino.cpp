@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Arduino HAL implementation (Wire) for CRUMBS.
+ */
+
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -8,9 +13,7 @@
 #define CRUMBS_DEFAULT_TWI_FREQ 100000UL
 #endif
 
-// Single global CRUMBS context pointer used by the Wire callbacks.
-// This matches Arduino's single-bus, single-instance pattern.
-// If you ever need multiple instances, this is where we would extend.
+// Single global CRUMBS context pointer used by the Wire callbacks (single-bus pattern).
 static crumbs_context_t *g_crumbs_ctx = nullptr;
 
 /* ------------------------------------------------------------------------- */
@@ -21,7 +24,7 @@ static void crumbs_arduino_on_receive(int numBytes)
 {
     if (g_crumbs_ctx == nullptr || numBytes <= 0)
     {
-        // Drain any pending bytes to avoid clogging the Wire buffer.
+        // Drain pending bytes to avoid leaving the Wire buffer full.
         while (Wire.available() > 0)
         {
             (void)Wire.read();
@@ -37,13 +40,13 @@ static void crumbs_arduino_on_receive(int numBytes)
         buffer[index++] = static_cast<uint8_t>(Wire.read());
     }
 
-    // If there were more bytes than we can store, drain them.
+    // Drain any remaining bytes that do not fit in @buffer.
     while (Wire.available() > 0)
     {
         (void)Wire.read();
     }
 
-    // Let the core decode and invoke on_message() if valid.
+    // Pass bytes to the core decoder which will call on_message() when valid.
     (void)crumbs_peripheral_handle_receive(g_crumbs_ctx, buffer, index);
 }
 
@@ -88,8 +91,8 @@ extern "C" void crumbs_arduino_init_controller(crumbs_context_t *ctx)
     Wire.setClock(CRUMBS_DEFAULT_TWI_FREQ);
 #endif
 
-    // Controller mode does not use Wire callbacks; user will call
-    // crumbs_controller_send() with crumbs_arduino_wire_write().
+    // Controller mode keeps Wire configured but does not register callbacks.
+    // Users should call crumbs_controller_send() paired with crumbs_arduino_wire_write().
     g_crumbs_ctx = ctx;
 }
 
@@ -103,7 +106,7 @@ extern "C" void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t ad
     // Initialize CRUMBS context as peripheral.
     crumbs_init(ctx, CRUMBS_ROLE_PERIPHERAL, address);
 
-    // Configure Wire as I2C slave at the given address.
+    // Configure TwoWire as an I²C slave at the given address.
     Wire.begin(address);
 #if defined(TWI_FREQ) || defined(TWBR)
     Wire.setClock(CRUMBS_DEFAULT_TWI_FREQ);
@@ -111,7 +114,7 @@ extern "C" void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t ad
 
     g_crumbs_ctx = ctx;
 
-    // Register callbacks that route into the CRUMBS core.
+    // Register Wire callbacks that route into the CRUMBS core.
     Wire.onReceive(crumbs_arduino_on_receive);
     Wire.onRequest(crumbs_arduino_on_request);
 }
@@ -121,7 +124,7 @@ extern "C" int crumbs_arduino_wire_write(void *user_ctx,
                                          const uint8_t *data,
                                          size_t len)
 {
-    // user_ctx is expected to be a TwoWire*; default to &Wire if null.
+    // user_ctx is expected to be a TwoWire*; default to &Wire when null.
     TwoWire *wire = &Wire;
     if (user_ctx != nullptr)
     {
@@ -172,7 +175,7 @@ extern "C" int crumbs_arduino_scan(void *user_ctx,
         wire->beginTransmission(static_cast<uint8_t>(addr));
         if (strict)
         {
-            // Write a single dummy byte to ensure data-phase ack
+            // Optionally write a single dummy byte to force data-phase ACK.
             wire->write((uint8_t)0x00);
         }
         uint8_t err = wire->endTransmission();
@@ -200,8 +203,7 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
     if (!buffer || len == 0)
         return -1;
 
-    // Request len bytes from the peripheral. Wire.requestFrom may block
-    // depending on the platform; use a timeout loop to be defensive.
+    // Request up to @len bytes. Use a defensive timeout loop to avoid hangs.
     int requested = (int)len;
     /* Ensure we select the correct TwoWire overload on various cores by
        explicitly casting the length to int (Wire.requestFrom has variants

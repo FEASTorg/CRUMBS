@@ -1,4 +1,3 @@
 # TODO
 
-- [X] Revise CRC-generation pipeline to adhere to new structure
-- [X] CI/CD pipeline for automatic builds and tests (rerunning CRC gens to check fuzzy parity and pycrc updates)
+- [ ] Slowly make Doxygen check more strcict over time (start with public API, then internal docs)

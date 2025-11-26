@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Core CRUMBS implementation (encode/decode and controller/peripheral helpers).
+ */
+
 #include "crumbs.h"
 
 #include <string.h> /* memcpy, memset */
@@ -19,6 +24,7 @@ static const size_t k_frame_len = 2u + (CRUMBS_DATA_LENGTH * sizeof(float)) + 1u
 _Static_assert(CRUMBS_MESSAGE_SIZE == 31u, "CRUMBS_MESSAGE_SIZE must be 31");
 #endif
 
+/* Write a 32-bit little-endian representation of a float into a buffer. */
 static void write_float_le(float value, uint8_t *out)
 {
     uint32_t raw = 0;
@@ -29,6 +35,7 @@ static void write_float_le(float value, uint8_t *out)
     out[3] = (uint8_t)((raw >> 24) & 0xFFu);
 }
 
+/* Read a 32-bit little-endian float from @p in. */
 static float read_float_le(const uint8_t *in)
 {
     uint32_t raw =
@@ -43,6 +50,11 @@ static float read_float_le(const uint8_t *in)
 
 /* ---- Public API implementation ---------------------------------------- */
 
+/**
+ * @brief Initialize a CRUMBS context structure.
+ *
+ * Clears the structure and sets the role and address as provided.
+ */
 void crumbs_init(crumbs_context_t *ctx,
                  crumbs_role_t role,
                  uint8_t address)
@@ -57,6 +69,9 @@ void crumbs_init(crumbs_context_t *ctx,
     ctx->address = (role == CRUMBS_ROLE_PERIPHERAL) ? address : 0u;
 }
 
+/**
+ * @brief Install callbacks and user data on an existing context.
+ */
 void crumbs_set_callbacks(crumbs_context_t *ctx,
                           crumbs_message_cb_t on_message,
                           crumbs_request_cb_t on_request,
@@ -72,6 +87,11 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
     ctx->user_data = user_data;
 }
 
+/**
+ * @brief Serialize a crumbs_message_t into a flat byte buffer.
+ *
+ * Returns CRUMBS_MESSAGE_SIZE on success or 0 on error.
+ */
 size_t crumbs_encode_message(const crumbs_message_t *msg,
                              uint8_t *buffer,
                              size_t buffer_len)
@@ -104,6 +124,11 @@ size_t crumbs_encode_message(const crumbs_message_t *msg,
     return index; /* should be k_frame_len */
 }
 
+/**
+ * @brief Decode a serialized frame into a crumbs_message_t.
+ *
+ * Updates CRC state in @p ctx if provided.
+ */
 int crumbs_decode_message(const uint8_t *buffer,
                           size_t buffer_len,
                           crumbs_message_t *msg,
@@ -158,6 +183,9 @@ int crumbs_decode_message(const uint8_t *buffer,
     return 0;
 }
 
+/**
+ * @brief Helper used by controllers to send a CRUMBS frame.
+ */
 int crumbs_controller_send(const crumbs_context_t *ctx,
                            uint8_t target_addr,
                            const crumbs_message_t *msg,
@@ -184,6 +212,9 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
     return write_fn(write_ctx, target_addr, frame, written);
 }
 
+/**
+ * @brief Peripheral-side handler for raw bytes received by a HAL.
+ */
 int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
                                      const uint8_t *buffer,
                                      size_t len)
@@ -217,6 +248,9 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     return 0;
 }
 
+/**
+ * @brief Build an encoded reply using the configured on_request callback.
+ */
 int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
                                   uint8_t *out_buf,
                                   size_t out_buf_len,
@@ -257,6 +291,9 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
     return 0;
 }
 
+/**
+ * @brief Probe an address range looking for CRUMBS-capable devices.
+ */
 int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
                                       uint8_t start_addr,
                                       uint8_t end_addr,

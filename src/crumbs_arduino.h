@@ -6,6 +6,11 @@
 
 #include "crumbs.h"
 
+/**
+ * @file
+ * @brief Arduino HAL adapter declarations for CRUMBS.
+ */
+
 #ifdef __cplusplus
 extern "C"
 {

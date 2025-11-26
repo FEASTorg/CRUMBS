@@ -12,10 +12,14 @@ extern "C"
 #include "crumbs.h"     /* crumbs_context_t, crumbs_message_t */
 #include "crumbs_i2c.h" /* crumbs_i2c_write_fn */
 
+    /** @file
+     * @brief Linux-native I²C helpers (linux-wire) used by CRUMBS.
+     */
+
     /**
-     * Linux I2C handle for CRUMBS.
+     * @brief Linux I2C handle for CRUMBS.
      *
-     * On native Linux builds this contains a linux-wire lw_i2c_bus. On other
+     * @details On native Linux builds this contains a linux-wire lw_i2c_bus. On other
      * platforms we provide a small placeholder so the type can be stack
      * allocated in examples while remaining harmless for Arduino builds.
      */
@@ -33,7 +37,7 @@ typedef struct crumbs_linux_i2c_s
 #endif
 
     /**
-     * Initialize a CRUMBS context as a CONTROLLER on a Linux I2C bus.
+     * @brief Initialize a CRUMBS context as a controller on a Linux I²C bus.
      *
      * @param ctx          Pointer to CRUMBS context (will be initialized).
      * @param i2c          Pointer to Linux I2C handle (will be initialized).
@@ -56,7 +60,7 @@ typedef struct crumbs_linux_i2c_s
     void crumbs_linux_close(crumbs_linux_i2c_t *i2c);
 
     /**
-     * I2C write adapter for CRUMBS on Linux, compatible with crumbs_i2c_write_fn.
+     * @brief I²C write adapter for CRUMBS on Linux; compatible with crumbs_i2c_write_fn.
      *
      * This uses linux-wire to:
      *   - select the slave address with lw_set_slave()
@@ -79,7 +83,7 @@ typedef struct crumbs_linux_i2c_s
                                size_t len);
 
     /**
-     * Helper: read a CRUMBS reply message from a peripheral.
+     * @brief Read a CRUMBS reply message from a peripheral.
      *
      * This is analogous to Arduino's `Wire.requestFrom()` + `crumbs_decode_message`.
      * It performs:

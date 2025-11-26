@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Small PlatformIO Arduino peripheral demo for CRUMBS.
+ */
+
 #include <Arduino.h>
 #include <crumbs_arduino.h>
 
@@ -11,7 +16,7 @@ static void on_message(crumbs_context_t *ctx, const crumbs_message_t *m)
   Serial.println(m->command_type);
   for (size_t i = 0; i < CRUMBS_DATA_LENGTH; ++i)
   {
-    // Print payload fields until we encounter a zero float (simple heuristic for demo)
+    // Print payload fields; demo stops at the first zero float
     if (m->data[i] == 0.0f) break;
     Serial.print(F(" data[")); Serial.print(i); Serial.print(F("]="));
     Serial.print(m->data[i], 4);

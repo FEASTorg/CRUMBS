@@ -1,0 +1,11 @@
+PROJECT_NAME           = CRUMBS
+OUTPUT_DIRECTORY       = docs/doxygen_out
+INPUT                  = src
+RECURSIVE              = YES
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+WARN_IF_UNDOCUMENTED   = YES
+WARNINGS              = YES
+QUIET                  = NO
+EXTRACT_ALL            = NO
+GENERATE_TREEVIEW      = NO
