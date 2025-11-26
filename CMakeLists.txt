@@ -28,7 +28,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CRUMBS_CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/crumbs_core.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/crc/crumbs_crc.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/crc/c99/crc8_nibble.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/crc/crc8_nibble.c
 )
 
 # Optionally add the Linux HAL implementation

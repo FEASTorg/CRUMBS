@@ -11,13 +11,13 @@ If you need step-by-step install instructions for linux-wire, see the dedicated 
 
 Quick build & run overview (example uses /dev/i2c-1):
 
-1. Install prerequisites:
+1. Install prerequisites
 
    - C compiler, CMake, make/ninja
    - linux-wire library (provides a CMake config package `linux_wire::linux_wire`) — see the install guide above
    - An account that can access the I2C device (or run the example with root privileges)
 
-1. Configure & build (from repo root):
+1. Configure & build (from repo root)
 
 ```bash
 mkdir -p build && cd build
@@ -25,10 +25,25 @@ cmake .. -DCRUMBS_ENABLE_LINUX_HAL=ON -DCRUMBS_BUILD_EXAMPLES=ON
 cmake --build . --parallel
 ```
 
-1. Run the example (the example uses `/dev/i2c-1` by default):
+1. Run the example (the example uses `/dev/i2c-1` by default)
 
 ```bash
 sudo ./crumbs_simple_linux_controller
+```
+
+1. Installing a release to the system (optional)
+
+If you want to install the built CRUMBS library and headers system-wide:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
+
+Then install with:
+
+```bash
+sudo cmake --install . --prefix /usr/local
 ```
 
 Notes & troubleshooting
@@ -39,12 +54,28 @@ Notes & troubleshooting
 
 - I²C driver: confirm the kernel exports /dev/i2c-\* devices (e.g. `modprobe i2c_dev`), and that the bus number matches what you pass to the example.
 
-- Example device/address: the Linux example accepts an optional device path and target address on the command line. For example:
+Example device/address and scan mode
+
+The Linux example accepts an optional device path and target address on the command line. For example (send a message to 0x08):
 
 ```bash
 sudo ./crumbs_simple_linux_controller /dev/i2c-1 0x08
 ```
 
-If you'd like I can add a wrapper script that discovers a reasonable default device path and optionally runs the example as a non-root user when configured with appropriate udev rules.
+Scanner mode
 
-If you'd like, I can extend the example to accept the device path and address as command-line parameters instead of hardcoding them.
+The example also supports a simple built-in scan mode to discover CRUMBS devices on the bus. Usage:
+
+```bash
+# Non-strict probe (attempt reads, send probe write if needed)
+sudo ./crumbs_simple_linux_controller scan
+
+# Strict probe (read-only checks)
+sudo ./crumbs_simple_linux_controller scan strict
+```
+
+Note: the example currently treats the first argument as either a device path (normal run) or a literal `scan` command; to scan using a non-default device path you can run the binary from that working directory or modify the example to accept a path + scan mode.
+
+Wrapper script / udev
+
+If you'd prefer the example to run as a non-root user, add a udev rule to adjust `/dev/i2c-*` permissions or add your account to the `i2c` group. I can add a small wrapper script that discovers the first available `/dev/i2c-*` device and invokes the example with appropriate parameters.

@@ -12,7 +12,7 @@ Goals and constraints
 - Deterministic fixed-size wire format for simple framing and predictable behavior
 - CRC-8 for integrity across noisy wires
 - Thin HALs for Arduino (Wire) and Linux (linux-wire), with guarded implementations so a single repo can be used for both targets
-- Practical scan/discovery primitives that can find devices that *actually* speak CRUMBS
+- Practical scan/discovery primitives that can find devices that _actually_ speak CRUMBS
 - Low memory usage and no dynamic allocations in the core (suitable for small MCUs)
 
 High-level architecture
@@ -21,7 +21,6 @@ High-level architecture
 - HALs: platform-specific adapters that map the core to the platform I²C primitives
   - Arduino HAL: `src/hal/arduino/` and public header `src/crumbs_arduino.h`
   - Linux HAL: `src/hal/linux/` and public header `src/crumbs_linux.h` (uses linux-wire; guarded for non-Linux builds)
- 
 - Examples: `examples/arduino` and `examples/linux` show controller and peripheral usage
 - Documentation: `docs/` contains the API reference, getting-started notes, and examples documentation
 
@@ -147,7 +146,7 @@ Maintenance notes for contributors
 
 - Keep the core strictly C and free of platform headers. HALs may use C++ where platform bindings (Arduino) are convenient.
 - Add tests near `src/core` for encode/decode/CRC changes; instruction generators for CRC are in `scripts/`.
-- Use guarded implementations in HALs for platform-specific includes (example: linux-wire guarded under __linux__ so Arduino builds stay clean).
+- Use guarded implementations in HALs for platform-specific includes (example: linux-wire guarded under **linux** so Arduino builds stay clean).
 
 Where to start reading code for contributions
 

@@ -46,11 +46,15 @@ This will install headers to /usr/local/include/linux_wire, the static library (
 
 1. Verify the installation
 
+If successful you should see the path to the installed linux_wireConfig.cmake under /usr/local/lib/cmake/linux_wire.
+
+Run this command to verify:
+
 ```sh
 cmake --find-package -DNAME=linux_wire -DCOMPILER_ID=GNU -DLANGUAGE=C -DMODE=EXIST
 ```
 
-If successful you should see the path to the installed linux_wireConfig.cmake under /usr/local/lib/cmake/linux_wire.
+> should print: `"linux_wire found."`
 
 ## Local build (developer workflow)
 
@@ -96,5 +100,6 @@ sudo usermod -a -G i2c $USER
 - CMake can't find linux_wire: verify the config files exist under your install prefix (search for linux_wireConfig.cmake) or use `-DCMAKE_PREFIX_PATH` to point to a build/install location.
 - Link errors referencing linux_wire symbols usually mean the package was not linked — confirm `target_link_libraries(... linux_wire::linux_wire)` is resolved by CMake.
 - If you get permission denied when opening /dev/i2c-\* use `sudo` or fix group/udev rules.
+- If using a Raspberry Pi, ensure I²C is enabled in `raspi-config` and the correct bus number is used (usually `/dev/i2c-1`).
 
 If you want, I can add a small script to the repo to help developers build & test linux-wire + CRUMBS locally using a consistent CMAKE_PREFIX_PATH workflow.
