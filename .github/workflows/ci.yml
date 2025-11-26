@@ -27,6 +27,14 @@ jobs:
             libudev-dev \
             python3-pip
 
+      - name: Restore linux-wire cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/linux-wire/build
+            third_party/linux-wire/install
+          key: ${{ runner.os }}-linux-wire-v1
+
       - name: Build and install linux-wire
         run: |
           git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
@@ -57,6 +65,12 @@ jobs:
         run: |
           cmake --install build --prefix ${GITHUB_WORKSPACE}/install
 
+      - name: Show installed crumbs package config
+        run: |
+          echo "--- installed crumbsConfig.cmake ---"
+          sed -n '1,200p' ${GITHUB_WORKSPACE}/install/lib/cmake/crumbs/crumbsConfig.cmake || true
+          echo "--- end ---"
+
       - name: Build native example (out-of-tree) against installed crumbs
         env:
           CMAKE_PREFIX_PATH: ${GITHUB_WORKSPACE}/third_party/linux-wire/install:${GITHUB_WORKSPACE}/install
@@ -64,6 +78,12 @@ jobs:
           cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -DCMAKE_BUILD_TYPE=Release
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
+
+      - name: Restore PlatformIO cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-v1
 
       - name: Install PlatformIO CLI
         run: |

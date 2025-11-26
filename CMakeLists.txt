@@ -9,7 +9,7 @@ project(CRUMBS
 # Options
 # ---------------------------------------------------------------------------
 
-option(CRUMBS_ENABLE_LINUX_HAL "Enable Linux I2C HAL (requires linux-wire)" ON)
+option(CRUMBS_ENABLE_LINUX_HAL "Enable Linux I2C HAL (requires linux-wire)" OFF)
 option(CRUMBS_BUILD_EXAMPLES   "Build Linux example programs"               ON)
 option(CRUMBS_ENABLE_TESTS "Build and run the lightweight C tests" ON)
 
