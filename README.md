@@ -45,7 +45,7 @@ crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NUL
 2. Place the CRUMBS folder in your Arduino `libraries` directory
 3. No external CRC runtime dependency required — generated CRC implementations are included under `src/crc`.
 
-The CRC code is generated with `pycrc` using the generator scripts in `scripts/` (see `scripts/generate_crc8_*`). The generator approach is inspired by AceCRC, but CRUMBS ships its own local API and does not require AceCRC at runtime.
+The CRC code is generated with `pycrc` using the generator script in `scripts/` (see `scripts/generate_crc8.py`).
 
 1. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
 

@@ -162,5 +162,3 @@ Appendix: quick reference (API / filenames)
 - Arduino HAL: `src/crumbs_arduino.h`, `src/hal/arduino/crumbs_i2c_arduino.cpp`
 - Linux HAL: `src/crumbs_linux.h`, `src/hal/linux/crumbs_i2c_linux.c`
 - Examples: `examples/arduino`, `examples/linux`
-
-If anything here looks wrong, incomplete, or too verbose, tell me where you'd like it tightened — I can remove duplication, expand the handshake pattern details, or add an appendix with message diagrams and example packet bytes for use with protocol analyzers.

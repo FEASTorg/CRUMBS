@@ -22,6 +22,7 @@ The CRC generation workflow has been simplified and consolidated into a single s
 What it produces:
 
 - Generated C99 outputs (per-variant):
+
   - `dist/crc/c99/crc8_<variant>.h`
   - `dist/crc/c99/crc8_<variant>.c`
 
@@ -30,7 +31,6 @@ What it produces:
   - `src/crc/crc8_<variant>.c`
 
 Usage examples and notes:
-
 
     # Generate the default variant (nibble) and stage it into src/crc
     python scripts/generate_crc8.py
