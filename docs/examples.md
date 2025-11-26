@@ -98,3 +98,11 @@ cmake --build examples/native/controller/build --config Release
 ```
 
 If you have installed CRUMBS (and supplied CMake config files to your install prefix) you can instead build the example against an installed package by turning off `CRUMBS_BUILD_IN_TREE` and setting `CMAKE_PREFIX_PATH` accordingly.
+
+When CRUMBS is installed and its CMake package files are available, out-of-tree builds can use `find_package`:
+
+```cmake
+find_package(crumbs CONFIG REQUIRED)
+add_executable(myprog main.c)
+target_link_libraries(myprog PRIVATE crumbs::crumbs)
+```
