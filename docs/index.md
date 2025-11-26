@@ -27,13 +27,13 @@ crumbs_arduino_init_peripheral(&pctx, 0x08);
 
 ## Documentation
 
-| File                                  | Description                      |
-| ------------------------------------- | -------------------------------- |
-| [Getting Started](getting-started.md) | Installation and basic usage     |
-| [API Reference](api-reference.md)     | Core C API and platform HAL docs |
-| [Protocol](protocol.md)               | Message format specification     |
-| [Examples](examples.md)               | Code examples and patterns       |
+| File                                  | Description                          |
+| ------------------------------------- | ------------------------------------ |
+| [Getting Started](getting-started.md) | Installation and basic usage         |
+| [API Reference](api-reference.md)     | Core C API and platform HAL docs     |
+| [Protocol](protocol.md)               | Message format specification         |
+| [Examples](examples.md)               | Code examples and patterns           |
 | [Developer Guide](developer-guide.md) | Architecture, integration & dev docs |
-| [Linux HAL](linux.md)                 | Linux build & example notes      |
+| [Linux HAL](linux.md)                 | Linux build & example notes          |
 
 **Version**: 1.0.0 | **Author**: Cameron | **Dependencies**: Wire library (Arduino) — CRC code is included in-tree (no AceCRC runtime required)

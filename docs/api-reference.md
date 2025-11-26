@@ -72,7 +72,7 @@ All HAL adapters follow the `crumbs_i2c_*` function signatures in `src/crumbs_i2
 
 ## Arduino HAL (high-level conveniences)
 
-````c
+```c
 /* Initialize controller/peripheral using default Wire instance */
 void crumbs_arduino_init_controller(crumbs_context_t *ctx);
 void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t address);
@@ -92,7 +92,7 @@ crumbs_arduino_init_controller(&ctx);
 // build message
 crumbs_message_t msg = {0}; msg.type_id=1; msg.command_type=1; msg.data[0]=1.23f;
 int rc = crumbs_controller_send(&ctx, 0x08, &msg, crumbs_arduino_wire_write, NULL);
-````
+```
 
 Usage (peripheral, Arduino):
 
@@ -101,8 +101,6 @@ crumbs_context_t ctx;
 crumbs_arduino_init_peripheral(&ctx, 0x08);
 crumbs_set_callbacks(&ctx, on_message_cb, on_request_cb, NULL);
 ```
-
-````
 
 ## Linux HAL (selected)
 
@@ -126,9 +124,7 @@ crumbs_context_t ctx;
 crumbs_linux_i2c_t bus;
 int rc = crumbs_linux_init_controller(&ctx, &bus, "/dev/i2c-1", 10000);
 // send using crumbs_controller_send(&ctx, addr, &msg, crumbs_linux_i2c_write, &bus);
-````
-
-````
+```
 
 Note: Most functions return `0` on success and negative or non-zero codes on error — consult the headers for specific return values.
 
@@ -140,7 +136,7 @@ Signature (read primitive):
 
 ```c
 typedef int (*crumbs_i2c_read_fn)(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us);
-````
+```
 
 Scanner helper:
 

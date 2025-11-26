@@ -32,10 +32,12 @@ target_link_libraries(myprog PRIVATE crumbs::crumbs)
 ```
 
 Tips
+
 - For local development prefer the in-tree example usage (examples/native/controller) which will link the in-repo `crumbs` target via `add_subdirectory`.
 - When packaging for distribution ensure you install the exported cmake files (the top-level CMake provided export/install rules place crumbs targets under lib/cmake/crumbs) so `find_package(crumbs CONFIG)` can locate them via CMAKE_PREFIX_PATH or an installed system prefix.
 
 Linux HAL dependency note
+
 - If you build CRUMBS with the Linux HAL enabled (CRUMBS_ENABLE_LINUX_HAL=ON) the installed CMake package will require the `linux_wire` package at consumption time (the exported target `crumbs::crumbs` links against `linux_wire::linux_wire`). Consumers should ensure `linux-wire` is available in their CMAKE_PREFIX_PATH or a system-installed location so the generated `crumbsConfig.cmake` can satisfy the dependency via `find_dependency(linux_wire CONFIG REQUIRED)`.
 
 ## Basic Usage
