@@ -188,8 +188,24 @@ install(EXPORT crumbsTargets
     DESTINATION ${config_install_dir}
 )
 
+# Also install exported config into the data cmake dir (share) to support
+# systems that search under ${CMAKE_INSTALL_PREFIX}/share for package configs.
+install(EXPORT crumbsTargets
+    FILE crumbsTargets.cmake
+    NAMESPACE crumbs::
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/crumbs
+)
+
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfigVersion.cmake"
     DESTINATION ${config_install_dir}
+)
+
+# Also install the package config into the data cmake dir so find_package will
+# find it when searching under share/ for installed packages on some systems.
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/crumbs
 )

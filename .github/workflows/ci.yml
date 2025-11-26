@@ -73,7 +73,9 @@ jobs:
 
       - name: Build native example (out-of-tree) against installed crumbs
         env:
+          # Try both the default lib cmake path and the data cmake path used by some systems
           CMAKE_PREFIX_PATH: ${GITHUB_WORKSPACE}/third_party/linux-wire/install:${GITHUB_WORKSPACE}/install
+          crumbs_DIR: ${GITHUB_WORKSPACE}/install/lib/cmake/crumbs
         run: |
           cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -DCMAKE_BUILD_TYPE=Release
           cmake --build build-native --parallel
