@@ -15,7 +15,9 @@
 
 static int fake_write(void *user_ctx, uint8_t addr, const uint8_t *data, size_t len)
 {
-    (void)user_ctx; (void)data; (void)len;
+    (void)user_ctx;
+    (void)data;
+    (void)len;
     /* accept writes for DEV_A and DEV_B */
     if (addr == DEV_A || addr == DEV_B)
         return 0;
@@ -24,7 +26,8 @@ static int fake_write(void *user_ctx, uint8_t addr, const uint8_t *data, size_t 
 
 static int fake_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, uint32_t timeout_us)
 {
-    (void)user_ctx; (void)timeout_us;
+    (void)user_ctx;
+    (void)timeout_us;
     if (addr != DEV_A && addr != DEV_B)
         return 0; /* no data */
 
@@ -55,7 +58,7 @@ int main(void)
     uint8_t found[16];
 
     int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x20, 0 /* non-strict */,
-                                             fake_write, fake_read, NULL, found, sizeof(found), 10000);
+                                              fake_write, fake_read, NULL, found, sizeof(found), 10000);
 
     if (n < 0)
     {
@@ -83,7 +86,8 @@ int main(void)
     /* implement fake_read_noncrumbs returning invalid payload */
     int fake_read_noncrumbs(void *user_ctx, uint8_t addr, uint8_t *buf, size_t len, uint32_t to)
     {
-        (void)user_ctx; (void)to;
+        (void)user_ctx;
+        (void)to;
         if (addr != DEV_A)
             return 0;
         if (len < 5)
@@ -95,7 +99,7 @@ int main(void)
     }
 
     int n2 = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x20, 0,
-                                              fake_write, fake_read_noncrumbs, NULL, found, sizeof(found), 10000);
+                                               fake_write, fake_read_noncrumbs, NULL, found, sizeof(found), 10000);
     if (n2 < 0)
     {
         fprintf(stderr, "scan2 failed rc=%d\n", n2);
