@@ -75,9 +75,33 @@ jobs:
         env:
           # Try both the default lib cmake path and the data cmake path used by some systems
           CMAKE_PREFIX_PATH: ${GITHUB_WORKSPACE}/third_party/linux-wire/install:${GITHUB_WORKSPACE}/install
-          crumbs_DIR: ${GITHUB_WORKSPACE}/install/lib/cmake/crumbs
         run: |
-          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -DCMAKE_BUILD_TYPE=Release
+          echo "CMAKE_PREFIX_PATH='${CMAKE_PREFIX_PATH}'"
+          echo "Listing install tree (top level):"
+          ls -la ${GITHUB_WORKSPACE}/install || true
+          echo "Listing lib cmake dir (if present):"
+          ls -la ${GITHUB_WORKSPACE}/install/lib/cmake || true
+          echo "Listing share cmake dir (if present):"
+          ls -la ${GITHUB_WORKSPACE}/install/share/cmake || true
+
+          # Locate the installed crumbs package config file and point CMake directly at it
+          CRUMBS_CFG=$(find ${GITHUB_WORKSPACE}/install -name 'crumbsConfig.cmake' -print -quit || true)
+          if [ -z "${CRUMBS_CFG}" ]; then
+            echo "ERROR: crumbsConfig.cmake not found in install prefix (${GITHUB_WORKSPACE}/install)";
+            echo "full install tree:"; find ${GITHUB_WORKSPACE}/install -maxdepth 5 -type f -print || true;
+            exit 1;
+          fi
+          CRUMBS_DIR=$(dirname "${CRUMBS_CFG}")
+          echo "Found crumbs package config at: ${CRUMBS_CFG}";
+          echo "crumbs_DIR will be: ${CRUMBS_DIR}"
+
+          echo "--- crumbsConfig.cmake head ---"
+          sed -n '1,200p' "${CRUMBS_CFG}" || true
+          echo "--- crumbsTargets.cmake (head) ---"
+          TARGETS_FILE="${CRUMBS_DIR}/crumbsTargets.cmake"
+          [ -f "${TARGETS_FILE}" ] && sed -n '1,200p' "${TARGETS_FILE}" || echo "crumbsTargets.cmake not found in ${CRUMBS_DIR}"
+
+          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -Dcrumbs_DIR=${CRUMBS_DIR} -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -DCMAKE_BUILD_TYPE=Release
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
 
