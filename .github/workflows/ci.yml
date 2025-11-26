@@ -97,6 +97,16 @@ jobs:
 
           echo "--- crumbsConfig.cmake head ---"
           sed -n '1,200p' "${CRUMBS_CFG}" || true
+          # Make sure the generated package config actually defines the helper
+          if ! grep -q 'include(CMakeFindDependencyMacro)' "${CRUMBS_CFG}"; then
+            echo "ERROR: crumbsConfig.cmake missing include(CMakeFindDependencyMacro)";
+            exit 1;
+          fi
+          if ! grep -q 'find_dependency(' "${CRUMBS_CFG}"; then
+            echo "WARNING: crumbsConfig.cmake does not contain find_dependency(), this may be okay if crumbs had no package dependencies at build-time.";
+          else
+            echo "Found find_dependency in crumbsConfig.cmake — good.";
+          fi
           echo "--- crumbsTargets.cmake (head) ---"
           TARGETS_FILE="${CRUMBS_DIR}/crumbsTargets.cmake"
           [ -f "${TARGETS_FILE}" ] && sed -n '1,200p' "${TARGETS_FILE}" || echo "crumbsTargets.cmake not found in ${CRUMBS_DIR}"
