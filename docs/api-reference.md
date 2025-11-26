@@ -1,4 +1,4 @@
-# API Reference (C core + platform HALs)
+# API Reference
 
 This section documents the public C API exposed by the CRUMBS core and the platform HALs (Arduino and Linux).
 

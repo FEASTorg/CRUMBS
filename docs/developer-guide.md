@@ -1,4 +1,4 @@
-# CRUMBS — Developer Guide
+# Developer Guide
 
 This guide explains the design, architecture, and implementation details of the CRUMBS protocol and codebase. It is intended for engineers integrating CRUMBS into microcontrollers (MCUs) and single-board computers (SBCs), or for contributors who want to understand, extend, and maintain the project.
 
