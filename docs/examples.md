@@ -84,3 +84,17 @@ for (uint8_t addr = 8; addr < 120; addr++) {
 ```
 
 For protocol-aware discovery (find devices that actually speak CRUMBS) use the core helper `crumbs_controller_scan_for_crumbs()` which performs a read-and-decode probe. See the Getting Started guide for short Arduino and Linux examples.
+
+## Native C example (CMake + static link)
+
+There is a minimal native C example that demonstrates using CRUMBS as a compiled library and linking a small program against the `crumbs` static target. The example is located at `examples/native/controller`.
+
+Build the example in-tree (recommended for local development):
+
+```bash
+cmake -S examples/native/controller -B examples/native/controller/build -DCRUMBS_BUILD_IN_TREE=ON
+cmake --build examples/native/controller/build --config Release
+./examples/native/controller/build/crumbs_native_example
+```
+
+If you have installed CRUMBS (and supplied CMake config files to your install prefix) you can instead build the example against an installed package by turning off `CRUMBS_BUILD_IN_TREE` and setting `CMAKE_PREFIX_PATH` accordingly.
