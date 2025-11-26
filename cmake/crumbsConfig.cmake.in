@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+
+# Load targets
+include("${CMAKE_CURRENT_LIST_DIR}/crumbsTargets.cmake")

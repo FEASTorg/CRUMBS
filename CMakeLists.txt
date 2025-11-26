@@ -48,11 +48,12 @@ add_library(crumbs STATIC ${CRUMBS_CORE_SOURCES})
 # Public headers live in src/ (for now)
 target_include_directories(crumbs
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src          # crumbs.h, crumbs_*.h, crumbs_linux.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/crc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/crc/c99
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/hal/linux
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/core>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/crc>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/crc/c99>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/hal/linux>
+        $<INSTALL_INTERFACE:include/crumbs>
 )
 
 # ---------------------------------------------------------------------------
@@ -131,8 +132,11 @@ endif()
 # ---------------------------------------------------------------------------
 
 # Install the static library
+# Install the static library and export targets so consumers can use find_package(crumbs)
 install(TARGETS crumbs
+    EXPORT crumbsTargets
     ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include/crumbs
 )
 
 # Install public headers under include/crumbs/
@@ -145,4 +149,35 @@ install(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/crumbs_message.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/crumbs_linux.h
     DESTINATION include/crumbs
+)
+
+# ---------------------------------------------------------------------------
+# Export / Config packaging for CMake consumers
+# ---------------------------------------------------------------------------
+include(CMakePackageConfigHelpers)
+
+set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/crumbs")
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/crumbsConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfig.cmake"
+    INSTALL_DESTINATION ${config_install_dir}
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(EXPORT crumbsTargets
+    FILE crumbsTargets.cmake
+    NAMESPACE crumbs::
+    DESTINATION ${config_install_dir}
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfigVersion.cmake"
+    DESTINATION ${config_install_dir}
 )

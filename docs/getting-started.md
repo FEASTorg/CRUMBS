@@ -11,6 +11,30 @@
 
 1. No external dependencies required.
 
+### Native C (CMake) installation
+
+You can build and install CRUMBS as a CMake library and then use `find_package(crumbs CONFIG)` from other projects.
+
+In the source tree:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release --parallel
+cmake --install build --prefix /usr/local
+```
+
+After installation you can use CRUMBS in other CMake projects with:
+
+```cmake
+find_package(crumbs CONFIG REQUIRED)
+add_executable(myprog main.c)
+target_link_libraries(myprog PRIVATE crumbs::crumbs)
+```
+
+Tips
+- For local development prefer the in-tree example usage (examples/native/controller) which will link the in-repo `crumbs` target via `add_subdirectory`.
+- When packaging for distribution ensure you install the exported cmake files (the top-level CMake provided export/install rules place crumbs targets under lib/cmake/crumbs) so `find_package(crumbs CONFIG)` can locate them via CMAKE_PREFIX_PATH or an installed system prefix.
+
 ## Basic Usage
 
 ### Controller (Arduino — C API)
