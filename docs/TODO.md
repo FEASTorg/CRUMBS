@@ -1,3 +1,4 @@
 # TODO
 
-- [ ] Slowly make Doxygen check more strcict over time (start with public API, then internal docs)
+- [ ] Implement variable length payloads for efficiency (currently fixed-size messages of 7 floats totaling 31 bytes with header and crc).
+- [ ] Implement function handlers
