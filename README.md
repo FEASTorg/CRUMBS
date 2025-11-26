@@ -1,11 +1,15 @@
 # CRUMBS
 
 [![CI](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml/badge.svg)](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml)
+[![Docs](https://github.com/FEASTorg/FEASTorg.github.io/actions/workflows/pages.yml/badge.svg)](https://feastorg.github.io/crumbs/)
+
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](./LICENSE)
 [![Language](https://img.shields.io/badge/language-C%20%7C%20C%2B%2B-00599C)](./)
 [![CMake](https://img.shields.io/badge/build-CMake-064F8C)](./)
-[![Arduino](https://img.shields.io/badge/platform-Arduino-00979D.svg)](docs/getting-started.md)
-[![Linux](https://img.shields.io/badge/platform-Linux-FCC624.svg)](docs/getting-started.md)
+
+![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
+![PlatformIO](https://img.shields.io/badge/PlatformIO-E37B0D?logo=platformio&logoColor=white&style=flat)
+![Arduino](https://img.shields.io/badge/​Arduino-00979D?logo=arduino&logoColor=white)
 
 CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
@@ -66,7 +70,31 @@ Working examples for both Arduino and Linux are provided under `examples/`:
 
 - `examples/arduino` — controller and peripheral sketches using the C API and `crumbs_arduino.h`
 - `examples/linux` — native controller example using the Linux HAL
+- `examples/platformio/controller` — small PlatformIO Arduino example showing how to use the Arduino HAL (see examples/platformio)
 
 ## License
 
 GPL-3.0 - see [LICENSE](LICENSE) file for details.
+
+## PlatformIO
+
+This project includes a `library.json` manifest so it can be used as a PlatformIO library. There is a small PlatformIO example project in `examples/platformio/controller`.
+
+Quick usage (from a PlatformIO project):
+
+1. Add the library via a git reference or the registry in your project's `platformio.ini`:
+
+```ini
+[env:myboard]
+platform = atmelavr
+framework = arduino
+board = uno
+lib_deps = https://github.com/FEASTorg/CRUMBS.git#v0.6.1
+```
+
+2. Include and use the library in your code: `#include <crumbs_arduino.h>`
+
+Notes:
+
+- `library.json` declares frameworks=arduino and platforms=\* which helps PlatformIO resolve and install the library.
+- Local example uses `lib_extra_dirs` to reference the repo root so you can build the example during development.
