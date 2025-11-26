@@ -15,10 +15,40 @@ CRC Variant Selection for CRUMBS Protocol (ATmega328P Target).
 
 ## CRC Code Generation
 
-The CRC code used in CRUMBS is generated using the following files found in the `scripts/` directory:
+The CRC generation workflow has been simplified and consolidated into a single script:
 
-- `generate_crc8_c99.py`: Python script to generate C99-compatible CRC code using pycrc.
-- `generate_crc8_arduino.py`: Python script to generate Arduino-compatible CRC code from the C99 code.
-- `validate_and_stage_crc8.py`: Python script to validate the generated CRC code and move it to the appropriate `src/crc/` directory.
+- `scripts/generate_crc8.py` — generates C99 outputs via pycrc and optionally stages variants into `src/crc` so the library compiles against a chosen CRC-8 implementation.
 
-**Note**: The CRC implementations included in this repository are generated using [pycrc](https://github.com/tpircher/pycrc). The generation approach here is inspired by the [AceCRC](https://github.com/bxparks/AceCRC) project, but the library ships a simplified locally-named API (e.g., `crc8_nibble_*`) and does not require AceCRC as a runtime dependency.
+What it produces:
+
+- Generated C99 outputs (per-variant):
+  - `dist/crc/c99/crc8_<variant>.h`
+  - `dist/crc/c99/crc8_<variant>.c`
+
+- Staged (copied) files (if staging enabled):
+  - `src/crc/crc8_<variant>.h`
+  - `src/crc/crc8_<variant>.c`
+
+Usage examples and notes:
+
+
+    # Generate the default variant (nibble) and stage it into src/crc
+    python scripts/generate_crc8.py
+
+    # Generate nibble+byte variants and *don't* stage them into src/ (writes only to dist/)
+    python scripts/generate_crc8.py --algos nibble,byte --no-stage
+
+    # Generate all variants and stage them (bit,nibble,nibblem,byte)
+    python scripts/generate_crc8.py --algos bit,nibble,nibblem,byte
+
+By default the script stages `nibble` (the variant chosen by the project) to keep the
+repository in a consistent state. The generator is driven by `pycrc` and produces
+portable, C99-compatible implementations.
+
+If you previously relied on separate conversion or staging scripts (`generate_crc8_c99.py`,
+`validate_and_stage_crc8.py`, `generate_crc8_arduino.py`) note that this new script replaces the
+common C99 generation + staging flow. The Arduino conversion script remains available for
+specialized Arduino-friendly conversions but is no longer part of the default generation +
+staging workflow.
+
+Refer to `scripts/generate_crc8.py --help` for full options and usage.
