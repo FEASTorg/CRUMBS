@@ -19,4 +19,6 @@ jobs:
           sudo apt-get install -y doxygen
 
       - name: Run doc-check script
-        run: scripts/doccheck.sh
+        # Run explicitly with bash so the step doesn't fail if the file lacks
+        # executable permissions on the runner (permission denied previously).
+        run: bash ./scripts/doccheck.sh
