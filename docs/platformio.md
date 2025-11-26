@@ -15,6 +15,8 @@ This project includes a PlatformIO library manifest (`library.json`) and Platfor
 
 2. (Optional) Create or log in to your PlatformIO account.
 
+    Either log in from the GUI, or
+
 3. Publish from your repo checkout (user must have permission):
 
    pio pkg publish
