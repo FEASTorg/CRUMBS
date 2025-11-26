@@ -146,6 +146,7 @@ Maintenance notes for contributors
 
 - Keep the core strictly C and free of platform headers. HALs may use C++ where platform bindings (Arduino) are convenient.
 - Add tests near `src/core` for encode/decode/CRC changes; instruction generators for CRC are in `scripts/`.
+  - Use `scripts/generate_crc8.py` to regenerate CRC-8 C99 variants (default staging is `nibble` which is the project default). The script writes generated C99 outputs into `dist/crc/c99` and will stage selected variants into `src/crc` when invoked without `--no-stage`.
 - Use guarded implementations in HALs for platform-specific includes (example: linux-wire guarded under **linux** so Arduino builds stay clean).
 
 Where to start reading code for contributions
