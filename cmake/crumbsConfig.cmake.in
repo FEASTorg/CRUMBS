@@ -1,11 +1,6 @@
 @PACKAGE_INIT@
 
-# Let CMake locate any package dependencies that were required at build time
-# Ensure the helper macro 'find_dependency' is available when expand the
-# @CRUMBS_PACKAGE_DEPENDENCIES@ placeholder below (CMake provides
-# CMakeFindDependencyMacro which defines find_dependency).
 include(CMakeFindDependencyMacro)
 @CRUMBS_PACKAGE_DEPENDENCIES@
 
-# Load targets
 include("${CMAKE_CURRENT_LIST_DIR}/crumbsTargets.cmake")

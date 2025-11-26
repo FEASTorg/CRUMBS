@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -27,10 +27,11 @@ jobs:
             libudev-dev \
             python3-pip
 
-      - name: Build and install linux-wire
+      # ---------------------------------------------------------------------
+      # Build & install linux-wire
+      # ---------------------------------------------------------------------
+      - name: Build linux-wire
         run: |
-          # Ensure a clean clone: remove the directory if it exists (avoid clone errors)
-          if [ -d third_party/linux-wire ]; then rm -rf third_party/linux-wire || true; fi
           git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
           cmake -S third_party/linux-wire -B third_party/linux-wire/build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -38,7 +39,10 @@ jobs:
           cmake --build third_party/linux-wire/build --parallel
           cmake --install third_party/linux-wire/build
 
-      - name: Configure CRUMBS
+      # ---------------------------------------------------------------------
+      # Build & test CRUMBS
+      # ---------------------------------------------------------------------
+      - name: Configure CRUMBS (with Linux HAL)
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install
         run: |
@@ -55,52 +59,35 @@ jobs:
       - name: Run CRUMBS tests
         run: ctest --test-dir build --output-on-failure
 
-      - name: Install CRUMBS locally for out-of-tree example test
+      # ---------------------------------------------------------------------
+      # Out-of-tree example build
+      # ---------------------------------------------------------------------
+      - name: Install CRUMBS locally
+        run: cmake --install build --prefix ${{ github.workspace }}/install
+
+      - name: Build native example (out-of-tree)
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake --install build --prefix ${GITHUB_WORKSPACE}/install
-
-      # (skip verbose show of installed crumbsConfig; keep CI output minimal)
-
-      - name: Build native example (out-of-tree) against installed crumbs
-        run: |
-          # Compute prefixes at runtime using the expanded GITHUB_WORKSPACE
-          LINUX_WIRE_PREFIX="${GITHUB_WORKSPACE}/third_party/linux-wire/install"
-          INSTALL_PREFIX="${GITHUB_WORKSPACE}/install"
-          CMAKE_PREFIX_PATH="${LINUX_WIRE_PREFIX}:${INSTALL_PREFIX}"
-          export CMAKE_PREFIX_PATH
-          # Compute prefixes and ensure linux-wire was built
-          echo "CMAKE_PREFIX_PATH='${CMAKE_PREFIX_PATH}'"
-          LINUX_WIRE_CFG=$(find "${LINUX_WIRE_PREFIX}" -name 'linux_wireConfig.cmake' -print -quit || true)
-          if [ -z "${LINUX_WIRE_CFG}" ]; then
-            echo "ERROR: linux_wire package config not found under ${LINUX_WIRE_PREFIX}.";
-            echo "Check linux-wire build/install logs above.";
-            exit 1;
-          fi
-
-          CRUMBS_CFG=$(find "${GITHUB_WORKSPACE}/install" -name 'crumbsConfig.cmake' -print -quit || true)
-          if [ -z "${CRUMBS_CFG}" ]; then
-            echo "ERROR: crumbsConfig.cmake not found in install prefix (${GITHUB_WORKSPACE}/install).";
-            exit 1;
-          fi
-          CRUMBS_DIR=$(dirname "${CRUMBS_CFG}")
-
-          cmake -S examples/native/controller -B build-native -DCRUMBS_BUILD_IN_TREE=OFF -Dcrumbs_DIR=${CRUMBS_DIR} -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" -DCMAKE_BUILD_TYPE=Release
+          cmake -S examples/native/controller -B build-native \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
 
-      - name: Install PlatformIO CLI
+      # ---------------------------------------------------------------------
+      # PlatformIO builds
+      # ---------------------------------------------------------------------
+      - name: Install PlatformIO
         run: |
           python3 -m pip install -U pip
           python3 -m pip install -U platformio
 
-      - name: Build PlatformIO controller example (Nano)
+      - name: Build PlatformIO controller example
         run: |
-          pushd examples/platformio/controller
-          pio run -e nanoatmega328
-          popd
+          pio run -d examples/platformio/controller -e nanoatmega328
 
-      - name: Build PlatformIO peripheral example (Nano)
+      - name: Build PlatformIO peripheral example
         run: |
-          pushd examples/platformio/peripheral
-          pio run -e nanoatmega328
-          popd
+          pio run -d examples/platformio/peripheral -e nanoatmega328
