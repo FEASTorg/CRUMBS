@@ -27,16 +27,15 @@ jobs:
             libudev-dev \
             python3-pip
 
-      - name: Restore linux-wire cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            third_party/linux-wire/build
-            third_party/linux-wire/install
-          key: ${{ runner.os }}-linux-wire-v1
+      # No linux-wire cache: always build fresh for deterministic CI runs
 
       - name: Build and install linux-wire
         run: |
+          # Ensure a clean clone - CI should build a fresh linux-wire every job
+          if [ -d third_party/linux-wire ]; then
+            echo "Removing pre-existing third_party/linux-wire directory to avoid stale state";
+            rm -rf third_party/linux-wire || true
+          fi
           git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
           cmake -S third_party/linux-wire -B third_party/linux-wire/build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -138,11 +137,7 @@ jobs:
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
 
-      - name: Restore PlatformIO cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.platformio
-          key: ${{ runner.os }}-platformio-v1
+      # No PlatformIO cache: prefer a clean install for CI reproducibility
 
       - name: Install PlatformIO CLI
         run: |
