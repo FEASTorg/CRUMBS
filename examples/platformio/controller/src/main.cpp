@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <crumbs_arduino.h>
+#include <stdlib.h> // atof
 
 // Minimal PlatformIO-compatible Arduino example showing CRUMBS controller init
 
@@ -70,7 +71,7 @@ void loop()
     tok = strtok(NULL, ",");
     if (!tok)
       break;
-    m.data[i] = (float)strtof(tok, NULL);
+    m.data[i] = (float)atof(tok);
   }
 
   int rc = crumbs_controller_send(&controller_ctx, (uint8_t)addr, &m, crumbs_arduino_wire_write, NULL);
