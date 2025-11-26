@@ -21,3 +21,34 @@ Hardware: the example expects a peripheral listening on `/dev/i2c-1` at I2C addr
 ```bash
 ./crumbs_simple_linux_controller /dev/i2c-1 0x08
 ```
+
+## Linux example quick usage
+
+The Linux controller example is intended to pair with the Arduino peripheral examples (e.g. upload `examples/arduino/simple/peripheral_example/peripheral_example.ino` to a board).
+
+Build and run (from the repository root):
+
+```bash
+mkdir -p build && cd build
+cmake .. -DCRUMBS_ENABLE_LINUX_HAL=ON -DCRUMBS_BUILD_EXAMPLES=ON
+cmake --build . --parallel
+```
+
+Run the example (default: /dev/i2c-1):
+
+```bash
+sudo ./crumbs_simple_linux_controller
+```
+
+Send to a specific address:
+
+```bash
+sudo ./crumbs_simple_linux_controller /dev/i2c-1 0x08
+```
+
+Scan for CRUMBS devices:
+
+```bash
+sudo ./crumbs_simple_linux_controller scan
+sudo ./crumbs_simple_linux_controller scan strict
+```

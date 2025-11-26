@@ -16,13 +16,6 @@
 
 #include <linux_wire.h> /* linux-wire C API */
 
-/* ---- Internal opaque struct definition -------------------------------- */
-
-struct crumbs_linux_i2c_s
-{
-    lw_i2c_bus bus;
-};
-
 /* ---- Public API -------------------------------------------------------- */
 
 int crumbs_linux_init_controller(crumbs_context_t *ctx,
