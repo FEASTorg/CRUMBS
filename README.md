@@ -1,5 +1,12 @@
 # CRUMBS
 
+[![CI](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml/badge.svg)](https://github.com/FEASTorg/CRUMBS/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](./LICENSE)
+[![Language](https://img.shields.io/badge/language-C%20%7C%20C%2B%2B-00599C)](./)
+[![CMake](https://img.shields.io/badge/build-CMake-064F8C)](./)
+[![Arduino](https://img.shields.io/badge/platform-Arduino-00979D.svg)](docs/getting-started.md)
+[![Linux](https://img.shields.io/badge/platform-Linux-FCC624.svg)](docs/getting-started.md)
+
 CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
 ## Features
