@@ -18,7 +18,10 @@ extern "C"
  *   - data[7]      : 7 * 4 bytes (float32, little-endian)
  *   - crc8         : 1 byte
  */
+/** @brief Number of float payload elements in a CRUMBS message. */
 #define CRUMBS_DATA_LENGTH 7u
+
+/** @brief Total serialized message length in bytes (header + data + CRC). */
 #define CRUMBS_MESSAGE_SIZE 31u
 
     /**

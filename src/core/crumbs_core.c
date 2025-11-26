@@ -365,16 +365,33 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
 
 /* ---- CRC stats helpers ------------------------------------------------- */
 
+/**
+ * @brief Get the number of CRC errors observed by the context.
+ *
+ * @param ctx Context to query (may be NULL).
+ * @return Count of CRC failures recorded by @p ctx (0 if ctx is NULL).
+ */
 uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx)
 {
     return ctx ? ctx->crc_error_count : 0u;
 }
 
+/**
+ * @brief Return 1 if the last decoded frame had a valid CRC.
+ *
+ * @param ctx Context to query (may be NULL).
+ * @return 1 if the last decode was CRC-ok, 0 otherwise.
+ */
 int crumbs_last_crc_ok(const crumbs_context_t *ctx)
 {
     return (ctx && ctx->last_crc_ok) ? 1 : 0;
 }
 
+/**
+ * @brief Reset CRC statistics for @p ctx.
+ *
+ * This clears the error count and sets last_crc_ok to true.
+ */
 void crumbs_reset_crc_stats(crumbs_context_t *ctx)
 {
     if (!ctx)

@@ -9,6 +9,7 @@
 #include "crumbs_arduino.h"
 #include "crumbs_message.h"
 
+/** @brief Default Two-Wire (I²C) bus frequency used by Arduino HAL (100 kHz). */
 #ifndef CRUMBS_DEFAULT_TWI_FREQ
 #define CRUMBS_DEFAULT_TWI_FREQ 100000UL
 #endif

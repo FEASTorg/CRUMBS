@@ -31,6 +31,10 @@ extern "C"
     } crumbs_role_t;
 
     struct crumbs_context_s;
+    /**
+     * @typedef crumbs_context_t
+     * @brief Opaque handle type for a CRUMBS endpoint context (see struct crumbs_context_s).
+     */
     typedef struct crumbs_context_s crumbs_context_t;
 
     /**
@@ -204,10 +208,32 @@ extern "C"
                                       size_t out_buf_len,
                                       size_t *out_len);
 
-    /* CRC stats helpers */
+    /** @name CRC statistics helpers
+     *  Convenience helpers to access / reset CRC statistics stored in a context.
+     *  @{ */
+    /**
+     * @brief Get the number of CRC failures recorded in @p ctx.
+     *
+     * @param ctx Context to query (may be NULL).
+     * @return Number of CRC failures (0 if ctx is NULL).
+     */
     uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx);
+
+    /**
+     * @brief Query whether the last decoded frame had a valid CRC.
+     *
+     * @param ctx Context to query (may be NULL).
+     * @return 1 if last decode had valid CRC, 0 otherwise (or if ctx==NULL).
+     */
     int crumbs_last_crc_ok(const crumbs_context_t *ctx);
+
+    /**
+     * @brief Reset CRC statistics tracked in the context.
+     *
+     * Clears the error count and marks last CRC as OK.
+     */
     void crumbs_reset_crc_stats(crumbs_context_t *ctx);
+    /** @} */
 
 #ifdef __cplusplus
 }

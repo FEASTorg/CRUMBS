@@ -32,7 +32,7 @@ extern "C"
 #else
 typedef struct crumbs_linux_i2c_s
 {
-    int _placeholder;
+    int _placeholder; /**< Placeholder used on non-Linux builds so the type is instantiable. */
 } crumbs_linux_i2c_t;
 #endif
 

@@ -14,6 +14,9 @@ extern "C"
      * @brief CRC-8 helper API for CRUMBS.
      */
 
+    /** @typedef crumbs_crc8_t
+     *  @brief 8-bit CRC type used by CRUMBS.
+     */
     typedef uint8_t crumbs_crc8_t;
 
     /**
