@@ -12,7 +12,7 @@
 #include <string.h> /* memset */
 #include <errno.h>
 
-#include "crumbs_crc.h" /* for CRUMBS_MESSAGE_SIZE, etc., via crumbs.h tree */
+#include "crumbs_crc.h" /* for CRUMBS_MESSAGE_MAX_SIZE, etc., via crumbs.h tree */
 
 #if defined(__linux__)
 
@@ -122,8 +122,8 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
         return -2;
     }
 
-    /* Expect a fixed-size CRUMBS frame; loop until no more data or buffer fills. */
-    uint8_t buf[CRUMBS_MESSAGE_SIZE];
+    /* Read up to max CRUMBS frame size; actual length is variable. */
+    uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
     size_t total = 0u;
 
     while (total < sizeof(buf))

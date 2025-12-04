@@ -51,10 +51,14 @@ void handleMessage(crumbs_context_t *ctx, crumbs_message_t *message)
     Serial.println(message->type_id);
     Serial.print(F("command_type: "));
     Serial.println(message->command_type);
+    Serial.print(F("data_len: "));
+    Serial.println(message->data_len);
     Serial.print(F("data: "));
-    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+    for (int i = 0; i < message->data_len; i++)
     {
-        Serial.print(message->data[i]);
+        Serial.print(F("0x"));
+        if (message->data[i] < 0x10) Serial.print('0');
+        Serial.print(message->data[i], HEX);
         Serial.print(F(" "));
     }
     Serial.println();
@@ -98,13 +102,15 @@ void handleRequest(crumbs_context_t *ctx, crumbs_message_t *reply)
     reply->type_id = 1;
     reply->command_type = 0;
 
-    reply->data[0] = 42.0f;
-    reply->data[1] = 1.0f;
-    reply->data[2] = 2.0f;
-    reply->data[3] = 3.0f;
-    reply->data[4] = 4.0f;
-    reply->data[5] = 5.0f;
-    reply->data[6] = 6.0f;
+    // Variable-length payload: send 7 bytes
+    reply->data_len = 7;
+    reply->data[0] = 42;
+    reply->data[1] = 1;
+    reply->data[2] = 2;
+    reply->data[3] = 3;
+    reply->data[4] = 4;
+    reply->data[5] = 5;
+    reply->data[6] = 6;
 }
 
 /**

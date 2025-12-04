@@ -31,23 +31,37 @@ static int fake_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, 
     if (addr != DEV_A && addr != DEV_B)
         return 0; /* no data */
 
-    if (len < CRUMBS_MESSAGE_SIZE)
-        return 0;
-
     /* Build a valid CRUMBS frame using encode helper */
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = (uint8_t)addr; /* unique but arbitrary */
     m.command_type = 0x1;
-    m.data[0] = (float)addr;
+    m.data_len = 3;
+    m.data[0] = (uint8_t)addr;
+    m.data[1] = 0xAA;
+    m.data[2] = 0xBB;
 
-    uint8_t frame[CRUMBS_MESSAGE_SIZE];
+    uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
     size_t w = crumbs_encode_message(&m, frame, sizeof(frame));
-    if (w == 0)
+    if (w == 0 || w > len)
         return -1;
 
     memcpy(buffer, frame, w);
     return (int)w;
+}
+
+static int fake_read_noncrumbs(void *user_ctx, uint8_t addr, uint8_t *buf, size_t len, uint32_t to)
+{
+    (void)user_ctx;
+    (void)to;
+    if (addr != DEV_A)
+        return 0;
+    if (len < 5)
+        return 0;
+    /* write 5 bytes of garbage (not a valid CRUMBS frame) */
+    for (size_t i = 0; i < 5 && i < len; ++i)
+        buf[i] = (uint8_t)(i + 1);
+    return 5;
 }
 
 int main(void)
@@ -83,21 +97,6 @@ int main(void)
     }
 
     /* Also test that a non-CRUMBS payload is not accepted */
-    /* implement fake_read_noncrumbs returning invalid payload */
-    int fake_read_noncrumbs(void *user_ctx, uint8_t addr, uint8_t *buf, size_t len, uint32_t to)
-    {
-        (void)user_ctx;
-        (void)to;
-        if (addr != DEV_A)
-            return 0;
-        if (len < 5)
-            return 0;
-        /* write 5 bytes of garbage (not CRUMBS frame) */
-        for (size_t i = 0; i < 5 && i < len; ++i)
-            buf[i] = (uint8_t)(i + 1);
-        return 5;
-    }
-
     int n2 = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x20, 0,
                                                fake_write, fake_read_noncrumbs, NULL, found, sizeof(found), 10000);
     if (n2 < 0)

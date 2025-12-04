@@ -6,19 +6,28 @@ The core is intentionally small and C-friendly so it is easy to consume from Ard
 
 ## Key types and constants
 
-- `crumbs_message_t` — fixed-size message struct (see `src/crumbs_message.h`). Fields:
+- `crumbs_message_t` — message struct (see `src/crumbs_message.h`). Fields:
 
   - `slice_address` — (logical) slice address (NOT serialized)
   - `type_id` — 1 byte
   - `command_type` — 1 byte
-  - `data[7]` — 7 float32 payload fields (little-endian)
-  - `crc8` — 1 byte CRC-8 computed over the serialized payload
+  - `data_len` — payload length (0–27)
+  - `data[27]` — raw byte payload (opaque to CRUMBS)
+  - `crc8` — 1 byte CRC-8 computed over the serialized header + payload
 
 - `crumbs_context_t` — per-endpoint context (role, address, CRC statistics, callbacks, user_data)
-- `CRUMBS_DATA_LENGTH` — number of payload floats (7)
-- `CRUMBS_MESSAGE_SIZE` — serialized frame size (31 bytes)
+- `CRUMBS_MAX_PAYLOAD` — maximum payload size (27 bytes)
+- `CRUMBS_MESSAGE_MAX_SIZE` — maximum serialized frame size (31 bytes)
 
-Serialized frame layout (31 bytes): - type_id (1) - command_type (1) - data (7 \* 4 = 28) - crc8 (1)
+Serialized frame layout (4–31 bytes):
+
+- type_id (1)
+- command_type (1)
+- data_len (1)
+- data[0..data_len-1] (variable, 0–27 bytes)
+- crc8 (1)
+
+CRC is computed over: type_id + command_type + data_len + data[0..data_len-1]
 
 ## Core API (full, concise)
 
@@ -57,8 +66,8 @@ void crumbs_reset_crc_stats(crumbs_context_t *ctx);
 ### Return values and common semantics
 
 - Encoding/decoding
-    - `crumbs_encode_message()` returns CRUMBS_MESSAGE_SIZE on success, 0 on failure (e.g., buffer too small).
-    - `crumbs_decode_message()` returns `0` on success, `-1` if buffer too small, and `-2` if the CRC check fails. When a non-NULL context is passed the function will update CRC statistics accessible via `crumbs_get_crc_error_count()` and `crumbs_last_crc_ok()`.
+    - `crumbs_encode_message()` returns encoded frame length (4 + data_len) on success, 0 on failure (e.g., buffer too small or data_len > CRUMBS_MAX_PAYLOAD).
+    - `crumbs_decode_message()` returns `0` on success, `-1` if buffer too small or data_len invalid, and `-2` if the CRC check fails. When a non-NULL context is passed the function will update CRC statistics accessible via `crumbs_get_crc_error_count()` and `crumbs_last_crc_ok()`.
 
 - Controller helpers
     - `crumbs_controller_send()` returns `0` on success; non-zero indicates an I2C write error as returned by the platform `write_fn`.
@@ -72,7 +81,7 @@ All HAL adapters follow the `crumbs_i2c_*` function signatures in `src/crumbs_i2
 
 ## Arduino HAL (high-level conveniences)
 
-```c
+````c
 /* Initialize controller/peripheral using default Wire instance */
 void crumbs_arduino_init_controller(crumbs_context_t *ctx);
 void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t address);
@@ -89,10 +98,16 @@ Usage (controller, Arduino):
 ```c
 crumbs_context_t ctx;
 crumbs_arduino_init_controller(&ctx);
-// build message
-crumbs_message_t msg = {0}; msg.type_id=1; msg.command_type=1; msg.data[0]=1.23f;
+// build message with byte payload
+crumbs_message_t msg = {0};
+msg.type_id = 1;
+msg.command_type = 1;
+// example: encode a float into bytes
+float val = 1.23f;
+msg.data_len = sizeof(float);
+memcpy(msg.data, &val, sizeof(float));
 int rc = crumbs_controller_send(&ctx, 0x08, &msg, crumbs_arduino_wire_write, NULL);
-```
+````
 
 Usage (peripheral, Arduino):
 
@@ -104,7 +119,7 @@ crumbs_set_callbacks(&ctx, on_message_cb, on_request_cb, NULL);
 
 ## Linux HAL (selected)
 
-```c
+````c
 int crumbs_linux_init_controller(crumbs_context_t *ctx,
                                  crumbs_linux_i2c_t *i2c,
                                  const char *device_path,
@@ -124,13 +139,13 @@ crumbs_context_t ctx;
 crumbs_linux_i2c_t bus;
 int rc = crumbs_linux_init_controller(&ctx, &bus, "/dev/i2c-1", 10000);
 // send using crumbs_controller_send(&ctx, addr, &msg, crumbs_linux_i2c_write, &bus);
-```
+````
 
 Note: Most functions return `0` on success and negative or non-zero codes on error — consult the headers for specific return values.
 
 ## Scanner & read primitive
 
-The core scanner uses a read primitive (`crumbs_i2c_read_fn`) and an optional write primitive to reliably discover devices that actually speak CRUMBS. It reads up to `CRUMBS_MESSAGE_SIZE` bytes and only accepts addresses that provide a CRC-valid CRUMBS frame.
+The core scanner uses a read primitive (`crumbs_i2c_read_fn`) and an optional write primitive to reliably discover devices that actually speak CRUMBS. It reads up to `CRUMBS_MESSAGE_MAX_SIZE` bytes and only accepts addresses that provide a CRC-valid CRUMBS frame.
 
 Signature (read primitive):
 

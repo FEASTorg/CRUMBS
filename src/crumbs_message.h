@@ -12,31 +12,36 @@ extern "C"
  * @file
  * @brief CRUMBS message layout and serialization constants.
  *
- * The wire frame is a fixed-size 31-byte sequence:
+ * The wire frame is a variable-length sequence (4–31 bytes):
  *   - type_id      : 1 byte
  *   - command_type : 1 byte
- *   - data[7]      : 7 * 4 bytes (float32, little-endian)
+ *   - data_len     : 1 byte (0–27)
+ *   - data[]       : data_len bytes (opaque payload)
  *   - crc8         : 1 byte
+ *
+ * Maximum frame size is 31 bytes to fit within Arduino Wire's 32-byte buffer.
  */
-/** @brief Number of float payload elements in a CRUMBS message. */
-#define CRUMBS_DATA_LENGTH 7u
 
-/** @brief Total serialized message length in bytes (header + data + CRC). */
-#define CRUMBS_MESSAGE_SIZE 31u
+/** @brief Maximum payload size in bytes (opaque byte array). */
+#define CRUMBS_MAX_PAYLOAD 27u
+
+/** @brief Maximum serialized message length in bytes (header + max payload + CRC). */
+#define CRUMBS_MESSAGE_MAX_SIZE (3u + CRUMBS_MAX_PAYLOAD + 1u)
 
     /**
-     * @brief Fixed-size message structure for CRUMBS communication.
+     * @brief Variable-length message structure for CRUMBS communication.
      *
      * The `slice_address` field is a logical address and is not serialized
      * by the encoder/decoder; it is left for user-level routing.
      */
     typedef struct crumbs_message_s
     {
-        uint8_t slice_address;          /**< Logical slice address (not serialized) */
-        uint8_t type_id;                /**< Identifier for the module type */
-        uint8_t command_type;           /**< Command or opcode identifier */
-        float data[CRUMBS_DATA_LENGTH]; /**< Payload data fields (7 floats) */
-        uint8_t crc8;                   /**< CRC-8 over serialized payload */
+        uint8_t slice_address;            /**< Logical slice address (not serialized) */
+        uint8_t type_id;                  /**< Identifier for the module type */
+        uint8_t command_type;             /**< Command or opcode identifier */
+        uint8_t data_len;                 /**< Number of payload bytes (0–27) */
+        uint8_t data[CRUMBS_MAX_PAYLOAD]; /**< Opaque payload bytes */
+        uint8_t crc8;                     /**< CRC-8 over serialized payload (filled by encoder) */
     } crumbs_message_t;
 
 #ifdef __cplusplus

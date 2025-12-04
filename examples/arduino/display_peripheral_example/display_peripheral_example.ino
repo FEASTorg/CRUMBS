@@ -110,18 +110,34 @@ void applyDataToChannels(const crumbs_message_t &m)
     const unsigned long kMinPeriod = 100UL;
     const unsigned long kMaxPeriod = 10000UL;
 
+    // Parse payload bytes into ratios and period
+    // Expected payload format: 4 floats (16 bytes): [green_ratio, yellow_ratio, red_ratio, period_s]
+    // Or raw bytes that user interprets as needed
+    
+    float ratios[3] = {0.5f, 0.0f, 0.0f};
     unsigned long requestedPeriod = kDefaultPeriod;
-    if (m.data[3] > 0.0f)
+
+    if (m.data_len >= 12) // At least 3 floats
     {
-        requestedPeriod = static_cast<unsigned long>(m.data[3] * 1000.0f);
+        memcpy(&ratios[0], &m.data[0], sizeof(float));
+        memcpy(&ratios[1], &m.data[4], sizeof(float));
+        memcpy(&ratios[2], &m.data[8], sizeof(float));
+    }
+    if (m.data_len >= 16) // 4th float for period
+    {
+        float period_s = 0.0f;
+        memcpy(&period_s, &m.data[12], sizeof(float));
+        if (period_s > 0.0f)
+        {
+            requestedPeriod = static_cast<unsigned long>(period_s * 1000.0f);
+        }
     }
     requestedPeriod = constrain(requestedPeriod, kMinPeriod, kMaxPeriod);
 
     for (size_t i = 0; i < 3; i++)
     {
         LedChan &chan = chans[i];
-        const float raw = (i < CRUMBS_DATA_LENGTH) ? m.data[i] : 0.0f;
-        const float ratio = constrain(raw, 0.0f, 1.0f);
+        const float ratio = constrain(ratios[i], 0.0f, 1.0f);
 
         chan.ratio = ratio;
         chan.period = requestedPeriod;

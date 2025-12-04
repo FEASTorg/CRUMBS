@@ -43,3 +43,4 @@
 # Distribution directory
 dist/
 _reference/
+build/

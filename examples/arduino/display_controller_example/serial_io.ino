@@ -5,8 +5,9 @@ extern void sendCrumbs(uint8_t address, crumbs_message_t &message);
 extern void requestCrumbs(uint8_t address);
 
 // Accept commands on serial in the following formats (space-separated):
-//   SEND <addr> <type_id> <command> <d0> <d1> <d2> <d3> <d4> <d5> <d6>
+//   SEND <addr> <type_id> <command> <byte0> <byte1> ...
 //   REQUEST <addr>
+// Bytes can be decimal or hex (e.g., 0x12).
 
 void handleSerial()
 {
@@ -19,7 +20,7 @@ void handleSerial()
         return;
 
     // Split tokens by whitespace
-    const size_t maxTokens = 12;
+    const size_t maxTokens = 32;
     String toks[maxTokens];
     size_t tokenCount = 0;
     int idx = 0;
@@ -51,15 +52,17 @@ void handleSerial()
     {
         uint8_t addr = (uint8_t)strtoul(toks[1].c_str(), NULL, 0);
         crumbs_message_t m = {};
-        m.type_id = (uint8_t)atoi(toks[2].c_str());
-        m.command_type = (uint8_t)atoi(toks[3].c_str());
-        for (size_t i = 0; i < CRUMBS_DATA_LENGTH && (4 + (int)i) < (int)tokenCount; ++i)
+        m.type_id = (uint8_t)strtoul(toks[2].c_str(), NULL, 0);
+        m.command_type = (uint8_t)strtoul(toks[3].c_str(), NULL, 0);
+        m.data_len = 0;
+        for (size_t i = 0; i < CRUMBS_MAX_PAYLOAD && (4 + i) < tokenCount; ++i)
         {
-            m.data[i] = (float)atof(toks[4 + i].c_str());
+            m.data[i] = (uint8_t)strtoul(toks[4 + i].c_str(), NULL, 0);
+            m.data_len++;
         }
         sendCrumbs(addr, m);
         return;
     }
 
-    Serial.println(F("Invalid command. Use: REQUEST <addr> or SEND <addr> <type> <cmd> <d0>.."));
+    Serial.println(F("Invalid command. Use: REQUEST <addr> or SEND <addr> <type> <cmd> <byte0>.."));
 }

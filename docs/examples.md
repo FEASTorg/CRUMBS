@@ -8,14 +8,14 @@ Send commands via serial interface and request data from peripherals. The exampl
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
-3. Send: `address,type_id,command_type,data0,data1,data2,data3,data4,data5,data6`
+3. Send: `address,type_id,command_type,byte0,byte1,...` (comma-separated bytes)
 4. Request: `request=address`
 
 ### Example Commands
 
 ```cpp
-8,1,1,75.0,1.0,0.0,65.0,2.0,7.0,3.14     // Send to address 8
-request=8                                 // Request data from address 8
+8,1,1,0,0,128,63,0,0,0,0     // Send to address 8 (first 4 bytes = 1.0f in little-endian)
+request=8                    // Request data from address 8
 ```
 
 ## Peripheral Example
@@ -31,7 +31,12 @@ void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
         case 0: // Data request (handled in on_request instead)
             break;
         case 1: // Set parameters
-            // read floats from m->data[] and apply
+            // read bytes from m->data[0..m->data_len-1] and apply
+            // example: decode a float from bytes
+            if (m->data_len >= sizeof(float)) {
+                float val;
+                memcpy(&val, m->data, sizeof(float));
+            }
             break;
     }
 }
@@ -40,7 +45,9 @@ void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
     reply->type_id = 1;
     reply->command_type = 0;
-    reply->data[0] = 42.0f;
+    float val = 42.0f;
+    reply->data_len = sizeof(float);
+    memcpy(reply->data, &val, sizeof(float));
 }
 
 void setup() {

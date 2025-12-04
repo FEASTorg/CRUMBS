@@ -13,15 +13,18 @@ static void on_message(crumbs_context_t *ctx, const crumbs_message_t *m)
   Serial.print(F("Received message: type_id="));
   Serial.print(m->type_id);
   Serial.print(F(" cmd="));
-  Serial.println(m->command_type);
-  for (size_t i = 0; i < CRUMBS_DATA_LENGTH; ++i)
+  Serial.print(m->command_type);
+  Serial.print(F(" data_len="));
+  Serial.println(m->data_len);
+
+  // Print payload bytes (hex)
+  for (size_t i = 0; i < m->data_len; ++i)
   {
-    // Print payload fields; demo stops at the first zero float
-    if (m->data[i] == 0.0f) break;
-    Serial.print(F(" data[")); Serial.print(i); Serial.print(F("]="));
-    Serial.print(m->data[i], 4);
+    Serial.print(F(" data[")); Serial.print(i); Serial.print(F("]=0x"));
+    if (m->data[i] < 0x10) Serial.print('0');
+    Serial.print(m->data[i], HEX);
   }
-  Serial.println();
+  if (m->data_len > 0) Serial.println();
 }
 
 static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
@@ -29,8 +32,11 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
   // Provide a simple reply payload for demo purposes
   reply->type_id = 0x10;
   reply->command_type = 0x42; // arbitrary
-  for (size_t i = 0; i < CRUMBS_DATA_LENGTH; ++i)
-    reply->data[i] = (float)(i + 1) * 1.234f;
+  reply->data_len = 4;
+  reply->data[0] = 0xDE;
+  reply->data[1] = 0xAD;
+  reply->data[2] = 0xBE;
+  reply->data[3] = 0xEF;
 }
 
 void setup()

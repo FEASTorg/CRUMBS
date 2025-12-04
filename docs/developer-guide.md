@@ -9,7 +9,8 @@ Short background (why CRUMBS)
 Goals and constraints
 
 - Small and portable C core (easy to include on microcontrollers)
-- Deterministic fixed-size wire format for simple framing and predictable behavior
+- Compact variable-length wire format for efficient framing (4–31 bytes)
+- Raw byte payloads (0–27 bytes) — interpretation is application-defined
 - CRC-8 for integrity across noisy wires
 - Thin HALs for Arduino (Wire) and Linux (linux-wire), with guarded implementations so a single repo can be used for both targets
 - Practical scan/discovery primitives that can find devices that _actually_ speak CRUMBS
@@ -26,15 +27,17 @@ High-level architecture
 
 Message format (wire format)
 
-- Fixed serialized length: 31 bytes (CRUMBS_MESSAGE_SIZE)
+- Variable serialized length: 4–31 bytes (CRUMBS_MESSAGE_MAX_SIZE = 31)
   - type_id: 1 byte
   - command_type: 1 byte
-  - data: 7 float32 values (7 × 4 = 28 bytes)
-  - crc8: 1 byte (CRC-8 computed over type_id + command_type + data)
+  - data_len: 1 byte (0–27)
+  - data: data_len bytes (raw opaque payload)
+  - crc8: 1 byte (CRC-8 computed over type_id + command_type + data_len + data[0..data_len-1])
 
 Design rationale
 
-- Fixed-size frames simplify read/parse loops on both controllers and peripherals — frames either read in full or fail fast.
+- Variable-length frames allow efficient payloads (no padding for short messages) while maintaining a bounded maximum size.
+- Raw byte payloads give applications full control over data encoding (floats, structs, strings, etc.).
 - CRC-8 is a good tradeoff on short bus lengths where noise may occur and a single byte per frame keeps overhead small.
 - Callback-driven peripheral handling keeps peripheral code simple and event-driven for MCU environments.
 
@@ -108,7 +111,13 @@ Examples & patterns
 ```c
 crumbs_context_t ctx;
 crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
-crumbs_message_t m = { .type_id = 1, .command_type = 1 };
+crumbs_message_t m = {0};
+m.type_id = 1;
+m.command_type = 1;
+// example: encode a float into bytes
+float val = 1.0f;
+m.data_len = sizeof(float);
+memcpy(m.data, &val, sizeof(float));
 crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, &Wire);
 ```
 

@@ -16,7 +16,7 @@ extern "C"
     /** @file
      * @brief CRUMBS core public API declarations.
      *
-     * CRUMBS is a minimal fixed-size I²C message protocol. This header
+     * CRUMBS is a minimal variable-length I²C message protocol. This header
      * declares the public types and functions used by both controller and
      * peripheral roles.
      */
@@ -109,7 +109,7 @@ extern "C"
      * @param msg Pointer to message to encode.
      * @param buffer Destination buffer.
      * @param buffer_len Size of @p buffer in bytes.
-     * @return Number of bytes written (CRUMBS_MESSAGE_SIZE) or 0 on error.
+     * @return Number of bytes written (4 + data_len) or 0 on error.
      */
     size_t crumbs_encode_message(const crumbs_message_t *msg,
                                  uint8_t *buffer,
@@ -121,10 +121,10 @@ extern "C"
      * Updates CRC-related statistics in @p ctx when provided.
      *
      * @param buffer Input buffer containing a serialized frame.
-     * @param buffer_len Length in bytes of @p buffer.
+     * @param buffer_len Length in bytes of @p buffer (must be 4 + data_len).
      * @param msg Output message struct (must not be NULL).
      * @param ctx Optional context updated with CRC stats (may be NULL).
-     * @return 0 on success, -1 if buffer too small, -2 on CRC mismatch.
+     * @return 0 on success, -1 if buffer too small or invalid, -2 on CRC mismatch.
      */
     int crumbs_decode_message(const uint8_t *buffer,
                               size_t buffer_len,
