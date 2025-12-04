@@ -1,12 +1,12 @@
 /**
- * @file controller_example.ino
- * @brief Minimal CRUMBS controller for the triple board rig.
+ * @file display_controller_example.ino
+ * @brief CRUMBS controller with OLED display for the triple board rig.
  *
- * Serial commands (newline terminated):
- *   SEND <addr> <greenRatio> <yellowRatio> <redRatio> <period_ms>
- *      e.g.  SEND 8 0.5 0 0.25 1500
+ * Serial commands (newline terminated, space-separated):
+ *   SEND <addr> <type_id> <cmd> [byte0 byte1 ...]
  *   REQUEST <addr>
- *      e.g.  REQUEST 0x08
+ *
+ * Bytes can be decimal or hex (0x..).
  */
 
 #include <Arduino.h>
@@ -87,8 +87,11 @@ void setup()
 
     Serial.println(F("CRUMBS Controller ready."));
     Serial.println(F("Commands:"));
-    Serial.println(F("  SEND <addr> <green> <yellow> <red> <period_ms>"));
+    Serial.println(F("  SEND <addr> <type> <cmd> [byte0 byte1 ...]"));
     Serial.println(F("  REQUEST <addr>"));
+    Serial.println(F("Examples:"));
+    Serial.println(F("  SEND 8 1 1 0x00 0x00 0x80 0x3F"));
+    Serial.println(F("  REQUEST 0x08"));
 }
 
 // =======================================================
@@ -141,11 +144,11 @@ void rememberExchange(bool wasRx, uint8_t address, const crumbs_message_t &messa
 
 void sendCrumbs(uint8_t address, crumbs_message_t &message)
 {
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
+    uint8_t buffer[CRUMBS_MESSAGE_MAX_SIZE];
     size_t bytes = crumbs_encode_message(&message, buffer, sizeof(buffer));
     if (bytes == 0)
     {
-        Serial.println(F("Encode failed (buffer too small)."));
+        Serial.println(F("Encode failed (buffer too small or invalid data_len)."));
         rememberExchange(false, address, message, false);
         setError();
         return;
@@ -161,14 +164,10 @@ void sendCrumbs(uint8_t address, crumbs_message_t &message)
     {
         Serial.print(F("Sent to 0x"));
         Serial.print(address, HEX);
-        Serial.print(F(" | ratios="));
-        Serial.print(message.data[0], 3);
-        Serial.print(' ');
-        Serial.print(message.data[1], 3);
-        Serial.print(' ');
-        Serial.print(message.data[2], 3);
-        Serial.print(F(" period_ms="));
-        Serial.println((unsigned long)message.data[3]);
+        Serial.print(F(" | data_len="));
+        Serial.print(message.data_len);
+        Serial.print(F(" bytes"));
+        Serial.println();
 
         rememberExchange(false, address, message, true);
         pulseActivity();
@@ -188,13 +187,13 @@ void sendCrumbs(uint8_t address, crumbs_message_t &message)
 
 void requestCrumbs(uint8_t address)
 {
-    /* Request CRUMBS_MESSAGE_SIZE bytes — cast to int for explicit overload */
-    Wire.requestFrom((int)address, (int)CRUMBS_MESSAGE_SIZE);
+    /* Request up to CRUMBS_MESSAGE_MAX_SIZE bytes — cast to int for explicit overload */
+    Wire.requestFrom((int)address, (int)CRUMBS_MESSAGE_MAX_SIZE);
     delay(5);
 
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
+    uint8_t buffer[CRUMBS_MESSAGE_MAX_SIZE];
     size_t count = 0;
-    while (Wire.available() && count < CRUMBS_MESSAGE_SIZE)
+    while (Wire.available() && count < CRUMBS_MESSAGE_MAX_SIZE)
     {
         buffer[count++] = Wire.read();
     }
@@ -212,14 +211,17 @@ void requestCrumbs(uint8_t address)
     {
         Serial.print(F("Response from 0x"));
         Serial.print(address, HEX);
-        Serial.print(F(" | ratios="));
-        Serial.print(message.data[0], 3);
-        Serial.print(' ');
-        Serial.print(message.data[1], 3);
-        Serial.print(' ');
-        Serial.print(message.data[2], 3);
-        Serial.print(F(" period_ms="));
-        Serial.println((unsigned long)message.data[3]);
+        Serial.print(F(" | data_len="));
+        Serial.print(message.data_len);
+        Serial.print(F(" bytes: "));
+        for (int i = 0; i < message.data_len && i < 8; ++i)
+        {
+            Serial.print(F("0x"));
+            if (message.data[i] < 0x10) Serial.print('0');
+            Serial.print(message.data[i], HEX);
+            Serial.print(' ');
+        }
+        Serial.println();
 
         rememberExchange(true, address, message, true);
         pulseActivity();

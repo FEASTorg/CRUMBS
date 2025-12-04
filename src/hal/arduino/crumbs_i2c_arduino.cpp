@@ -33,7 +33,7 @@ static void crumbs_arduino_on_receive(int numBytes)
         return;
     }
 
-    uint8_t buffer[CRUMBS_MESSAGE_SIZE];
+    uint8_t buffer[CRUMBS_MESSAGE_MAX_SIZE];
     size_t index = 0;
 
     while (Wire.available() > 0 && index < sizeof(buffer))
@@ -58,7 +58,7 @@ static void crumbs_arduino_on_request()
         return;
     }
 
-    uint8_t frame[CRUMBS_MESSAGE_SIZE];
+    uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
     size_t frame_len = 0;
 
     int rc = crumbs_peripheral_build_reply(g_crumbs_ctx,

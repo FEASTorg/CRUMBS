@@ -56,7 +56,11 @@ void setup() {
     crumbs_message_t m = {};
     m.type_id = 1;
     m.command_type = 1;
-    m.data[0] = 25.5f;
+
+    // Variable-length payload: send a float as 4 bytes
+    float temp = 25.5f;
+    m.data_len = sizeof(float);
+    memcpy(m.data, &temp, sizeof(float));
 
     // Send to target address 0x08 using the Wire HAL via crumbs_controller_send
     crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
@@ -72,14 +76,21 @@ crumbs_context_t ctx;
 
 // Message receive callback
 void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
-    // process the message (peek m->data[] etc.)
+    // process the message: m->data_len bytes in m->data[]
+    if (m->data_len >= sizeof(float)) {
+        float val;
+        memcpy(&val, m->data, sizeof(float));
+        // use val...
+    }
 }
 
 // Request callback — fill reply message
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
     reply->type_id = 1;
     reply->command_type = 0;
-    reply->data[0] = 42.0f;
+    float val = 42.0f;
+    reply->data_len = sizeof(float);
+    memcpy(reply->data, &val, sizeof(float));
 }
 
 void setup() {

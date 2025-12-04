@@ -7,46 +7,18 @@
 
 #include <string.h> /* memcpy, memset */
 
-/* ---- Internal constants & helpers (file-local) ------------------------- */
+/* ---- Internal constants (file-local) ----------------------------------- */
+
+/** @brief Minimum frame size: type_id + command_type + data_len + crc8 = 4 bytes. */
+static const size_t k_min_frame_len = 4u;
+
+/** @brief Header size: type_id + command_type + data_len = 3 bytes. */
+static const size_t k_header_len = 3u;
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-_Static_assert(sizeof(float) == 4, "CRUMBS requires 32-bit IEEE 754 float");
+_Static_assert(CRUMBS_MESSAGE_MAX_SIZE == 31u, "CRUMBS_MESSAGE_MAX_SIZE must be 31");
+_Static_assert(CRUMBS_MAX_PAYLOAD == 27u, "CRUMBS_MAX_PAYLOAD must be 27");
 #endif
-
-/* Header = type_id + command_type */
-static const size_t k_header_len = 2u;
-static const size_t k_data_len = CRUMBS_DATA_LENGTH;
-static const size_t k_payload_len = 2u + (CRUMBS_DATA_LENGTH * sizeof(float));
-static const size_t k_crc_len = 1u;
-static const size_t k_frame_len = 2u + (CRUMBS_DATA_LENGTH * sizeof(float)) + 1u;
-
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-_Static_assert(CRUMBS_MESSAGE_SIZE == 31u, "CRUMBS_MESSAGE_SIZE must be 31");
-#endif
-
-/* Write a 32-bit little-endian representation of a float into a buffer. */
-static void write_float_le(float value, uint8_t *out)
-{
-    uint32_t raw = 0;
-    memcpy(&raw, &value, sizeof(raw));
-    out[0] = (uint8_t)(raw & 0xFFu);
-    out[1] = (uint8_t)((raw >> 8) & 0xFFu);
-    out[2] = (uint8_t)((raw >> 16) & 0xFFu);
-    out[3] = (uint8_t)((raw >> 24) & 0xFFu);
-}
-
-/* Read a 32-bit little-endian float from @p in. */
-static float read_float_le(const uint8_t *in)
-{
-    uint32_t raw =
-        ((uint32_t)in[0]) |
-        ((uint32_t)in[1] << 8) |
-        ((uint32_t)in[2] << 16) |
-        ((uint32_t)in[3] << 24);
-    float value = 0.0f;
-    memcpy(&value, &raw, sizeof(value));
-    return value;
-}
 
 /* ---- Public API implementation ---------------------------------------- */
 
@@ -90,13 +62,27 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
 /**
  * @brief Serialize a crumbs_message_t into a flat byte buffer.
  *
- * Returns CRUMBS_MESSAGE_SIZE on success or 0 on error.
+ * Wire format: [type_id, command_type, data_len, data[0..data_len-1], crc8]
+ * Returns the encoded length (4 + data_len) on success, or 0 on error.
  */
 size_t crumbs_encode_message(const crumbs_message_t *msg,
                              uint8_t *buffer,
                              size_t buffer_len)
 {
-    if (!msg || !buffer || buffer_len < k_frame_len)
+    if (!msg || !buffer)
+    {
+        return 0u;
+    }
+
+    /* Validate data_len is within bounds. */
+    if (msg->data_len > CRUMBS_MAX_PAYLOAD)
+    {
+        return 0u;
+    }
+
+    /* Compute required frame size: header (3) + data_len + crc (1). */
+    size_t frame_len = k_header_len + msg->data_len + 1u;
+    if (buffer_len < frame_len)
     {
         return 0u;
     }
@@ -105,29 +91,26 @@ size_t crumbs_encode_message(const crumbs_message_t *msg,
 
     buffer[index++] = msg->type_id;
     buffer[index++] = msg->command_type;
+    buffer[index++] = msg->data_len;
 
-    for (size_t i = 0; i < k_data_len; ++i)
+    /* Copy payload bytes. */
+    if (msg->data_len > 0u)
     {
-        write_float_le(msg->data[i], &buffer[index]);
-        index += sizeof(float);
+        memcpy(&buffer[index], msg->data, msg->data_len);
+        index += msg->data_len;
     }
 
-    /* Compute CRC over payload (header + data) */
-    crumbs_crc8_t crc = crumbs_crc8(buffer, k_payload_len);
+    /* Compute CRC over header + payload (bytes 0 through index-1). */
+    crumbs_crc8_t crc = crumbs_crc8(buffer, index);
     buffer[index++] = crc;
 
-    /* Preserve CRC in struct for caller's convenience. */
-    /* Note: slice_address is not serialized. */
-    /* Caller can set msg->crc8 before or after if desired. */
-    (void)msg; /* struct not modified here */
-
-    return index; /* should be k_frame_len */
+    return index; /* 4 + data_len */
 }
 
 /**
  * @brief Decode a serialized frame into a crumbs_message_t.
  *
- * Updates CRC state in @p ctx if provided.
+ * Validates frame structure and CRC. Updates CRC state in @p ctx if provided.
  */
 int crumbs_decode_message(const uint8_t *buffer,
                           size_t buffer_len,
@@ -139,7 +122,8 @@ int crumbs_decode_message(const uint8_t *buffer,
         return -1;
     }
 
-    if (buffer_len < k_frame_len)
+    /* Minimum frame: type_id + command_type + data_len + crc8 = 4 bytes. */
+    if (buffer_len < k_min_frame_len)
     {
         if (ctx)
         {
@@ -148,8 +132,32 @@ int crumbs_decode_message(const uint8_t *buffer,
         return -1; /* too small */
     }
 
-    const crumbs_crc8_t computed = crumbs_crc8(buffer, k_payload_len);
-    const crumbs_crc8_t received = buffer[k_payload_len];
+    /* Extract data_len from header. */
+    uint8_t data_len = buffer[2];
+    if (data_len > CRUMBS_MAX_PAYLOAD)
+    {
+        if (ctx)
+        {
+            ctx->last_crc_ok = 0u;
+        }
+        return -1; /* invalid data_len */
+    }
+
+    /* Expected frame length: header (3) + data_len + crc (1). */
+    size_t expected_len = k_header_len + data_len + 1u;
+    if (buffer_len < expected_len)
+    {
+        if (ctx)
+        {
+            ctx->last_crc_ok = 0u;
+        }
+        return -1; /* truncated frame */
+    }
+
+    /* CRC is computed over header + payload (bytes 0 through header+data_len-1). */
+    size_t crc_span = k_header_len + data_len;
+    const crumbs_crc8_t computed = crumbs_crc8(buffer, crc_span);
+    const crumbs_crc8_t received = buffer[crc_span];
 
     if (computed != received)
     {
@@ -161,16 +169,14 @@ int crumbs_decode_message(const uint8_t *buffer,
         return -2; /* CRC mismatch */
     }
 
-    size_t index = 0u;
+    /* Populate message fields. slice_address is not transmitted. */
+    msg->type_id = buffer[0];
+    msg->command_type = buffer[1];
+    msg->data_len = data_len;
 
-    /* Note: slice_address is not transmitted; caller decides how to route it. */
-    msg->type_id = buffer[index++];
-    msg->command_type = buffer[index++];
-
-    for (size_t i = 0; i < k_data_len; ++i)
+    if (data_len > 0u)
     {
-        msg->data[i] = read_float_le(&buffer[index]);
-        index += sizeof(float);
+        memcpy(msg->data, &buffer[k_header_len], data_len);
     }
 
     msg->crc8 = received;
@@ -202,7 +208,7 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
         return -2;
     }
 
-    uint8_t frame[CRUMBS_MESSAGE_SIZE];
+    uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
     size_t written = crumbs_encode_message(msg, frame, sizeof(frame));
     if (written == 0u)
     {
@@ -311,15 +317,15 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
     if (start_addr > end_addr)
         return -1;
 
-    uint8_t buf[CRUMBS_MESSAGE_SIZE];
+    uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
     size_t count = 0u;
 
     for (int addr = start_addr; addr <= end_addr; ++addr)
     {
         /* Attempt a direct read first (many peripherals reply on request).
            read_fn returns number of bytes read on success, negative on error. */
-        int n = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_SIZE, timeout_us);
-        if (n == (int)CRUMBS_MESSAGE_SIZE)
+        int n = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_MAX_SIZE, timeout_us);
+        if (n >= (int)k_min_frame_len)
         {
             crumbs_message_t m;
             if (crumbs_decode_message(buf, (size_t)n, &m, NULL) == 0)
@@ -344,8 +350,8 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
             /* Send a probe message; ignore any error from send. */
             (void)crumbs_controller_send(ctx, (uint8_t)addr, &probe, write_fn, io_ctx);
 
-            int n2 = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_SIZE, timeout_us);
-            if (n2 == (int)CRUMBS_MESSAGE_SIZE)
+            int n2 = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_MAX_SIZE, timeout_us);
+            if (n2 >= (int)k_min_frame_len)
             {
                 crumbs_message_t m2;
                 if (crumbs_decode_message(buf, (size_t)n2, &m2, NULL) == 0)

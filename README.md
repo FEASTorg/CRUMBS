@@ -16,7 +16,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 
 ## Features
 
-- **Fixed Message Format**: 31-byte frames with 7 float data fields
+- **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
 - **Event-Driven Communication**: Callback-based message handling
 - **Built-in Serialization**: Automatic encoding/decoding of message structures
@@ -35,7 +35,11 @@ crumbs_arduino_init_controller(&controller_ctx);
 crumbs_message_t m = {};
 m.type_id = 1;
 m.command_type = 1;
-m.data[0] = 1.0f;
+
+// Variable-length payload: send a float as 4 bytes
+float value = 1.0f;
+m.data_len = sizeof(float);
+memcpy(m.data, &value, sizeof(float));
 
 crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```

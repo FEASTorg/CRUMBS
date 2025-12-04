@@ -81,14 +81,10 @@ int main(int argc, char **argv)
     msg.type_id = 1;
     msg.command_type = 1;
 
-    // Example data payload
-    msg.data[0] = 12.34f;
-    msg.data[1] = 5.0f;
-    msg.data[2] = 9.87f;
-    msg.data[3] = 0.0f;
-    msg.data[4] = 0.0f;
-    msg.data[5] = 0.0f;
-    msg.data[6] = 0.0f;
+    // Example data payload (3 floats encoded as bytes)
+    float values[] = {12.34f, 5.0f, 9.87f};
+    msg.data_len = sizeof(values);
+    memcpy(msg.data, values, sizeof(values));
 
     //----------------------------------------------------------------------
     // Send message to slice
@@ -110,7 +106,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("Message sent.\n");
+    printf("Message sent (%u payload bytes).\n", msg.data_len);
 
     //----------------------------------------------------------------------
     // Request a reply (Arduino slice will respond in onRequest handler)
@@ -133,11 +129,12 @@ int main(int argc, char **argv)
     printf("Reply received:\n");
     printf("  type_id:       %u\n", reply.type_id);
     printf("  command_type:  %u\n", reply.command_type);
+    printf("  data_len:      %u\n", reply.data_len);
     printf("  data:          ");
 
-    for (int i = 0; i < CRUMBS_DATA_LENGTH; i++)
+    for (int i = 0; i < reply.data_len; i++)
     {
-        printf("%f ", reply.data[i]);
+        printf("0x%02X ", reply.data[i]);
     }
 
     printf("\n  crc8:          0x%02X\n", reply.crc8);

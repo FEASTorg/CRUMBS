@@ -17,23 +17,27 @@ int main(void)
     memset(&m, 0, sizeof(m));
     m.type_id = 0x99;
     m.command_type = 0x42;
-    m.data[0] = 1.234f;
+    m.data_len = 4;
+    m.data[0] = 0x12;
+    m.data[1] = 0x34;
+    m.data[2] = 0x56;
+    m.data[3] = 0x78;
 
-    uint8_t frame[CRUMBS_MESSAGE_SIZE];
+    uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
     size_t w = crumbs_encode_message(&m, frame, sizeof(frame));
-    if (w != CRUMBS_MESSAGE_SIZE)
+    if (w != 4 + m.data_len)
     {
         fprintf(stderr, "encode length mismatch\n");
         return 2;
     }
 
     /* Corrupt one byte in the frame payload so CRC no longer matches */
-    frame[5] ^= 0xFF;
+    frame[4] ^= 0xFF;
 
     crumbs_message_t out;
     memset(&out, 0, sizeof(out));
 
-    int rc = crumbs_decode_message(frame, (size_t)w, &out, &ctx);
+    int rc = crumbs_decode_message(frame, w, &out, &ctx);
     /* expect a negative error indicating bad CRC/invalid frame */
     if (rc == 0)
     {

@@ -1,52 +1,20 @@
+/**
+ * @file display_status.ino
+ * @brief OLED display rendering for the controller example.
+ *
+ * This file provides drawDisplay() which is called from the main .ino.
+ * All state variables are defined in display_controller_example.ino.
+ */
+
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include "crumbs_arduino.h"
 #include <stdio.h>
 
+// External references to state defined in display_controller_example.ino
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
-
-extern const uint8_t LED_GREEN;
-extern const uint8_t LED_YELLOW;
-extern const uint8_t LED_RED;
-
-extern volatile unsigned long yellowPulseUntil;
-extern const unsigned long YELLOW_PULSE_MS;
-
-extern struct LastExchange
-{
-    bool hasData;
-    bool wasRx;
-    uint8_t address;
-    bool success;
-    crumbs_message_t message;
-} lastExchange;
-
+extern struct LastExchange lastExchange;
 extern bool hasError;
-
-void setOk()
-{
-    haveError = false;
-    digitalWrite(LED_RED, LOW);
-    digitalWrite(LED_GREEN, HIGH);
-}
-
-void setError()
-{
-    haveError = true;
-    digitalWrite(LED_GREEN, LOW);
-    digitalWrite(LED_RED, HIGH);
-}
-
-void pulseActivity()
-{
-    yellowPulseUntil = millis() + YELLOW_PULSE_MS;
-}
-
-void refreshLeds()
-{
-    // Handle yellow pulse timing
-    digitalWrite(LED_YELLOW, (millis() < yellowPulseUntil) ? HIGH : LOW);
-}
 
 void drawDisplay()
 {
@@ -65,24 +33,48 @@ void drawDisplay()
         }
 
         // TX/RX line
-        char line[20];
+        char line[24];
         int y = 34;
         sprintf(line, "%s 0x%02X", lastExchange.wasRx ? "RX" : "TX", lastExchange.address);
         u8g2.drawStr(0, y, line);
         y += 12;
-        sprintf(line, "type:%u cmd:%u ok:%u", lastExchange.message.type_id, lastExchange.message.command_type, (uint8_t)lastExchange.success);
+
+        sprintf(line, "t:%u c:%u len:%u ok:%u",
+                lastExchange.message.type_id,
+                lastExchange.message.command_type,
+                lastExchange.message.data_len,
+                (uint8_t)lastExchange.success);
         u8g2.drawStr(0, y, line);
         y += 12;
 
-        // data lines
+        // Show data: first 3 bytes ... last 2 bytes
         char buf[24];
-        sprintf(buf, "d0:%0.2f d1:%0.2f", lastExchange.message.data[0], lastExchange.message.data[1]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        sprintf(buf, "d2:%0.2f d3:%0.2f", lastExchange.message.data[2], lastExchange.message.data[3]);
-        u8g2.drawStr(0, y, buf);
-        y += 12;
-        sprintf(buf, "d4:%0.2f d5:%0.2f", lastExchange.message.data[4], lastExchange.message.data[5]);
-        u8g2.drawStr(0, y, buf);
+        uint8_t len = lastExchange.message.data_len;
+        if (len == 0)
+        {
+            u8g2.drawStr(0, y, "d: (empty)");
+        }
+        else if (len <= 5)
+        {
+            // Show all bytes if 5 or fewer
+            snprintf(buf, sizeof(buf), "d:%02X %02X %02X %02X %02X",
+                     lastExchange.message.data[0],
+                     len > 1 ? lastExchange.message.data[1] : 0,
+                     len > 2 ? lastExchange.message.data[2] : 0,
+                     len > 3 ? lastExchange.message.data[3] : 0,
+                     len > 4 ? lastExchange.message.data[4] : 0);
+            u8g2.drawStr(0, y, buf);
+        }
+        else
+        {
+            // Show first 3 ... last 2
+            snprintf(buf, sizeof(buf), "d:%02X %02X %02X..%02X %02X",
+                     lastExchange.message.data[0],
+                     lastExchange.message.data[1],
+                     lastExchange.message.data[2],
+                     lastExchange.message.data[len - 2],
+                     lastExchange.message.data[len - 1]);
+            u8g2.drawStr(0, y, buf);
+        }
     } while (u8g2.nextPage());
 }
