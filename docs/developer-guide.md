@@ -54,6 +54,39 @@ Core API highlights
 - `crumbs_peripheral_build_reply()` — build a reply to send in on_request.
 - CRC helpers and stats: `crumbs_decode_message()` returns 0 on success; `crumbs_get_crc_error_count()` and `crumbs_last_crc_ok()` provide diagnostics.
 
+Command Handler Dispatch
+
+For structured message processing, CRUMBS provides per-command-type handler registration as an alternative (or complement) to the general `on_message` callback.
+
+- `crumbs_register_handler(ctx, command_type, fn, user_data)` — register a handler for a specific command type (0–255)
+- `crumbs_unregister_handler(ctx, command_type)` — clear a registered handler
+
+Handler signature:
+
+```c
+typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
+                                  uint8_t command_type,
+                                  const uint8_t *data,
+                                  uint8_t data_len,
+                                  void *user_data);
+```
+
+Dispatch flow in `crumbs_peripheral_handle_receive()`:
+1. Decode message and validate CRC
+2. Invoke `on_message` callback (if set)
+3. Invoke registered handler for `msg.command_type` (if set)
+
+This design allows both patterns:
+- Use `on_message` alone for simple cases or logging
+- Use handlers for command-specific logic with separate user_data per command
+- Combine both: `on_message` for statistics/logging, handlers for dispatch
+
+Implementation details:
+- O(1) dispatch via direct array indexing (256-entry table per context)
+- Memory cost: 256 × (function pointer + void*) ≈ 2KB on 32-bit, 4KB on 64-bit
+- Registering a handler for an already-registered command_type overwrites silently
+- Passing fn=NULL clears the handler
+
 HAL primitives and integration
 
 The core is platform-agnostic and relies on the HAL to provide I²C primitives:

@@ -1,6 +1,20 @@
 # CHANGELOG
 
-## [Unreleased] - Variable-Length Payload
+## [0.8.0] - Command Handler Dispatch System
+
+### Added
+
+- **Command Handler Dispatch System**: Per-command-type handler registration for structured message processing
+  - `crumbs_handler_fn` typedef: `void (*)(crumbs_context_t*, uint8_t command_type, const uint8_t* data, uint8_t data_len, void* user_data)`
+  - `crumbs_register_handler(ctx, command_type, fn, user_data)`: Register handler for a command type
+  - `crumbs_unregister_handler(ctx, command_type)`: Clear handler for a command type
+  - Handlers are invoked after `on_message` callback (if both are set)
+  - O(1) dispatch via 256-entry lookup table per context
+- **Handler Examples**:
+  - `examples/arduino/handler_peripheral_example/` - Arduino peripheral using per-command handlers (LED control, echo)
+  - `examples/linux/handler_controller/` - Linux controller CLI for handler peripheral
+
+## [0.7.x] - Variable-Length Payload
 
 ### Breaking Changes
 

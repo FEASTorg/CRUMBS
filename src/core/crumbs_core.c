@@ -60,6 +60,33 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
 }
 
 /**
+ * @brief Register a handler for a specific command type.
+ */
+int crumbs_register_handler(crumbs_context_t *ctx,
+                            uint8_t command_type,
+                            crumbs_handler_fn fn,
+                            void *user_data)
+{
+    if (!ctx)
+    {
+        return -1;
+    }
+
+    ctx->handlers[command_type] = fn;
+    ctx->handler_userdata[command_type] = user_data;
+    return 0;
+}
+
+/**
+ * @brief Unregister a handler for a specific command type.
+ */
+int crumbs_unregister_handler(crumbs_context_t *ctx,
+                              uint8_t command_type)
+{
+    return crumbs_register_handler(ctx, command_type, NULL, NULL);
+}
+
+/**
  * @brief Serialize a crumbs_message_t into a flat byte buffer.
  *
  * Wire format: [type_id, command_type, data_len, data[0..data_len-1], crc8]
@@ -246,9 +273,21 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
      */
     msg.slice_address = ctx->address;
 
+    /* Invoke general on_message callback if set. */
     if (ctx->on_message)
     {
         ctx->on_message(ctx, &msg);
+    }
+
+    /* Dispatch to per-command handler if registered. */
+    crumbs_handler_fn handler = ctx->handlers[msg.command_type];
+    if (handler)
+    {
+        handler(ctx,
+                msg.command_type,
+                msg.data,
+                msg.data_len,
+                ctx->handler_userdata[msg.command_type]);
     }
 
     return 0;

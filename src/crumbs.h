@@ -60,6 +60,26 @@ extern "C"
         crumbs_message_t *msg);
 
     /**
+     * @brief Command handler function type for dispatch-based message handling.
+     *
+     * Handlers are registered per command_type and called when a message with
+     * that command is received. This provides an alternative to the on_message
+     * callback for command-specific processing.
+     *
+     * @param ctx Pointer to the active CRUMBS context.
+     * @param command_type The command type that triggered this handler.
+     * @param data Pointer to the payload bytes (may be NULL if data_len==0).
+     * @param data_len Number of payload bytes (0–27).
+     * @param user_data Opaque pointer registered with the handler.
+     */
+    typedef void (*crumbs_handler_fn)(
+        crumbs_context_t *ctx,
+        uint8_t command_type,
+        const uint8_t *data,
+        uint8_t data_len,
+        void *user_data);
+
+    /**
      * @brief State and configuration for a CRUMBS endpoint.
      *
      * This structure is plain-old-data so it is safe to allocate on the
@@ -76,6 +96,13 @@ extern "C"
         crumbs_message_cb_t on_message; /**< Called when a message is received (peripheral). */
         crumbs_request_cb_t on_request; /**< Called when the bus master requests a reply. */
         void *user_data;                /**< Opaque pointer for user code (forwarded to callbacks). */
+
+        /** @name Command Handler Dispatch Table
+         *  Per-command_type handler functions and associated user data.
+         *  @{ */
+        crumbs_handler_fn handlers[256];      /**< Handler functions indexed by command_type. */
+        void *handler_userdata[256];          /**< User data for each handler. */
+        /** @} */
     };
 
     /**
@@ -100,6 +127,42 @@ extern "C"
                               crumbs_message_cb_t on_message,
                               crumbs_request_cb_t on_request,
                               void *user_data);
+
+    /** @name Command Handler Registration
+     *  Register/unregister per-command handlers for dispatch-based processing.
+     *  @{ */
+
+    /**
+     * @brief Register a handler for a specific command type.
+     *
+     * The handler will be invoked when a message with the given command_type
+     * is received (after on_message, if configured). Registering a handler
+     * for a command_type that already has one will overwrite the previous.
+     *
+     * @param ctx Context to register the handler on.
+     * @param command_type The command type to handle (0–255).
+     * @param fn Handler function to call (NULL to unregister).
+     * @param user_data Opaque pointer passed to the handler when invoked.
+     * @return 0 on success, -1 if ctx is NULL.
+     */
+    int crumbs_register_handler(crumbs_context_t *ctx,
+                                uint8_t command_type,
+                                crumbs_handler_fn fn,
+                                void *user_data);
+
+    /**
+     * @brief Unregister a handler for a specific command type.
+     *
+     * Equivalent to crumbs_register_handler(ctx, command_type, NULL, NULL).
+     *
+     * @param ctx Context to unregister from.
+     * @param command_type The command type to unregister.
+     * @return 0 on success, -1 if ctx is NULL.
+     */
+    int crumbs_unregister_handler(crumbs_context_t *ctx,
+                                  uint8_t command_type);
+
+    /** @} */
 
     /**
      * @brief Encode a message into the CRUMBS wire frame.

@@ -41,6 +41,10 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
                           crumbs_request_cb_t on_request,
                           void *user_data);
 
+/* Per-command handler registration */
+int crumbs_register_handler(crumbs_context_t *ctx, uint8_t command_type, crumbs_handler_fn fn, void *user_data);
+int crumbs_unregister_handler(crumbs_context_t *ctx, uint8_t command_type);
+
 /* Encoding/decoding */
 size_t crumbs_encode_message(const crumbs_message_t *msg, uint8_t *buffer, size_t buffer_len);
 int crumbs_decode_message(const uint8_t *buffer, size_t buffer_len, crumbs_message_t *msg, crumbs_context_t *ctx);
@@ -60,6 +64,40 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx, uint8_t *out_buf, size_
 uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx);
 int crumbs_last_crc_ok(const crumbs_context_t *ctx);
 void crumbs_reset_crc_stats(crumbs_context_t *ctx);
+```
+
+### Command Handler Dispatch
+
+The handler dispatch system provides per-command-type function registration for structured message processing. Instead of (or in addition to) using the general `on_message` callback, you can register individual handlers for specific command types.
+
+```c
+/* Handler function signature */
+typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
+                                  uint8_t command_type,
+                                  const uint8_t *data,
+                                  uint8_t data_len,
+                                  void *user_data);
+
+/* Register a handler for command type 0x10 */
+crumbs_register_handler(&ctx, 0x10, my_handler, my_userdata);
+
+/* Handler is invoked when that command_type is received */
+void my_handler(crumbs_context_t *ctx, uint8_t cmd, const uint8_t *data, uint8_t len, void *ud) {
+    // Process command 0x10
+}
+```
+
+Handler dispatch happens inside `crumbs_peripheral_handle_receive()`:
+1. Message is decoded and CRC is validated
+2. `on_message` callback is invoked (if set)
+3. Registered handler for `msg.command_type` is invoked (if set)
+
+This allows combining both approaches: use `on_message` for logging/statistics while using handlers for command-specific logic.
+
+- `crumbs_register_handler()` returns 0 on success, -1 if ctx is NULL
+- Registering with fn=NULL clears the handler (same as `crumbs_unregister_handler()`)
+- Overwriting an existing handler replaces it silently
+- Memory cost: 256 × (function pointer + void*) per context (~2KB on 32-bit, ~4KB on 64-bit)
 
 ---
 
