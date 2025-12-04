@@ -6,11 +6,13 @@ extern crumbs_context_t crumbs_ctx;
 
 extern crumbs_message_t lastRxMessage;
 extern bool lastRxValid;
+extern crumbs_message_t lastResponseMessage;
+extern bool lastResponseValid;
 
 extern void drawDisplay();
-extern void applyCommand(const crumbs_message_t &message);
 extern void setOk();
 extern void setError();
+extern void pulseActivity();
 
 // Receive message from controller
 // Callback invoked when a complete, valid message is received.
@@ -40,24 +42,6 @@ void handleMessage(crumbs_context_t *ctx, const crumbs_message_t *m)
 
     pulseActivity();
     setOk();
-
-    // Handle command types
-    switch (m->command_type)
-    {
-    case 0: // Request format/config: no immediate action, handled by onRequest
-        Serial.println(F("Slice: command=REQUEST format/status."));
-        break;
-
-    case 1: // Set parameters (parse payload bytes as LED behaviors)
-        Serial.println(F("Slice: command=SET parameters."));
-        applyDataToChannels(*m);
-        break;
-
-    default:
-        Serial.println(F("Slice: Unknown command."));
-        break;
-    }
-
     drawDisplay();
 }
 

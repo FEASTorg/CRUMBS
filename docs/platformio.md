@@ -33,7 +33,7 @@ This project includes a PlatformIO library manifest (`library.json`) and Platfor
 ## Keeping the registry package up to date
 
 - Bump the `version` field in `library.json` for every published release.
-- Optionally tag your release (e.g., `git tag v0.7.0` and push tags). This helps users and CI track versions.
+- Optionally tag your release (e.g., `git tag v0.7.1` and push tags). This helps users and CI track versions.
 - Consider adding automated CI release steps (for example a GitHub Actions workflow) that call `pio pkg publish` when a new release tag is pushed. That requires storing a PlatformIO token/credentials in GitHub secrets.
 
 ## Local development & CI fallback

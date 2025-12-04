@@ -32,20 +32,13 @@ const unsigned long YELLOW_PULSE_MS = 120;
 // ---------- CRUMBS (C API) ----------
 crumbs_context_t crumbs_ctx;
 
-// ---------- State controlled by incoming CRUMBS data ----------
-struct LedChan
-{
-    float ratio;          // 0.0..1.0 duty
-    unsigned long period; // ms
-    bool state;
-    uint8_t pin;
-    unsigned long lastToggle; // ms timestamp of last state change
-};
-LedChan chans[3] = {
-    {0.5f, 2000UL, false, LED_GREEN, 0UL},  // We'll drive green as "OK" unless another mode overrides
-    {0.0f, 1000UL, false, LED_YELLOW, 0UL}, // Yellow as activity pulse + optional CRUMBS control
-    {0.0f, 1000UL, false, LED_RED, 0UL}     // Red can be CRUMBS driven for fault indication
-};
+// ---------- Status LED state ----------
+// Green = solid when OK
+// Red = blink when ERROR  
+// Yellow = activity pulse on CRUMBS message RX
+unsigned long errorBlinkLast = 0;
+const unsigned long ERROR_BLINK_MS = 250;
+bool errorBlinkState = false;
 // Last received/response messages (for the display)
 crumbs_message_t lastRxMessage = {};
 bool lastRxValid = false;
@@ -62,8 +55,8 @@ const unsigned long kDisplayIntervalMs = 100;
 void drawDisplay();
 void handleMessage(crumbs_context_t *ctx, const crumbs_message_t *message);
 void handleRequest(crumbs_context_t *ctx, crumbs_message_t *response);
-void applyCommand(const crumbs_message_t &message);
-void updateChannels(unsigned long now);
+void refreshLeds();
+void pulseActivity();
 void setOk();
 void setError();
 
@@ -100,100 +93,6 @@ void setup()
 void loop()
 {
     refreshLeds();
-    serviceBlinkLogic(); // optional: CRUMBS-driven blink patterns
 }
 
-void applyDataToChannels(const crumbs_message_t &m)
-{
-    const unsigned long now = millis();
-    const unsigned long kDefaultPeriod = 1000UL;
-    const unsigned long kMinPeriod = 100UL;
-    const unsigned long kMaxPeriod = 10000UL;
 
-    // Parse payload bytes into ratios and period
-    // Expected payload format: 4 floats (16 bytes): [green_ratio, yellow_ratio, red_ratio, period_s]
-    // Or raw bytes that user interprets as needed
-    
-    float ratios[3] = {0.5f, 0.0f, 0.0f};
-    unsigned long requestedPeriod = kDefaultPeriod;
-
-    if (m.data_len >= 12) // At least 3 floats
-    {
-        memcpy(&ratios[0], &m.data[0], sizeof(float));
-        memcpy(&ratios[1], &m.data[4], sizeof(float));
-        memcpy(&ratios[2], &m.data[8], sizeof(float));
-    }
-    if (m.data_len >= 16) // 4th float for period
-    {
-        float period_s = 0.0f;
-        memcpy(&period_s, &m.data[12], sizeof(float));
-        if (period_s > 0.0f)
-        {
-            requestedPeriod = static_cast<unsigned long>(period_s * 1000.0f);
-        }
-    }
-    requestedPeriod = constrain(requestedPeriod, kMinPeriod, kMaxPeriod);
-
-    for (size_t i = 0; i < 3; i++)
-    {
-        LedChan &chan = chans[i];
-        const float ratio = constrain(ratios[i], 0.0f, 1.0f);
-
-        chan.ratio = ratio;
-        chan.period = requestedPeriod;
-        chan.lastToggle = now;
-
-        if (ratio <= 0.0f)
-        {
-            chan.state = false;
-            digitalWrite(chan.pin, LOW);
-        }
-        else if (ratio >= 1.0f)
-        {
-            chan.state = true;
-            digitalWrite(chan.pin, HIGH);
-        }
-        else
-        {
-            chan.state = true; // restart cycle in high phase
-            digitalWrite(chan.pin, HIGH);
-        }
-    }
-}
-
-void serviceBlinkLogic()
-{
-    const unsigned long now = millis();
-
-    for (size_t i = 0; i < 3; i++)
-    {
-        LedChan &chan = chans[i];
-
-        if (chan.ratio <= 0.0f)
-        {
-            continue; // forced low
-        }
-        if (chan.ratio >= 1.0f)
-        {
-            continue; // forced high
-        }
-
-        const unsigned long period = (chan.period < 2UL) ? 2UL : chan.period;
-        unsigned long highDuration = static_cast<unsigned long>(period * chan.ratio);
-        if (highDuration == 0)
-        {
-            highDuration = 1;
-        }
-        unsigned long lowDuration = (period > highDuration) ? (period - highDuration) : 1UL;
-
-        const unsigned long targetDuration = chan.state ? highDuration : lowDuration;
-        const unsigned long elapsed = now - chan.lastToggle;
-
-        if (elapsed >= targetDuration)
-        {
-            chan.state = !chan.state;
-            chan.lastToggle = now;
-            digitalWrite(chan.pin, chan.state ? HIGH : LOW);
-        }
-    }
-}

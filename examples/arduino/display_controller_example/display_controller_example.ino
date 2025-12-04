@@ -1,12 +1,12 @@
 /**
- * @file controller_example.ino
- * @brief Minimal CRUMBS controller for the triple board rig.
+ * @file display_controller_example.ino
+ * @brief CRUMBS controller with OLED display for the triple board rig.
  *
- * Serial commands (newline terminated):
- *   SEND <addr> <greenRatio> <yellowRatio> <redRatio> <period_ms>
- *      e.g.  SEND 8 0.5 0 0.25 1500
+ * Serial commands (newline terminated, space-separated):
+ *   SEND <addr> <type_id> <cmd> [byte0 byte1 ...]
  *   REQUEST <addr>
- *      e.g.  REQUEST 0x08
+ *
+ * Bytes can be decimal or hex (0x..).
  */
 
 #include <Arduino.h>
@@ -87,8 +87,11 @@ void setup()
 
     Serial.println(F("CRUMBS Controller ready."));
     Serial.println(F("Commands:"));
-    Serial.println(F("  SEND <addr> <green> <yellow> <red> <period_ms>"));
+    Serial.println(F("  SEND <addr> <type> <cmd> [byte0 byte1 ...]"));
     Serial.println(F("  REQUEST <addr>"));
+    Serial.println(F("Examples:"));
+    Serial.println(F("  SEND 8 1 1 0x00 0x00 0x80 0x3F"));
+    Serial.println(F("  REQUEST 0x08"));
 }
 
 // =======================================================
