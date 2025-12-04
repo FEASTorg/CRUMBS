@@ -125,8 +125,8 @@ Build with PlatformIO CLI inside the example directories:
 
 ```bash
 cd examples/platformio/controller
-pio run -e nanoatmega328
+pio run -e nanoatmega328new
 
 cd ../peripheral
-pio run -e nanoatmega328
+pio run -e nanoatmega328new
 ```
