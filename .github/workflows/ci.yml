@@ -86,8 +86,8 @@ jobs:
 
       - name: Build PlatformIO controller example
         run: |
-          pio run -d examples/platformio/controller -e nanoatmega328
+          pio run -d examples/platformio/controller -e nanoatmega328new
 
       - name: Build PlatformIO peripheral example
         run: |
-          pio run -d examples/platformio/peripheral -e nanoatmega328
+          pio run -d examples/platformio/peripheral -e nanoatmega328new
