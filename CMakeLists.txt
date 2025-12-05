@@ -70,6 +70,11 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
         examples/linux/simple_controller/simple_linux_controller.c
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
+
+    add_executable(crumbs_multi_controller
+        examples/handlers/linux/multi_controller/multi_controller.c
+    )
+    target_link_libraries(crumbs_multi_controller PRIVATE crumbs)
 endif()
 
 # -----------------------------------------------------------------------------
