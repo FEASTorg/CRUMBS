@@ -65,7 +65,7 @@ extern "C"
      * @param msg Pointer to the decoded message (valid only for callback duration).
      */
     typedef void (*crumbs_message_cb_t)(
-        crumbs_context_t *ctx,
+        struct crumbs_context_s *ctx,
         const crumbs_message_t *msg);
 
     /**
@@ -77,7 +77,7 @@ extern "C"
      * @param msg Pointer to message object to fill with the reply.
      */
     typedef void (*crumbs_request_cb_t)(
-        crumbs_context_t *ctx,
+        struct crumbs_context_s *ctx,
         crumbs_message_t *msg);
 
     /**
@@ -94,7 +94,7 @@ extern "C"
      * @param user_data Opaque pointer registered with the handler.
      */
     typedef void (*crumbs_handler_fn)(
-        crumbs_context_t *ctx,
+        struct crumbs_context_s *ctx,
         uint8_t command_type,
         const uint8_t *data,
         uint8_t data_len,
