@@ -128,6 +128,58 @@ crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
 
 See `examples/arduino/handler_peripheral_example/` and `examples/linux/handler_controller/` for complete working examples.
 
+## Message Helpers Pattern
+
+The `crumbs_msg.h` header provides type-safe payload building and reading. This pattern is cleaner than manual byte manipulation:
+
+### Controller with Message Helpers
+
+```c
+#include <crumbs_msg.h>
+
+// Define command header (see examples/commands/ for full pattern)
+#define SERVO_TYPE_ID    0x02
+#define SERVO_CMD_ANGLE  0x01
+
+crumbs_message_t msg;
+crumbs_msg_init(&msg);
+msg.type_id = SERVO_TYPE_ID;
+msg.command_type = SERVO_CMD_ANGLE;
+crumbs_msg_add_u8(&msg, servo_index);    // Which servo
+crumbs_msg_add_u16(&msg, 1500);          // Pulse width in μs
+
+crumbs_controller_send(&ctx, 0x10, &msg, write_fn, write_ctx);
+```
+
+### Peripheral Handler with Message Readers
+
+```c
+void handle_servo_angle(crumbs_context_t *ctx, uint8_t cmd,
+                        const uint8_t *data, uint8_t len, void *user) {
+    size_t off = 0;
+    uint8_t index;
+    uint16_t pulse;
+
+    if (crumbs_msg_read_u8(data, len, &off, &index) < 0) return;
+    if (crumbs_msg_read_u16(data, len, &off, &pulse) < 0) return;
+
+    servo_set_pulse(index, pulse);
+}
+
+void setup() {
+    crumbs_arduino_init_peripheral(&ctx, 0x10);
+    crumbs_register_handler(&ctx, SERVO_CMD_ANGLE, handle_servo_angle, NULL);
+}
+```
+
+See `examples/handlers/` for complete working examples:
+
+- `arduino/led_peripheral/` — LED strip control with RGB values
+- `arduino/servo_peripheral/` — Dual servo control with pulse widths
+- `linux/multi_controller/` — Linux controller using multiple device command headers
+
+See [Message Helpers](message-helpers.md) for complete API documentation.
+
 ## Common Patterns
 
 ### Multiple Devices

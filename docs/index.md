@@ -1,6 +1,6 @@
 # CRUMBS Documentation
 
-Arduino I2C communication library for controller/peripheral messaging with fixed 31-byte frames and CRC validation.
+Arduino I2C communication library for controller/peripheral messaging with variable-length payloads and CRC validation.
 
 ## Quick Start
 
@@ -18,10 +18,11 @@ crumbs_arduino_init_peripheral(&pctx, 0x08);
 
 ## Features
 
-- Fixed 31-byte message format (7 float data fields)
+- Variable-length payload (0–27 bytes per message)
 - Controller/peripheral architecture
 - Event-driven callbacks
-- Built-in serialization
+- Per-command handler dispatch
+- Message builder/reader helpers
 - CRC-8 data integrity
 - Debug support
 
@@ -31,9 +32,10 @@ crumbs_arduino_init_peripheral(&pctx, 0x08);
 | ------------------------------------- | ------------------------------------ |
 | [Getting Started](getting-started.md) | Installation and basic usage         |
 | [API Reference](api-reference.md)     | Core C API and platform HAL docs     |
+| [Message Helpers](message-helpers.md) | Payload building and reading helpers |
 | [Protocol](protocol.md)               | Message format specification         |
 | [Examples](examples.md)               | Code examples and patterns           |
 | [Developer Guide](developer-guide.md) | Architecture, integration & dev docs |
 | [Linux HAL](linux.md)                 | Linux build & example notes          |
 
-**Version**: 0.8.0 | **Author**: Cameron | **Dependencies**: Wire library (Arduino); linux-wire for Linux HAL
+**Version**: 0.9.0 | **Author**: Cameron | **Dependencies**: Wire library (Arduino); linux-wire for Linux HAL

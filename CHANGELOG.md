@@ -1,6 +1,45 @@
 # CHANGELOG
 
-## [0.8.0] - Command Handler Dispatch System
+## [0.9.0] - Message Builder/Reader Helpers
+
+### Added
+
+- **Message Builder/Reader API** (`src/crumbs_msg.h`): Zero-overhead inline helpers for structured payload construction and reading
+  - `crumbs_msg_init(msg)`: Initialize a message builder
+  - `crumbs_msg_add_u8/u16/u32()`: Append unsigned integers (little-endian)
+  - `crumbs_msg_add_i8/i16/i32()`: Append signed integers (little-endian)
+  - `crumbs_msg_add_float()`: Append 32-bit float (native byte order)
+  - `crumbs_msg_add_bytes()`: Append raw byte arrays
+  - `crumbs_msg_read_u8/u16/u32()`: Read unsigned integers from payload
+  - `crumbs_msg_read_i8/i16/i32()`: Read signed integers from payload
+  - `crumbs_msg_read_float()`: Read 32-bit float from payload
+  - `crumbs_msg_read_bytes()`: Read raw byte arrays from payload
+  - All functions return 0 on success, -1 on bounds overflow
+  - Header-only design: `static inline` functions for zero call overhead
+
+- **Example Command Headers** (`examples/commands/`):
+  - `led_commands.h`: LED device command definitions and sender functions
+  - `servo_commands.h`: Servo device command definitions and sender functions
+  - Demonstrates the "copy and customize" pattern for user commands
+
+- **Example Applications** (`examples/handlers/`):
+  - `arduino/led_peripheral/`: LED control peripheral using handler dispatch
+  - `arduino/servo_peripheral/`: Dual servo peripheral with message reading
+  - `linux/multi_controller/`: Linux controller using multiple command headers
+
+### Documentation
+
+- New documentation: `docs/message-helpers.md` — comprehensive guide to crumbs_msg.h
+- Updated `docs/api-reference.md` with message helper API
+- Updated `docs/index.md` to reflect variable-length payload (was outdated)
+
+### Notes
+
+- This layer composes with the existing handler dispatch system (0.8.x)
+- No breaking changes — all existing code continues to work
+- Float encoding uses native byte order; document this if crossing architectures
+
+## [0.8.x] - Command Handler Dispatch System v0
 
 ### Added
 

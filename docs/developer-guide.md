@@ -72,18 +72,21 @@ typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
 ```
 
 Dispatch flow in `crumbs_peripheral_handle_receive()`:
+
 1. Decode message and validate CRC
 2. Invoke `on_message` callback (if set)
 3. Invoke registered handler for `msg.command_type` (if set)
 
 This design allows both patterns:
+
 - Use `on_message` alone for simple cases or logging
 - Use handlers for command-specific logic with separate user_data per command
 - Combine both: `on_message` for statistics/logging, handlers for dispatch
 
 Implementation details:
+
 - O(1) dispatch via direct array indexing (256-entry table per context)
-- Memory cost: 256 × (function pointer + void*) ≈ 2KB on 32-bit, 4KB on 64-bit
+- Memory cost: 256 × (function pointer + void\*) ≈ 2KB on 32-bit, 4KB on 64-bit
 - Registering a handler for an already-registered command_type overwrites silently
 - Passing fn=NULL clears the handler
 

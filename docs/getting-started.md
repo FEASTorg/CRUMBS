@@ -105,6 +105,14 @@ void setup() {
 - Use addresses 0x08-0x77 for peripherals
 - Set I2C clock to 100kHz (default)
 
+## Next Steps
+
+Once basic communication is working:
+
+1. **Handler dispatch**: Register per-command handlers instead of switch statements — see [API Reference](api-reference.md#command-handler-dispatch)
+2. **Message helpers**: Use `crumbs_msg.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
+3. **Command headers**: Create reusable command definitions — see `examples/commands/`
+
 ## Debug & Troubleshooting
 
 Enable debug: `#define CRUMBS_DEBUG` before include
