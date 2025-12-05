@@ -8,6 +8,36 @@
 #include "crumbs_crc.h"
 #include "crumbs_i2c.h"
 
+/* ============================================================================
+ * Debug Configuration
+ * ============================================================================ */
+
+/**
+ * @brief Enable CRUMBS debug output.
+ *
+ * Define CRUMBS_DEBUG before including crumbs.h to enable debug messages.
+ * You must also define CRUMBS_DEBUG_PRINT to specify how to output debug.
+ *
+ * Example for Arduino:
+ *   #define CRUMBS_DEBUG
+ *   #define CRUMBS_DEBUG_PRINT(fmt, ...) Serial.printf(fmt, ##__VA_ARGS__)
+ *
+ * Example for Linux/stdio:
+ *   #define CRUMBS_DEBUG
+ *   #define CRUMBS_DEBUG_PRINT(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+ *
+ * When CRUMBS_DEBUG is not defined, all debug calls compile to nothing.
+ */
+#ifdef CRUMBS_DEBUG
+#ifndef CRUMBS_DEBUG_PRINT
+/* Default: no-op if user didn't define a print function */
+#define CRUMBS_DEBUG_PRINT(fmt, ...) ((void)0)
+#endif
+#define CRUMBS_DBG(fmt, ...) CRUMBS_DEBUG_PRINT("[CRUMBS] " fmt, ##__VA_ARGS__)
+#else
+#define CRUMBS_DBG(fmt, ...) ((void)0)
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {

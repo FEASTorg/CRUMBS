@@ -32,6 +32,23 @@
 #include <string.h>
 #include <unistd.h>
 
+/* ============================================================================
+ * Debug Configuration
+ * ============================================================================ */
+
+/**
+ * @brief Enable CRUMBS debug output.
+ * 
+ * Set to 1 to enable debug messages from the CRUMBS library.
+ * Messages are printed to stderr with [CRUMBS] prefix.
+ */
+#define ENABLE_CRUMBS_DEBUG 0
+
+#if ENABLE_CRUMBS_DEBUG
+#define CRUMBS_DEBUG
+#define CRUMBS_DEBUG_PRINT(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#endif
+
 #include "crumbs.h"
 #include "crumbs_linux.h"
 #include "crumbs_msg.h"

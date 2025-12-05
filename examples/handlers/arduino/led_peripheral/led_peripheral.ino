@@ -35,8 +35,21 @@
  */
 #define ENABLE_SERIAL_TEST 0
 
+/**
+ * @brief Enable CRUMBS debug output via Serial.
+ * 
+ * When 1: Prints debug messages for I2C receive/transmit
+ * When 0: No debug output (smaller code size)
+ */
+#define ENABLE_CRUMBS_DEBUG 0
+
 /* Reduce handler table size for memory-constrained devices */
 #define CRUMBS_MAX_HANDLERS 8
+
+/* Enable CRUMBS debug if configured */
+#if ENABLE_CRUMBS_DEBUG
+#define CRUMBS_DEBUG
+#endif
 
 #include <crumbs.h>
 #include <crumbs_arduino.h>

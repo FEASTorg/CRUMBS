@@ -211,12 +211,15 @@ int crumbs_decode_message(const uint8_t *buffer,
 {
     if (!buffer || !msg)
     {
+        CRUMBS_DBG("decode: NULL buffer or msg\n");
         return -1;
     }
 
     /* Minimum frame: type_id + command_type + data_len + crc8 = 4 bytes. */
     if (buffer_len < k_min_frame_len)
     {
+        CRUMBS_DBG("decode: too short (%u < %u)\n",
+                   (unsigned)buffer_len, (unsigned)k_min_frame_len);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -228,6 +231,8 @@ int crumbs_decode_message(const uint8_t *buffer,
     uint8_t data_len = buffer[2];
     if (data_len > CRUMBS_MAX_PAYLOAD)
     {
+        CRUMBS_DBG("decode: data_len %u > max %u\n",
+                   data_len, CRUMBS_MAX_PAYLOAD);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -239,6 +244,8 @@ int crumbs_decode_message(const uint8_t *buffer,
     size_t expected_len = k_header_len + data_len + 1u;
     if (buffer_len < expected_len)
     {
+        CRUMBS_DBG("decode: truncated (%u < %u)\n",
+                   (unsigned)buffer_len, (unsigned)expected_len);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -253,6 +260,8 @@ int crumbs_decode_message(const uint8_t *buffer,
 
     if (computed != received)
     {
+        CRUMBS_DBG("decode: CRC mismatch (got 0x%02X, expected 0x%02X)\n",
+                   received, computed);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -273,6 +282,9 @@ int crumbs_decode_message(const uint8_t *buffer,
 
     msg->crc8 = received;
 
+    CRUMBS_DBG("decode: OK type=0x%02X cmd=0x%02X len=%u\n",
+               msg->type_id, msg->command_type, msg->data_len);
+
     if (ctx)
     {
         ctx->last_crc_ok = 1u;
@@ -292,11 +304,13 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
 {
     if (!ctx || !msg || !write_fn)
     {
+        CRUMBS_DBG("tx: invalid ctx/msg/write_fn\n");
         return -1;
     }
 
     if (ctx->role != CRUMBS_ROLE_CONTROLLER)
     {
+        CRUMBS_DBG("tx: not controller role\n");
         return -2;
     }
 
@@ -304,10 +318,19 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
     size_t written = crumbs_encode_message(msg, frame, sizeof(frame));
     if (written == 0u)
     {
+        CRUMBS_DBG("tx: encode failed\n");
         return -3;
     }
 
-    return write_fn(write_ctx, target_addr, frame, written);
+    CRUMBS_DBG("tx: addr=0x%02X %u bytes type=0x%02X cmd=0x%02X\n",
+               target_addr, (unsigned)written, msg->type_id, msg->command_type);
+
+    int rc = write_fn(write_ctx, target_addr, frame, written);
+    if (rc != 0)
+    {
+        CRUMBS_DBG("tx: write failed (%d)\n", rc);
+    }
+    return rc;
 }
 
 /**
@@ -319,8 +342,22 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
 {
     if (!ctx || ctx->role != CRUMBS_ROLE_PERIPHERAL || !buffer)
     {
+        CRUMBS_DBG("rx: invalid ctx/role/buffer\n");
         return -1;
     }
+
+    CRUMBS_DBG("rx: %u bytes [", (unsigned)len);
+#ifdef CRUMBS_DEBUG
+    for (size_t i = 0; i < len && i < 8; i++)
+    {
+        CRUMBS_DEBUG_PRINT("%02X ", buffer[i]);
+    }
+    if (len > 8)
+    {
+        CRUMBS_DEBUG_PRINT("...");
+    }
+    CRUMBS_DEBUG_PRINT("]\n");
+#endif
 
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
@@ -328,6 +365,7 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     int rc = crumbs_decode_message(buffer, len, &msg, ctx);
     if (rc != 0)
     {
+        CRUMBS_DBG("rx: decode failed (%d)\n", rc);
         return rc;
     }
 
@@ -341,6 +379,7 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     /* Invoke general on_message callback if set. */
     if (ctx->on_message)
     {
+        CRUMBS_DBG("rx: calling on_message\n");
         ctx->on_message(ctx, &msg);
     }
 
@@ -351,14 +390,20 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     crumbs_handler_fn handler = ctx->handlers[msg.command_type];
     if (handler)
     {
+        CRUMBS_DBG("rx: dispatch cmd 0x%02X\n", msg.command_type);
         handler(ctx,
                 msg.command_type,
                 msg.data,
                 msg.data_len,
                 ctx->handler_userdata[msg.command_type]);
     }
+    else
+    {
+        CRUMBS_DBG("rx: no handler for cmd 0x%02X\n", msg.command_type);
+    }
 #else
     /* Reduced table: O(n) linear search */
+    uint8_t found = 0;
     for (uint8_t i = 0; i < ctx->handler_count; i++)
     {
         if (ctx->handler_cmd[i] == msg.command_type)
@@ -366,14 +411,21 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
             crumbs_handler_fn handler = ctx->handlers[i];
             if (handler)
             {
+                CRUMBS_DBG("rx: dispatch cmd 0x%02X (slot %u)\n", msg.command_type, i);
                 handler(ctx,
                         msg.command_type,
                         msg.data,
                         msg.data_len,
                         ctx->handler_userdata[i]);
             }
+            found = 1;
             break;
         }
+    }
+    if (!found)
+    {
+        CRUMBS_DBG("rx: no handler for cmd 0x%02X (searched %u slots)\n",
+                   msg.command_type, ctx->handler_count);
     }
 #endif
 #endif /* CRUMBS_MAX_HANDLERS > 0 */
@@ -396,11 +448,13 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
 
     if (!ctx || ctx->role != CRUMBS_ROLE_PERIPHERAL || !out_buf)
     {
+        CRUMBS_DBG("reply: invalid ctx/role/buffer\n");
         return -1;
     }
 
     if (!ctx->on_request)
     {
+        CRUMBS_DBG("reply: no on_request callback\n");
         /* No reply configured. */
         return 0;
     }
@@ -409,13 +463,18 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
     memset(&msg, 0, sizeof(msg));
 
     /* Allow application to fill in the reply. */
+    CRUMBS_DBG("reply: calling on_request\n");
     ctx->on_request(ctx, &msg);
 
     size_t written = crumbs_encode_message(&msg, out_buf, out_buf_len);
     if (written == 0u)
     {
+        CRUMBS_DBG("reply: encode failed\n");
         return -2;
     }
+
+    CRUMBS_DBG("reply: %u bytes type=0x%02X cmd=0x%02X\n",
+               (unsigned)written, msg.type_id, msg.command_type);
 
     if (out_len)
     {
