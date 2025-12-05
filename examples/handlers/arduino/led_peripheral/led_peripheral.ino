@@ -12,7 +12,15 @@
  * - Arduino Nano (or compatible)
  * - 4 LEDs on pins D4, D5, D6, D7
  * - I2C address: 0x08
+ *
+ * Memory optimization:
+ * - Define CRUMBS_MAX_HANDLERS=8 to reduce RAM from 70% to ~22%
+ * - In Arduino IDE: Add to build flags or use a build script
+ * - In PlatformIO: build_flags = -DCRUMBS_MAX_HANDLERS=8
  */
+
+/* Reduce handler table size for memory-constrained devices */
+#define CRUMBS_MAX_HANDLERS 8
 
 #include <crumbs.h>
 #include <crumbs_arduino.h>

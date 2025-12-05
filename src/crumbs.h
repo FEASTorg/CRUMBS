@@ -22,6 +22,27 @@ extern "C"
      */
 
     /**
+     * @brief Maximum number of command handlers that can be registered.
+     *
+     * Define this before including crumbs.h to reduce memory usage on
+     * constrained devices. Default is 256 for full O(1) lookup.
+     *
+     * Memory usage: CRUMBS_MAX_HANDLERS * (sizeof(void*) * 2 + 1) bytes
+     * - 256 handlers: ~1025 bytes on AVR, ~2049 bytes on 32-bit
+     * - 16 handlers: ~65 bytes on AVR, ~129 bytes on 32-bit
+     * - 8 handlers: ~33 bytes on AVR, ~65 bytes on 32-bit
+     *
+     * When < 256, dispatch uses O(n) linear search instead of O(1) lookup.
+     * Set to 0 to disable handler dispatch entirely.
+     *
+     * Example (platformio.ini):
+     *   build_flags = -DCRUMBS_MAX_HANDLERS=8
+     */
+#ifndef CRUMBS_MAX_HANDLERS
+#define CRUMBS_MAX_HANDLERS 256
+#endif
+
+    /**
      * @brief Role of a CRUMBS endpoint on the I²C bus.
      */
     typedef enum
@@ -97,12 +118,19 @@ extern "C"
         crumbs_request_cb_t on_request; /**< Called when the bus master requests a reply. */
         void *user_data;                /**< Opaque pointer for user code (forwarded to callbacks). */
 
+#if CRUMBS_MAX_HANDLERS > 0
         /** @name Command Handler Dispatch Table
          *  Per-command_type handler functions and associated user data.
+         *  Size controlled by CRUMBS_MAX_HANDLERS (default 256).
          *  @{ */
-        crumbs_handler_fn handlers[256];      /**< Handler functions indexed by command_type. */
-        void *handler_userdata[256];          /**< User data for each handler. */
+#if CRUMBS_MAX_HANDLERS < 256
+        uint8_t handler_count;                        /**< Number of registered handlers. */
+        uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];     /**< Command type for each slot. */
+#endif
+        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];  /**< Handler functions. */
+        void *handler_userdata[CRUMBS_MAX_HANDLERS];      /**< User data for each handler. */
         /** @} */
+#endif /* CRUMBS_MAX_HANDLERS > 0 */
     };
 
     /**
@@ -130,6 +158,7 @@ extern "C"
 
     /** @name Command Handler Registration
      *  Register/unregister per-command handlers for dispatch-based processing.
+     *  Maximum handlers controlled by CRUMBS_MAX_HANDLERS (default 256).
      *  @{ */
 
     /**
@@ -143,7 +172,7 @@ extern "C"
      * @param command_type The command type to handle (0–255).
      * @param fn Handler function to call (NULL to unregister).
      * @param user_data Opaque pointer passed to the handler when invoked.
-     * @return 0 on success, -1 if ctx is NULL.
+     * @return 0 on success, -1 if ctx is NULL or handler table is full.
      */
     int crumbs_register_handler(crumbs_context_t *ctx,
                                 uint8_t command_type,

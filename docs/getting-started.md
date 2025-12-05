@@ -112,6 +112,18 @@ Once basic communication is working:
 1. **Handler dispatch**: Register per-command handlers instead of switch statements — see [API Reference](api-reference.md#command-handler-dispatch)
 2. **Message helpers**: Use `crumbs_msg.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
 3. **Command headers**: Create reusable command definitions — see `examples/commands/`
+4. **Memory optimization**: Reduce handler table size with `CRUMBS_MAX_HANDLERS` — see below
+
+## Memory Optimization
+
+The default handler table (256 entries) uses ~1KB RAM on AVR. For memory-constrained devices, reduce it:
+
+```c
+#define CRUMBS_MAX_HANDLERS 8  // Before including crumbs.h
+#include <crumbs.h>
+```
+
+This reduces handler memory from ~1KB to ~33 bytes. See [API Reference](api-reference.md#memory-optimization-crumbs_max_handlers) for details.
 
 ## Debug & Troubleshooting
 

@@ -95,10 +95,36 @@ Handler dispatch happens inside `crumbs_peripheral_handle_receive()`:
 
 This allows combining both approaches: use `on_message` for logging/statistics while using handlers for command-specific logic.
 
-- `crumbs_register_handler()` returns 0 on success, -1 if ctx is NULL
+- `crumbs_register_handler()` returns 0 on success, -1 if ctx is NULL or table full
 - Registering with fn=NULL clears the handler (same as `crumbs_unregister_handler()`)
 - Overwriting an existing handler replaces it silently
-- Memory cost: 256 × (function pointer + void\*) per context (~2KB on 32-bit, ~4KB on 64-bit)
+
+#### Memory Optimization (CRUMBS_MAX_HANDLERS)
+
+By default, the handler table supports 256 commands using O(1) direct lookup. This costs ~1KB on AVR (2-byte pointers) or ~2KB on 32-bit platforms.
+
+For memory-constrained devices, define `CRUMBS_MAX_HANDLERS` before including `crumbs.h`:
+
+```c
+#define CRUMBS_MAX_HANDLERS 8  // Only need 8 handlers
+#include <crumbs.h>
+```
+
+Or via compiler flags (PlatformIO example):
+```ini
+build_flags = -DCRUMBS_MAX_HANDLERS=8
+```
+
+Memory usage by configuration:
+
+| CRUMBS_MAX_HANDLERS | AVR (2-byte ptr) | 32-bit (4-byte ptr) | Lookup |
+|---------------------|------------------|---------------------|--------|
+| 256 (default)       | ~1025 bytes      | ~2049 bytes         | O(1)   |
+| 16                  | ~65 bytes        | ~129 bytes          | O(n)   |
+| 8                   | ~33 bytes        | ~65 bytes           | O(n)   |
+| 0 (disabled)        | 0 bytes          | 0 bytes             | —      |
+
+When < 256, dispatch uses linear search which is fast for typical handler counts (4-16).
 
 ---
 

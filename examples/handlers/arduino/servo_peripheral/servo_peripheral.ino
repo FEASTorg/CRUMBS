@@ -12,7 +12,14 @@
  * - Arduino Nano (or compatible)
  * - 2x SG90 servos on pins D9, D10
  * - I2C address: 0x09
+ *
+ * Memory optimization:
+ * - Define CRUMBS_MAX_HANDLERS=8 to reduce RAM usage
+ * - In PlatformIO: build_flags = -DCRUMBS_MAX_HANDLERS=8
  */
+
+/* Reduce handler table size for memory-constrained devices */
+#define CRUMBS_MAX_HANDLERS 8
 
 #include <Servo.h>
 #include <crumbs.h>

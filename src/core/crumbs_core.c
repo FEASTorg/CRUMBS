@@ -61,12 +61,25 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
 
 /**
  * @brief Register a handler for a specific command type.
+ *
+ * When CRUMBS_MAX_HANDLERS < 256, uses linear search for slot management.
+ * When CRUMBS_MAX_HANDLERS == 256, uses direct indexing (O(1)).
+ * When CRUMBS_MAX_HANDLERS == 0, handlers are disabled.
  */
 int crumbs_register_handler(crumbs_context_t *ctx,
                             uint8_t command_type,
                             crumbs_handler_fn fn,
                             void *user_data)
 {
+#if CRUMBS_MAX_HANDLERS == 0
+    /* Handlers disabled */
+    (void)ctx;
+    (void)command_type;
+    (void)fn;
+    (void)user_data;
+    return -1;
+#elif CRUMBS_MAX_HANDLERS == 256
+    /* Full table: O(1) direct indexing */
     if (!ctx)
     {
         return -1;
@@ -75,6 +88,58 @@ int crumbs_register_handler(crumbs_context_t *ctx,
     ctx->handlers[command_type] = fn;
     ctx->handler_userdata[command_type] = user_data;
     return 0;
+#else
+    /* Reduced table: linear search */
+    if (!ctx)
+    {
+        return -1;
+    }
+
+    /* Check if command already registered (overwrite) */
+    for (uint8_t i = 0; i < ctx->handler_count; i++)
+    {
+        if (ctx->handler_cmd[i] == command_type)
+        {
+            if (fn == NULL)
+            {
+                /* Unregister: remove slot by swapping with last */
+                ctx->handler_count--;
+                if (i < ctx->handler_count)
+                {
+                    ctx->handler_cmd[i] = ctx->handler_cmd[ctx->handler_count];
+                    ctx->handlers[i] = ctx->handlers[ctx->handler_count];
+                    ctx->handler_userdata[i] = ctx->handler_userdata[ctx->handler_count];
+                }
+            }
+            else
+            {
+                /* Overwrite existing */
+                ctx->handlers[i] = fn;
+                ctx->handler_userdata[i] = user_data;
+            }
+            return 0;
+        }
+    }
+
+    /* Not found - add new handler if fn is non-NULL */
+    if (fn == NULL)
+    {
+        /* Nothing to unregister */
+        return 0;
+    }
+
+    if (ctx->handler_count >= CRUMBS_MAX_HANDLERS)
+    {
+        /* Table full */
+        return -1;
+    }
+
+    uint8_t slot = ctx->handler_count++;
+    ctx->handler_cmd[slot] = command_type;
+    ctx->handlers[slot] = fn;
+    ctx->handler_userdata[slot] = user_data;
+    return 0;
+#endif
 }
 
 /**
@@ -279,7 +344,10 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
         ctx->on_message(ctx, &msg);
     }
 
+#if CRUMBS_MAX_HANDLERS > 0
     /* Dispatch to per-command handler if registered. */
+#if CRUMBS_MAX_HANDLERS == 256
+    /* Full table: O(1) direct indexing */
     crumbs_handler_fn handler = ctx->handlers[msg.command_type];
     if (handler)
     {
@@ -289,6 +357,26 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
                 msg.data_len,
                 ctx->handler_userdata[msg.command_type]);
     }
+#else
+    /* Reduced table: O(n) linear search */
+    for (uint8_t i = 0; i < ctx->handler_count; i++)
+    {
+        if (ctx->handler_cmd[i] == msg.command_type)
+        {
+            crumbs_handler_fn handler = ctx->handlers[i];
+            if (handler)
+            {
+                handler(ctx,
+                        msg.command_type,
+                        msg.data,
+                        msg.data_len,
+                        ctx->handler_userdata[i]);
+            }
+            break;
+        }
+    }
+#endif
+#endif /* CRUMBS_MAX_HANDLERS > 0 */
 
     return 0;
 }

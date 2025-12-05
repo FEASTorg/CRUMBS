@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.9.0] - Message Builder/Reader Helpers
+## [0.9.x] - Message Builder/Reader Helpers
 
 ### Added
 
@@ -26,6 +26,14 @@
   - `arduino/led_peripheral/`: LED control peripheral using handler dispatch
   - `arduino/servo_peripheral/`: Dual servo peripheral with message reading
   - `linux/multi_controller/`: Linux controller using multiple command headers
+
+- **Configurable Handler Table Size** (`CRUMBS_MAX_HANDLERS`):
+  - New compile-time option to control handler dispatch table size
+  - Default: 256 (full O(1) lookup, backward compatible)
+  - Set lower values (e.g., 8) to reduce RAM on constrained devices
+  - Memory savings: 256 → 8 handlers saves ~990 bytes on AVR
+  - When < 256, uses O(n) linear search (fast for small n)
+  - Set to 0 to disable handler dispatch entirely
 
 ### Documentation
 
