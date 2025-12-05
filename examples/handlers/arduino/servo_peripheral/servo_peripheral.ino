@@ -32,7 +32,7 @@
  * When 1: Serial commands control servos directly (I2C disabled)
  * When 0: Normal I2C peripheral mode
  */
-#define ENABLE_SERIAL_TEST 1
+#define ENABLE_SERIAL_TEST 0
 
 /* Reduce handler table size for memory-constrained devices */
 #define CRUMBS_MAX_HANDLERS 8

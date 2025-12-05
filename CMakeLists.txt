@@ -70,11 +70,6 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
         examples/linux/simple_controller/simple_linux_controller.c
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
-
-    add_executable(crumbs_handler_controller
-        examples/linux/handler_controller/handler_controller.c
-    )
-    target_link_libraries(crumbs_handler_controller PRIVATE crumbs)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -116,8 +111,9 @@ install(FILES
     src/crumbs_arduino.h
     src/crumbs_crc.h
     src/crumbs_i2c.h
-    src/crumbs_message.h
     src/crumbs_linux.h
+    src/crumbs_message.h
+    src/crumbs_msg.h
     DESTINATION include/crumbs
 )
 
