@@ -75,6 +75,9 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
         examples/handlers/linux/multi_controller/multi_controller.c
     )
     target_link_libraries(crumbs_multi_controller PRIVATE crumbs)
+    target_include_directories(crumbs_multi_controller PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/commands
+    )
 endif()
 
 # -----------------------------------------------------------------------------
