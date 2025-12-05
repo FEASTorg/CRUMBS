@@ -54,22 +54,26 @@ extern "C"
     /**
      * @brief Maximum number of command handlers that can be registered.
      *
-     * Define this before including crumbs.h to reduce memory usage on
-     * constrained devices. Default is 256 for full O(1) lookup.
+     * Define this before including crumbs.h to adjust memory usage.
+     * Default is 16 which balances memory use and typical needs.
      *
-     * Memory usage: CRUMBS_MAX_HANDLERS * (sizeof(void*) * 2 + 1) bytes
-     * - 256 handlers: ~1025 bytes on AVR, ~2049 bytes on 32-bit
-     * - 16 handlers: ~65 bytes on AVR, ~129 bytes on 32-bit
-     * - 8 handlers: ~33 bytes on AVR, ~65 bytes on 32-bit
+     * Memory usage: CRUMBS_MAX_HANDLERS * (sizeof(void*) * 2 + 2) bytes
+     * - 16 handlers: ~68 bytes on AVR, ~132 bytes on 32-bit
+     * - 8 handlers: ~36 bytes on AVR, ~68 bytes on 32-bit
+     * - 32 handlers: ~132 bytes on AVR, ~260 bytes on 32-bit
      *
-     * When < 256, dispatch uses O(n) linear search instead of O(1) lookup.
+     * Dispatch always uses O(n) linear search for portability.
      * Set to 0 to disable handler dispatch entirely.
      *
-     * Example (platformio.ini):
+     * IMPORTANT: For Arduino/PlatformIO, you must add this to your
+     * platformio.ini build_flags to affect the library compilation:
      *   build_flags = -DCRUMBS_MAX_HANDLERS=8
+     * 
+     * Defining it only in your sketch does NOT work because Arduino
+     * precompiles the library separately.
      */
 #ifndef CRUMBS_MAX_HANDLERS
-#define CRUMBS_MAX_HANDLERS 256
+#define CRUMBS_MAX_HANDLERS 16
 #endif
 
     /**
@@ -151,12 +155,11 @@ extern "C"
 #if CRUMBS_MAX_HANDLERS > 0
         /** @name Command Handler Dispatch Table
          *  Per-command_type handler functions and associated user data.
-         *  Size controlled by CRUMBS_MAX_HANDLERS (default 256).
+         *  Size controlled by CRUMBS_MAX_HANDLERS (default 16).
+         *  Uses linear search for dispatch (O(n) but portable/safe).
          *  @{ */
-#if CRUMBS_MAX_HANDLERS < 256
         uint8_t handler_count;                        /**< Number of registered handlers. */
         uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];     /**< Command type for each slot. */
-#endif
         crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];  /**< Handler functions. */
         void *handler_userdata[CRUMBS_MAX_HANDLERS];      /**< User data for each handler. */
         /** @} */
@@ -186,9 +189,27 @@ extern "C"
                               crumbs_request_cb_t on_request,
                               void *user_data);
 
+    /**
+     * @brief Get the size of crumbs_context_t as compiled in the library.
+     *
+     * This can be used to verify that the user's context size matches the
+     * library's expected size. On Arduino, a mismatch occurs when the user
+     * defines CRUMBS_MAX_HANDLERS in their sketch instead of build_flags.
+     *
+     * Usage:
+     * @code
+     * if (sizeof(crumbs_context_t) != crumbs_context_size()) {
+     *     // ERROR: CRUMBS_MAX_HANDLERS mismatch!
+     * }
+     * @endcode
+     *
+     * @return Size of crumbs_context_t in bytes as seen by the library.
+     */
+    size_t crumbs_context_size(void);
+
     /** @name Command Handler Registration
      *  Register/unregister per-command handlers for dispatch-based processing.
-     *  Maximum handlers controlled by CRUMBS_MAX_HANDLERS (default 256).
+     *  Maximum handlers controlled by CRUMBS_MAX_HANDLERS (default 16).
      *  @{ */
 
     /**

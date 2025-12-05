@@ -25,7 +25,17 @@ _Static_assert(CRUMBS_MAX_PAYLOAD == 27u, "CRUMBS_MAX_PAYLOAD must be 27");
 /**
  * @brief Initialize a CRUMBS context structure.
  *
- * Clears the structure and sets the role and address as provided.
+ * This function initializes only the core (fixed-size) fields of the context.
+ * Handler arrays are NOT touched to ensure safety when the caller's
+ * CRUMBS_MAX_HANDLERS differs from the library's compiled value.
+ * 
+ * For handler dispatch to work correctly, callers should either:
+ * - Use static/global context (automatically zero-initialized), or
+ * - Explicitly zero-initialize: `crumbs_context_t ctx = {0};`
+ * 
+ * This is particularly important for Arduino/PlatformIO where the library
+ * is precompiled with the default CRUMBS_MAX_HANDLERS but user code may
+ * define a different value.
  */
 void crumbs_init(crumbs_context_t *ctx,
                  crumbs_role_t role,
@@ -36,9 +46,40 @@ void crumbs_init(crumbs_context_t *ctx,
         return;
     }
 
-    memset(ctx, 0, sizeof(*ctx));
-    ctx->role = role;
+    /* 
+     * Initialize only fixed-size fields. DO NOT use memset(ctx, 0, sizeof(*ctx))
+     * because sizeof(*ctx) uses the LIBRARY's CRUMBS_MAX_HANDLERS, which
+     * may differ from the CALLER's value if they defined it differently.
+     * Writing beyond the caller's struct size causes stack/heap corruption.
+     */
     ctx->address = (role == CRUMBS_ROLE_PERIPHERAL) ? address : 0u;
+    ctx->role = role;
+    ctx->crc_error_count = 0u;
+    ctx->last_crc_ok = 0u;
+    ctx->on_message = NULL;
+    ctx->on_request = NULL;
+    ctx->user_data = NULL;
+
+    /* 
+     * Handler arrays are left untouched. If the context is in static storage,
+     * they're already zero. If on stack, caller must have zero-initialized.
+     * We reset handler_count to ensure no stale handlers are dispatched.
+     */
+#if CRUMBS_MAX_HANDLERS > 0
+    ctx->handler_count = 0u;
+#endif
+}
+
+/**
+ * @brief Get the size of crumbs_context_t as compiled in the library.
+ *
+ * This allows runtime detection of CRUMBS_MAX_HANDLERS mismatches between
+ * the library and user code (common on Arduino when user defines in sketch
+ * instead of build_flags).
+ */
+size_t crumbs_context_size(void)
+{
+    return sizeof(crumbs_context_t);
 }
 
 /**
@@ -62,8 +103,7 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
 /**
  * @brief Register a handler for a specific command type.
  *
- * When CRUMBS_MAX_HANDLERS < 256, uses linear search for slot management.
- * When CRUMBS_MAX_HANDLERS == 256, uses direct indexing (O(1)).
+ * Uses linear search for slot management (O(n) but safe and portable).
  * When CRUMBS_MAX_HANDLERS == 0, handlers are disabled.
  */
 int crumbs_register_handler(crumbs_context_t *ctx,
@@ -78,18 +118,8 @@ int crumbs_register_handler(crumbs_context_t *ctx,
     (void)fn;
     (void)user_data;
     return -1;
-#elif CRUMBS_MAX_HANDLERS == 256
-    /* Full table: O(1) direct indexing */
-    if (!ctx)
-    {
-        return -1;
-    }
-
-    ctx->handlers[command_type] = fn;
-    ctx->handler_userdata[command_type] = user_data;
-    return 0;
 #else
-    /* Reduced table: linear search */
+    /* Linear search table */
     if (!ctx)
     {
         return -1;
@@ -384,25 +414,7 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     }
 
 #if CRUMBS_MAX_HANDLERS > 0
-    /* Dispatch to per-command handler if registered. */
-#if CRUMBS_MAX_HANDLERS == 256
-    /* Full table: O(1) direct indexing */
-    crumbs_handler_fn handler = ctx->handlers[msg.command_type];
-    if (handler)
-    {
-        CRUMBS_DBG("rx: dispatch cmd 0x%02X\n", msg.command_type);
-        handler(ctx,
-                msg.command_type,
-                msg.data,
-                msg.data_len,
-                ctx->handler_userdata[msg.command_type]);
-    }
-    else
-    {
-        CRUMBS_DBG("rx: no handler for cmd 0x%02X\n", msg.command_type);
-    }
-#else
-    /* Reduced table: O(n) linear search */
+    /* Dispatch to per-command handler if registered (linear search). */
     uint8_t found = 0;
     for (uint8_t i = 0; i < ctx->handler_count; i++)
     {
@@ -427,7 +439,6 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
         CRUMBS_DBG("rx: no handler for cmd 0x%02X (searched %u slots)\n",
                    msg.command_type, ctx->handler_count);
     }
-#endif
 #endif /* CRUMBS_MAX_HANDLERS > 0 */
 
     return 0;

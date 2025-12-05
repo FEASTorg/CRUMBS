@@ -46,7 +46,7 @@ static void test_handler(crumbs_context_t *ctx,
 
 static int test_register_handler_success(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};  /* Zero-init required */
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     int rc = crumbs_register_handler(&ctx, 0x42, test_handler, (void *)0xDEADBEEF);
@@ -75,7 +75,7 @@ static int test_register_handler_null_ctx(void)
 
 static int test_unregister_handler(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     /* Register then unregister */
@@ -93,7 +93,7 @@ static int test_unregister_handler(void)
 
 static int test_handler_overwrite(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     /* Register handler for command 0x10 */
@@ -131,7 +131,7 @@ static int test_handler_overwrite(void)
 
 static int test_handler_dispatch(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     reset_handler_state();
@@ -195,7 +195,7 @@ static int test_handler_dispatch(void)
 
 static int test_no_handler_registered(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     reset_handler_state();
@@ -242,7 +242,7 @@ static void test_on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 
 static int test_handler_with_on_message(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
     crumbs_set_callbacks(&ctx, test_on_message, NULL, NULL);
 
@@ -283,7 +283,7 @@ static int test_handler_with_on_message(void)
 
 static int test_handler_zero_data(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     reset_handler_state();
@@ -321,7 +321,7 @@ static int test_handler_zero_data(void)
 
 static int test_handler_max_data(void)
 {
-    crumbs_context_t ctx;
+    crumbs_context_t ctx = {0};
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     reset_handler_state();

@@ -43,8 +43,14 @@
  */
 #define ENABLE_CRUMBS_DEBUG 0
 
-/* Reduce handler table size for memory-constrained devices */
-#define CRUMBS_MAX_HANDLERS 8
+/* 
+ * NOTE: To reduce handler table size, add to platformio.ini:
+ *   build_flags = -DCRUMBS_MAX_HANDLERS=8
+ * 
+ * Defining it here does NOT work because Arduino precompiles
+ * the library separately from the sketch.
+ * Default is 16 handlers which uses ~70 bytes on AVR.
+ */
 
 /* Enable CRUMBS debug if configured */
 #if ENABLE_CRUMBS_DEBUG
@@ -194,7 +200,8 @@ void setup()
     while (!Serial) {
         delay(10);
     }
-    
+    Serial.println(F("Starting Init"));
+
     /* Initialize LED pins */
     for (uint8_t i = 0; i < NUM_LEDS; i++) {
         pinMode(LED_PINS[i], OUTPUT);
@@ -205,6 +212,16 @@ void setup()
     /* Serial test mode - print help */
     serial_io_setup();
 #else
+    /* Verify struct size matches library (catches CRUMBS_MAX_HANDLERS mismatch) */
+    if (sizeof(ctx) != crumbs_context_size()) {
+        Serial.println(F("ERROR: Context size mismatch!"));
+        Serial.print(F("Sketch: ")); Serial.print(sizeof(ctx));
+        Serial.print(F("  Library: ")); Serial.println(crumbs_context_size());
+        Serial.println(F("Add to platformio.ini:"));
+        Serial.println(F("  build_flags = -DCRUMBS_MAX_HANDLERS=16"));
+        while (1) { delay(1000); }  /* Halt */
+    }
+    
     /* Initialize CRUMBS peripheral */
     crumbs_arduino_init_peripheral(&ctx, I2C_ADDRESS);
     
