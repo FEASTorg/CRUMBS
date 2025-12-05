@@ -24,6 +24,9 @@
  *   ./multi_controller /dev/i2c-1
  */
 
+/* Enable usleep() on glibc - must be before any includes */
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
