@@ -17,7 +17,23 @@
  * - Define CRUMBS_MAX_HANDLERS=8 to reduce RAM from 70% to ~22%
  * - In Arduino IDE: Add to build flags or use a build script
  * - In PlatformIO: build_flags = -DCRUMBS_MAX_HANDLERS=8
+ *
+ * Serial Test Mode:
+ * - Set ENABLE_SERIAL_TEST to 1 to test hardware via serial commands
+ * - Set to 0 for normal I2C peripheral operation
  */
+
+/* ============================================================================
+ * Build Configuration
+ * ============================================================================ */
+
+/**
+ * @brief Enable serial test mode for hardware testing.
+ * 
+ * When 1: Serial commands control LEDs directly (I2C disabled)
+ * When 0: Normal I2C peripheral mode
+ */
+#define ENABLE_SERIAL_TEST 1
 
 /* Reduce handler table size for memory-constrained devices */
 #define CRUMBS_MAX_HANDLERS 8
@@ -42,8 +58,11 @@ static const uint8_t NUM_LEDS = 4;
  * State
  * ============================================================================ */
 
-static crumbs_context_t ctx;
 static uint8_t led_state = 0;  /* Bitmask of current LED states */
+
+#if !ENABLE_SERIAL_TEST
+static crumbs_context_t ctx;
+#endif
 
 /* ============================================================================
  * Hardware Control
@@ -60,8 +79,9 @@ static void apply_state(uint8_t bitmask)
     }
 }
 
+#if !ENABLE_SERIAL_TEST
 /* ============================================================================
- * Command Handlers
+ * Command Handlers (I2C mode only)
  * ============================================================================ */
 
 /**
@@ -138,7 +158,7 @@ static void handle_blink(crumbs_context_t *ctx, uint8_t cmd,
 /**
  * @brief Request handler for I2C read (GET_STATE response).
  */
-static void handle_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void handle_request(struct crumbs_context_s *ctx, crumbs_message_t *reply)
 {
     (void)ctx;
     
@@ -148,6 +168,8 @@ static void handle_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     Serial.print(F("GET_STATE: 0b"));
     Serial.println(led_state, BIN);
 }
+
+#endif /* !ENABLE_SERIAL_TEST */
 
 /* ============================================================================
  * Arduino Setup & Loop
@@ -166,6 +188,10 @@ void setup()
         digitalWrite(LED_PINS[i], LOW);
     }
     
+#if ENABLE_SERIAL_TEST
+    /* Serial test mode - print help */
+    serial_io_setup();
+#else
     /* Initialize CRUMBS peripheral */
     crumbs_arduino_init_peripheral(&ctx, I2C_ADDRESS);
     
@@ -180,6 +206,8 @@ void setup()
     Serial.println(F("=== LED Peripheral Ready ==="));
     Serial.print(F("I2C Address: 0x"));
     Serial.println(I2C_ADDRESS, HEX);
+#endif
+
     Serial.print(F("LEDs on pins: "));
     for (uint8_t i = 0; i < NUM_LEDS; i++) {
         Serial.print(LED_PINS[i]);
@@ -190,5 +218,8 @@ void setup()
 
 void loop()
 {
-    /* All processing happens via I2C callbacks */
+#if ENABLE_SERIAL_TEST
+    serial_io_loop();
+#endif
+    /* I2C processing happens via callbacks */
 }

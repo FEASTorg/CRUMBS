@@ -16,7 +16,23 @@
  * Memory optimization:
  * - Define CRUMBS_MAX_HANDLERS=8 to reduce RAM usage
  * - In PlatformIO: build_flags = -DCRUMBS_MAX_HANDLERS=8
+ *
+ * Serial Test Mode:
+ * - Set ENABLE_SERIAL_TEST to 1 to test hardware via serial commands
+ * - Set to 0 for normal I2C peripheral operation
  */
+
+/* ============================================================================
+ * Build Configuration
+ * ============================================================================ */
+
+/**
+ * @brief Enable serial test mode for hardware testing.
+ * 
+ * When 1: Serial commands control servos directly (I2C disabled)
+ * When 0: Normal I2C peripheral mode
+ */
+#define ENABLE_SERIAL_TEST 1
 
 /* Reduce handler table size for memory-constrained devices */
 #define CRUMBS_MAX_HANDLERS 8
@@ -42,9 +58,12 @@ static const uint8_t NUM_SERVOS = 2;
  * State
  * ============================================================================ */
 
-static crumbs_context_t ctx;
 static Servo servos[NUM_SERVOS];
 static uint8_t servo_angles[NUM_SERVOS] = {90, 90};  /* Current angles */
+
+#if !ENABLE_SERIAL_TEST
+static crumbs_context_t ctx;
+#endif
 
 /* ============================================================================
  * Hardware Control
@@ -80,8 +99,9 @@ static void sweep_servo(uint8_t channel, uint8_t start, uint8_t end, uint8_t ste
     }
 }
 
+#if !ENABLE_SERIAL_TEST
 /* ============================================================================
- * Command Handlers
+ * Command Handlers (I2C mode only)
  * ============================================================================ */
 
 /**
@@ -160,7 +180,7 @@ static void handle_sweep(crumbs_context_t *ctx, uint8_t cmd,
 /**
  * @brief Handler for SERVO_CMD_CENTER_ALL.
  */
-static void handle_center_all(crumbs_context_t *ctx, uint8_t cmd,
+static void handle_center_all(struct crumbs_context_s *ctx, uint8_t cmd,
                               const uint8_t *data, uint8_t len, void *user)
 {
     (void)ctx; (void)cmd; (void)data; (void)len; (void)user;
@@ -175,7 +195,7 @@ static void handle_center_all(crumbs_context_t *ctx, uint8_t cmd,
 /**
  * @brief Request handler for I2C read (GET_ANGLES response).
  */
-static void handle_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void handle_request(struct crumbs_context_s *ctx, crumbs_message_t *reply)
 {
     (void)ctx;
     
@@ -189,6 +209,8 @@ static void handle_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     Serial.print(servo_angles[1]);
     Serial.println(F("°"));
 }
+
+#endif /* !ENABLE_SERIAL_TEST */
 
 /* ============================================================================
  * Arduino Setup & Loop
@@ -207,6 +229,10 @@ void setup()
         servos[i].write(90);  /* Start centered */
     }
     
+#if ENABLE_SERIAL_TEST
+    /* Serial test mode - print help */
+    serial_io_setup();
+#else
     /* Initialize CRUMBS peripheral */
     crumbs_arduino_init_peripheral(&ctx, I2C_ADDRESS);
     
@@ -222,6 +248,8 @@ void setup()
     Serial.println(F("=== Servo Peripheral Ready ==="));
     Serial.print(F("I2C Address: 0x"));
     Serial.println(I2C_ADDRESS, HEX);
+#endif
+
     Serial.print(F("Servos on pins: "));
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         Serial.print(SERVO_PINS[i]);
@@ -232,5 +260,8 @@ void setup()
 
 void loop()
 {
-    /* All processing happens via I2C callbacks */
+#if ENABLE_SERIAL_TEST
+    serial_io_loop();
+#endif
+    /* I2C processing happens via callbacks */
 }
