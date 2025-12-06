@@ -185,7 +185,7 @@ Integration tips and pitfalls
 
 - Bus reliability: use pull-ups, twisted pairs, good wiring, and proper grounding — CRC reduces but doesn't eliminate the need for good wiring
 - Device address selection: avoid conflicts and use the scanner to detect collisions early
-- Real-time constraints: CRUMBS frames are fixed-size — plan reads/writes with delays and hardware constraints in mind
+- Real-time constraints: CRUMBS frames are variable-length (4–31 bytes) — plan reads/writes with delays and hardware constraints in mind
 
 Maintenance notes for contributors
 

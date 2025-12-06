@@ -2,6 +2,8 @@
 
 This repository includes a lightweight Linux HAL that uses the "linux-wire" helper and a small example program you can run on a Linux host (e.g. Raspberry Pi) to act as a CRUMBS controller.
 
+> **Important:** The Linux HAL currently supports **controller mode only**. Peripheral mode (acting as an I²C target device) is not implemented. Linux hosts typically act as I²C controllers anyway; for peripheral devices, use an Arduino or other microcontroller with the Arduino HAL.
+
 Two important pieces to get set up on Linux:
 
 - linux-wire (the I²C helper library used by the HAL)

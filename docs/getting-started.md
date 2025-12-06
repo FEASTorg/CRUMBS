@@ -99,6 +99,8 @@ void setup() {
 }
 ```
 
+> **Byte Order Note:** Integer helpers (`crumbs_msg_add_u16()`, etc.) use little-endian encoding for portability. However, `crumbs_msg_add_float()` uses **native byte order** (`memcpy`), which is not portable across different architectures. If your controller and peripheral use different CPU architectures (e.g., ARM and x86), you should serialize floats manually or use fixed-point integers instead.
+
 ## Hardware Setup
 
 - Connect I2C (SDA/SCL) with 4.7kΩ pull-ups
@@ -113,6 +115,41 @@ Once basic communication is working:
 2. **Message helpers**: Use `crumbs_msg.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
 3. **Command headers**: Create reusable command definitions — see `examples/common/`
 4. **Memory optimization**: Reduce handler table size with `CRUMBS_MAX_HANDLERS` — see below
+
+### Quick Handler Dispatch Example
+
+Instead of a large switch statement, register handlers per command:
+
+```cpp
+// Peripheral with handler dispatch (Arduino)
+#include <crumbs_arduino.h>
+
+crumbs_context_t ctx;
+
+void handle_led(crumbs_context_t *c, uint8_t cmd, const uint8_t *data, uint8_t len, void *user) {
+    if (len >= 1) digitalWrite(LED_BUILTIN, data[0] ? HIGH : LOW);
+}
+
+void handle_servo(crumbs_context_t *c, uint8_t cmd, const uint8_t *data, uint8_t len, void *user) {
+    size_t off = 0;
+    uint8_t index;
+    uint16_t pulse;
+    if (crumbs_msg_read_u8(data, len, &off, &index) == 0 &&
+        crumbs_msg_read_u16(data, len, &off, &pulse) == 0) {
+        // set_servo(index, pulse);
+    }
+}
+
+void setup() {
+    crumbs_arduino_init_peripheral(&ctx, 0x08);
+    crumbs_register_handler(&ctx, 0x01, handle_led, NULL);   // command 0x01 → LED
+    crumbs_register_handler(&ctx, 0x02, handle_servo, NULL); // command 0x02 → servo
+}
+
+void loop() {} // Wire callbacks handle everything
+```
+
+For complete examples, see `examples/arduino/handler_peripheral_led/` and `examples/arduino/handler_peripheral_servo/`.
 
 ## Memory Optimization
 
@@ -141,10 +178,16 @@ Common issues:
 
 The HALs expose a generic I²C scanner (address ACK probing) and the CRUMBS core provides a CRUMBS-aware scanner that attempts to read and decode a CRUMBS frame from each address. Use the CRUMBS scanner when you want to discover devices that actually speak the CRUMBS protocol.
 
+**Scan modes:**
+
+- **Non-strict** (default): Attempts reads, may send a probe write if needed. More likely to detect devices but slightly more intrusive.
+- **Strict**: Read-only checks. Safer for buses with sensitive devices but may miss some peripherals.
+
 Arduino example (Serial):
 
 ```cpp
 // Use crumbs_controller_scan_for_crumbs from the core
+// flags=0 for non-strict, flags=CRUMBS_SCAN_STRICT for strict mode
 uint8_t found[32];
 int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, &Wire, found, sizeof(found), 50000);
 ```
@@ -152,6 +195,9 @@ int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wi
 Linux example (CLI):
 
 ```bash
-// Run the provided example binary with 'scan' or 'scan strict'
+# Non-strict mode (default)
 ./crumbs_simple_linux_controller scan
+
+# Strict mode (read-only probes)
+./crumbs_simple_linux_controller scan strict
 ```

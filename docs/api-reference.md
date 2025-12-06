@@ -64,7 +64,30 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx, uint8_t *out_buf, size_
 uint32_t crumbs_get_crc_error_count(const crumbs_context_t *ctx);
 int crumbs_last_crc_ok(const crumbs_context_t *ctx);
 void crumbs_reset_crc_stats(crumbs_context_t *ctx);
+
+/* ABI compatibility check */
+size_t crumbs_context_size(void);
 ```
+
+### ABI Compatibility Check
+
+The `crumbs_context_size()` function returns the size of `crumbs_context_t` as compiled into the library. This is used to detect mismatches between the header and compiled library when `CRUMBS_MAX_HANDLERS` differs.
+
+**When to use:** If you compile CRUMBS as a library separately from your application (e.g., PlatformIO lib_deps), the `CRUMBS_MAX_HANDLERS` value must match between library and application. A mismatch causes memory corruption.
+
+```c
+void setup() {
+    // Verify ABI compatibility at startup
+    if (sizeof(crumbs_context_t) != crumbs_context_size()) {
+        Serial.println("ERROR: CRUMBS_MAX_HANDLERS mismatch!");
+        Serial.print("Header size: "); Serial.println(sizeof(crumbs_context_t));
+        Serial.print("Library size: "); Serial.println(crumbs_context_size());
+        while(1); // Halt
+    }
+}
+```
+
+**Fix:** Ensure `CRUMBS_MAX_HANDLERS` is set via `build_flags` in `platformio.ini`, not `#define` before include.
 
 ### Command Handler Dispatch
 
@@ -192,22 +215,71 @@ All add/read functions return 0 on success, -1 on bounds overflow. See [Message 
 
 ---
 
-### Return values and common semantics
+### Return Values and Error Codes
 
-- Encoding/decoding
+All CRUMBS functions use consistent return value conventions:
 
-  - `crumbs_encode_message()` returns encoded frame length (4 + data_len) on success, 0 on failure (e.g., buffer too small or data_len > CRUMBS_MAX_PAYLOAD).
-  - `crumbs_decode_message()` returns `0` on success, `-1` if buffer too small or data_len invalid, and `-2` if the CRC check fails. When a non-NULL context is passed the function will update CRC statistics accessible via `crumbs_get_crc_error_count()` and `crumbs_last_crc_ok()`.
+- **Success**: `0` (or positive value where documented)
+- **Failure**: Negative values indicate specific error conditions
 
-- Controller helpers
+#### Core Functions
 
-  - `crumbs_controller_send()` returns `0` on success; non-zero indicates an I2C write error as returned by the platform `write_fn`.
+| Function                             | Return | Meaning                                                     |
+| ------------------------------------ | ------ | ----------------------------------------------------------- |
+| `crumbs_encode_message()`            | `>0`   | Encoded frame length (4 + data_len)                         |
+|                                      | `0`    | Failure (buffer too small or data_len > CRUMBS_MAX_PAYLOAD) |
+| `crumbs_decode_message()`            | `0`    | Success                                                     |
+|                                      | `-1`   | Buffer too small, data_len invalid, or truncated frame      |
+|                                      | `-2`   | CRC mismatch                                                |
+| `crumbs_controller_send()`           | `0`    | Success                                                     |
+|                                      | `-1`   | Invalid arguments (NULL ctx/msg/write_fn)                   |
+|                                      | `-2`   | Context not in controller role                              |
+|                                      | `-3`   | Encode failed                                               |
+|                                      | `>0`   | I2C write error (passed through from write_fn)              |
+| `crumbs_peripheral_handle_receive()` | `0`    | Success (callbacks invoked)                                 |
+|                                      | `-1`   | Invalid arguments or not peripheral role                    |
+|                                      | `-1`   | Decode failed (buffer/length error)                         |
+|                                      | `-2`   | CRC mismatch                                                |
+| `crumbs_peripheral_build_reply()`    | `0`    | Success (out_len set to frame size, or 0 if no reply)       |
+|                                      | `-1`   | Invalid arguments or not peripheral role                    |
+|                                      | `-2`   | Encode failed                                               |
+| `crumbs_register_handler()`          | `0`    | Success                                                     |
+|                                      | `-1`   | NULL context or handler table full                          |
+| `crumbs_unregister_handler()`        | `0`    | Success (always, even if not found)                         |
 
-- Peripheral helpers
-  - `crumbs_peripheral_handle_receive()` returns `0` on success, negative on decode/CRC errors. When successful it will invoke `ctx->on_message` if configured.
-  - `crumbs_peripheral_build_reply()` returns `0` on success. If no reply is available the function returns 0 and sets `out_len` to 0.
+#### Linux HAL Functions
 
-All HAL adapters follow the `crumbs_i2c_*` function signatures in `src/crumbs_i2c.h` — write functions should return 0 on success and non-zero on error; read functions should return number-of-bytes-read (>=0) or negative on error.
+| Function                         | Return  | Meaning                                       |
+| -------------------------------- | ------- | --------------------------------------------- |
+| `crumbs_linux_init_controller()` | `0`     | Success                                       |
+|                                  | `-1`    | Invalid arguments                             |
+|                                  | `-2`    | Failed to open I2C bus                        |
+| `crumbs_linux_i2c_write()`       | `0`     | Success                                       |
+|                                  | `-1`    | Invalid arguments or bus not open             |
+|                                  | `-2`    | Failed to select slave address                |
+|                                  | `-3`    | Write I/O error                               |
+|                                  | `-4`    | Incomplete write (bytes written ≠ requested)  |
+| `crumbs_linux_read_message()`    | `0`     | Success                                       |
+|                                  | `-1`    | Invalid arguments or bus not open             |
+|                                  | `-2`    | Failed to select slave address                |
+|                                  | `-3`    | Read I/O error                                |
+|                                  | `-4`    | No bytes read                                 |
+|                                  | `-1/-2` | Decode/CRC error (passed through from decode) |
+
+#### Arduino HAL Functions
+
+| Function                      | Return | Meaning                           |
+| ----------------------------- | ------ | --------------------------------- |
+| `crumbs_arduino_wire_write()` | `0`    | Success                           |
+|                               | `>0`   | Wire.endTransmission() error code |
+
+#### CRC Statistics
+
+When `crumbs_decode_message()` is called with a non-NULL context, it updates CRC statistics:
+
+- `crumbs_get_crc_error_count(ctx)` — total CRC failures since init/reset
+- `crumbs_last_crc_ok(ctx)` — 1 if last decode had valid CRC, 0 otherwise
+- `crumbs_reset_crc_stats(ctx)` — reset counters to zero
 
 ## Arduino HAL (high-level conveniences)
 
@@ -250,6 +322,8 @@ crumbs_set_callbacks(&ctx, on_message_cb, on_request_cb, NULL);
 ```
 
 ## Linux HAL (selected)
+
+> **Note:** The Linux HAL currently supports **controller mode only**. Peripheral mode (acting as an I²C target device) is not yet implemented. For peripheral devices, use an Arduino or other microcontroller.
 
 ```c
 int crumbs_linux_init_controller(crumbs_context_t *ctx,
