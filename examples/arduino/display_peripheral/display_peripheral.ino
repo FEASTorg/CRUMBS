@@ -1,5 +1,5 @@
 /**
- * @file peripheral_example.ino
+ * @file display_peripheral.ino
  * @brief Minimal CRUMBS slice for the triple board rig.
  *
  * Receives LED settings from the controller and replies with current state.

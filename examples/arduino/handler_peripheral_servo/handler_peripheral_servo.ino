@@ -1,5 +1,5 @@
 /**
- * @file servo_peripheral.ino
+ * @file handler_peripheral_servo.ino
  * @brief Example CRUMBS servo controller peripheral using command interface.
  *
  * This sketch demonstrates:

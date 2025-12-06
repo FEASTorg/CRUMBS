@@ -3,7 +3,7 @@ project(crumbs_native_example C)
 
 # Build this example in one of two ways:
 # 1) in-tree: build inside the CRUMBS repo and link to the `crumbs` target
-#    cmake -S examples/native/controller -B build -DCRUMBS_BUILD_IN_TREE=ON
+#    cmake -S examples/linux/simple_native_controller -B build -DCRUMBS_BUILD_IN_TREE=ON
 # 2) out-of-tree (installed library): set CMAKE_PREFIX_PATH to an installed
 #    path that contains crumbsConfig.cmake / crumbsTargets.cmake
 

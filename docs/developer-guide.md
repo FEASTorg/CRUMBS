@@ -22,7 +22,7 @@ High-level architecture
 - HALs: platform-specific adapters that map the core to the platform I²C primitives
   - Arduino HAL: `src/hal/arduino/` and public header `src/crumbs_arduino.h`
   - Linux HAL: `src/hal/linux/` and public header `src/crumbs_linux.h` (uses linux-wire; guarded for non-Linux builds)
-- Examples: `examples/arduino` and `examples/linux` show controller and peripheral usage
+- Examples: `examples/arduino/`, `examples/linux/`, and `examples/platformio/` show controller and peripheral usage
 - Documentation: `docs/` contains the API reference, getting-started notes, and examples documentation
 
 Message format (wire format)
@@ -223,4 +223,4 @@ Appendix: quick reference (API / filenames)
 - I²C primitives: `src/crumbs_i2c.h` (write_fn + read_fn + scan_fn)
 - Arduino HAL: `src/crumbs_arduino.h`, `src/hal/arduino/crumbs_i2c_arduino.cpp`
 - Linux HAL: `src/crumbs_linux.h`, `src/hal/linux/crumbs_i2c_linux.c`
-- Examples: `examples/arduino`, `examples/linux`
+- Examples: `examples/arduino/`, `examples/linux/`, `examples/platformio/`

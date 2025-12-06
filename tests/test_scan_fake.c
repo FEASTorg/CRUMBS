@@ -64,7 +64,7 @@ static int fake_read_noncrumbs(void *user_ctx, uint8_t addr, uint8_t *buf, size_
     return 5;
 }
 
-int main(void)
+static int test_scan_finds_devices(void)
 {
     crumbs_context_t ctx;
     crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
@@ -76,8 +76,8 @@ int main(void)
 
     if (n < 0)
     {
-        fprintf(stderr, "scan failed rc=%d\n", n);
-        return 2;
+        fprintf(stderr, "scan_finds_devices: scan failed rc=%d\n", n);
+        return 1;
     }
 
     /* Expect to find both devices */
@@ -92,24 +92,82 @@ int main(void)
 
     if (!sawA || !sawB)
     {
-        fprintf(stderr, "scan did not find expected devices: sawA=%d sawB=%d n=%d\n", sawA, sawB, n);
-        return 3;
+        fprintf(stderr, "scan_finds_devices: did not find expected devices: sawA=%d sawB=%d n=%d\n",
+                sawA, sawB, n);
+        return 1;
     }
 
-    /* Also test that a non-CRUMBS payload is not accepted */
-    int n2 = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x20, 0,
-                                               fake_write, fake_read_noncrumbs, NULL, found, sizeof(found), 10000);
-    if (n2 < 0)
-    {
-        fprintf(stderr, "scan2 failed rc=%d\n", n2);
-        return 4;
-    }
-    if (n2 != 0)
-    {
-        fprintf(stderr, "scan incorrectly identified non-CRUMBS device n2=%d\n", n2);
-        return 5;
-    }
-
-    printf("OK scan tests\n");
+    printf("  scan finds devices: PASS\n");
     return 0;
+}
+
+static int test_scan_rejects_noncrumbs(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    uint8_t found[16];
+
+    int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x20, 0,
+                                              fake_write, fake_read_noncrumbs, NULL, found, sizeof(found), 10000);
+    if (n < 0)
+    {
+        fprintf(stderr, "scan_rejects_noncrumbs: scan failed rc=%d\n", n);
+        return 1;
+    }
+    if (n != 0)
+    {
+        fprintf(stderr, "scan_rejects_noncrumbs: incorrectly identified non-CRUMBS device n=%d\n", n);
+        return 1;
+    }
+
+    printf("  scan rejects non-CRUMBS: PASS\n");
+    return 0;
+}
+
+static int test_scan_empty_range(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    uint8_t found[16];
+
+    /* Scan a range with no devices */
+    int n = crumbs_controller_scan_for_crumbs(&ctx, 0x50, 0x60, 0,
+                                              fake_write, fake_read, NULL, found, sizeof(found), 10000);
+    if (n < 0)
+    {
+        fprintf(stderr, "scan_empty_range: scan failed rc=%d\n", n);
+        return 1;
+    }
+    if (n != 0)
+    {
+        fprintf(stderr, "scan_empty_range: should find 0 devices, got %d\n", n);
+        return 1;
+    }
+
+    printf("  scan empty range: PASS\n");
+    return 0;
+}
+
+int main(void)
+{
+    int failures = 0;
+
+    printf("Running scan tests:\n");
+
+    failures += test_scan_finds_devices();
+    failures += test_scan_rejects_noncrumbs();
+    failures += test_scan_empty_range();
+
+    if (failures == 0)
+    {
+        printf("OK all scan tests passed\n");
+        return 0;
+    }
+    else
+    {
+        fprintf(stderr, "FAILED %d test(s)\n", failures);
+        return 1;
+    }
 }

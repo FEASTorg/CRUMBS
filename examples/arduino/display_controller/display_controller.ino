@@ -1,5 +1,5 @@
 /**
- * @file display_controller_example.ino
+ * @file display_controller.ino
  * @brief CRUMBS controller with OLED display for the triple board rig.
  *
  * Serial commands (newline terminated, space-separated):

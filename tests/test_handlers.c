@@ -49,7 +49,7 @@ static int test_register_handler_success(void)
     crumbs_context_t ctx = {0};  /* Zero-init required */
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
-    int rc = crumbs_register_handler(&ctx, 0x42, test_handler, (void *)0xDEADBEEF);
+    int rc = crumbs_register_handler(&ctx, 0x42, test_handler, (void *)(uintptr_t)0xDEADBEEF);
     if (rc != 0)
     {
         fprintf(stderr, "register_handler returned %d, expected 0\n", rc);
@@ -79,7 +79,7 @@ static int test_unregister_handler(void)
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     /* Register then unregister */
-    crumbs_register_handler(&ctx, 0x55, test_handler, (void *)0x1234);
+    crumbs_register_handler(&ctx, 0x55, test_handler, (void *)(uintptr_t)0x1234);
     int rc = crumbs_unregister_handler(&ctx, 0x55);
     if (rc != 0)
     {
@@ -97,10 +97,10 @@ static int test_handler_overwrite(void)
     crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
 
     /* Register handler for command 0x10 */
-    crumbs_register_handler(&ctx, 0x10, test_handler, (void *)0x1111);
+    crumbs_register_handler(&ctx, 0x10, test_handler, (void *)(uintptr_t)0x1111);
 
     /* Overwrite with different user_data */
-    crumbs_register_handler(&ctx, 0x10, test_handler, (void *)0x2222);
+    crumbs_register_handler(&ctx, 0x10, test_handler, (void *)(uintptr_t)0x2222);
 
     /* Simulate a message to verify which user_data is used */
     reset_handler_state();
@@ -119,7 +119,7 @@ static int test_handler_overwrite(void)
 
     crumbs_peripheral_handle_receive(&ctx, buf, len);
 
-    if (g_last_user_data != (void *)0x2222)
+    if (g_last_user_data != (void *)(uintptr_t)0x2222)
     {
         fprintf(stderr, "handler_overwrite: user_data should be 0x2222, got %p\n", g_last_user_data);
         return 1;
@@ -137,7 +137,7 @@ static int test_handler_dispatch(void)
     reset_handler_state();
 
     /* Register handler for command 0x42 */
-    crumbs_register_handler(&ctx, 0x42, test_handler, (void *)0xCAFE);
+    crumbs_register_handler(&ctx, 0x42, test_handler, (void *)(uintptr_t)0xCAFE);
 
     /* Create and encode a message */
     crumbs_message_t msg;
@@ -183,7 +183,7 @@ static int test_handler_dispatch(void)
         return 1;
     }
 
-    if (g_last_user_data != (void *)0xCAFE)
+    if (g_last_user_data != (void *)(uintptr_t)0xCAFE)
     {
         fprintf(stderr, "handler got wrong user_data\n");
         return 1;
@@ -289,7 +289,7 @@ static int test_handler_zero_data(void)
     reset_handler_state();
 
     /* Register handler for command 0x00 */
-    crumbs_register_handler(&ctx, 0x00, test_handler, (void *)0xABCD);
+    crumbs_register_handler(&ctx, 0x00, test_handler, (void *)(uintptr_t)0xABCD);
 
     /* Create message with zero-length payload */
     crumbs_message_t msg;
@@ -370,6 +370,86 @@ static int test_handler_max_data(void)
     return 0;
 }
 
+static int test_handler_table_full(void)
+{
+    crumbs_context_t ctx = {0};
+    crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
+
+    /* Fill the handler table to capacity */
+    for (uint8_t i = 0; i < CRUMBS_MAX_HANDLERS; ++i)
+    {
+        int rc = crumbs_register_handler(&ctx, i, test_handler, NULL);
+        if (rc != 0)
+        {
+            fprintf(stderr, "handler_table_full: registration %u failed early\n", i);
+            return 1;
+        }
+    }
+
+    /* Next registration should fail (table full) */
+    int rc = crumbs_register_handler(&ctx, 0xFF, test_handler, NULL);
+    if (rc != -1)
+    {
+        fprintf(stderr, "handler_table_full: should return -1 when full\n");
+        return 1;
+    }
+
+    printf("  handler table full: PASS\n");
+    return 0;
+}
+
+static int test_unregister_nonexistent(void)
+{
+    crumbs_context_t ctx = {0};
+    crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
+
+    /* Unregister a command that was never registered */
+    int rc = crumbs_unregister_handler(&ctx, 0x99);
+
+    /* Should succeed gracefully (no-op) */
+    if (rc != 0)
+    {
+        fprintf(stderr, "unregister_nonexistent: should return 0\n");
+        return 1;
+    }
+
+    printf("  unregister nonexistent: PASS\n");
+    return 0;
+}
+
+static int test_handler_wrong_command_not_called(void)
+{
+    crumbs_context_t ctx = {0};
+    crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x10);
+
+    reset_handler_state();
+
+    /* Register handler for command 0x42 ONLY */
+    crumbs_register_handler(&ctx, 0x42, test_handler, NULL);
+
+    /* Send a message with a DIFFERENT command (0x99) */
+    crumbs_message_t msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.type_id = 0x01;
+    msg.command_type = 0x99; /* Not registered */
+    msg.data_len = 0;
+
+    uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
+    size_t len = crumbs_encode_message(&msg, buf, sizeof(buf));
+
+    crumbs_peripheral_handle_receive(&ctx, buf, len);
+
+    /* Handler should NOT have been called */
+    if (g_handler_call_count != 0)
+    {
+        fprintf(stderr, "handler_wrong_command: handler should not be called for unregistered command\n");
+        return 1;
+    }
+
+    printf("  handler wrong command not called: PASS\n");
+    return 0;
+}
+
 /* ---- Main ------------------------------------------------------------- */
 
 int main(void)
@@ -381,9 +461,12 @@ int main(void)
     failures += test_register_handler_success();
     failures += test_register_handler_null_ctx();
     failures += test_unregister_handler();
+    failures += test_unregister_nonexistent();
+    failures += test_handler_table_full();
     failures += test_handler_overwrite();
     failures += test_handler_dispatch();
     failures += test_no_handler_registered();
+    failures += test_handler_wrong_command_not_called();
     failures += test_handler_with_on_message();
     failures += test_handler_zero_data();
     failures += test_handler_max_data();

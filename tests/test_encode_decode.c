@@ -220,6 +220,99 @@ static int test_truncated_frame(void)
     return 0;
 }
 
+static int test_malformed_data_len_in_frame(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    /*
+     * Construct a wire frame manually with a data_len byte that claims
+     * more payload bytes than actually present. This tests the decoder's
+     * bounds checking against the provided buffer_len.
+     *
+     * Frame format: [type_id, command_type, data_len, ...payload..., CRC]
+     */
+    uint8_t malformed[8];
+    malformed[0] = 0x01; /* type_id */
+    malformed[1] = 0x02; /* command_type */
+    malformed[2] = 20;   /* data_len claims 20 bytes of payload */
+    malformed[3] = 0xAA; /* Only 1 byte of actual payload */
+    malformed[4] = 0x00; /* Fake CRC (doesn't matter, should fail length check first) */
+
+    crumbs_message_t out;
+    memset(&out, 0, sizeof(out));
+
+    /* Buffer is only 5 bytes, but data_len claims 20 - should fail */
+    int rc = crumbs_decode_message(malformed, 5, &out, &ctx);
+    if (rc == 0)
+    {
+        fprintf(stderr, "malformed data_len should fail decode\n");
+        return 1;
+    }
+
+    printf("  malformed data_len rejection: PASS\n");
+    return 0;
+}
+
+static int test_decode_minimum_valid_frame(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    /* Minimum valid frame: 4 bytes (type_id, command_type, data_len=0, CRC) */
+    crumbs_message_t m;
+    memset(&m, 0, sizeof(m));
+    m.type_id = 0xAA;
+    m.command_type = 0xBB;
+    m.data_len = 0;
+
+    uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
+    size_t w = crumbs_encode_message(&m, buf, sizeof(buf));
+
+    if (w != 4)
+    {
+        fprintf(stderr, "minimum frame should be 4 bytes, got %zu\n", w);
+        return 1;
+    }
+
+    /* Now try decoding with exactly 4 bytes */
+    crumbs_message_t out;
+    int rc = crumbs_decode_message(buf, 4, &out, &ctx);
+    if (rc != 0)
+    {
+        fprintf(stderr, "minimum valid frame decode failed\n");
+        return 1;
+    }
+
+    if (out.type_id != 0xAA || out.command_type != 0xBB || out.data_len != 0)
+    {
+        fprintf(stderr, "minimum frame decode mismatch\n");
+        return 1;
+    }
+
+    printf("  minimum valid frame: PASS\n");
+    return 0;
+}
+
+static int test_decode_buffer_len_too_short(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    uint8_t buf[3] = {0x01, 0x02, 0x00}; /* Only 3 bytes, min is 4 */
+
+    crumbs_message_t out;
+    int rc = crumbs_decode_message(buf, 3, &out, &ctx);
+    if (rc == 0)
+    {
+        fprintf(stderr, "buffer_len < 4 should fail\n");
+        return 1;
+    }
+
+    printf("  buffer too short rejection: PASS\n");
+    return 0;
+}
+
 int main(void)
 {
     int failures = 0;
@@ -231,6 +324,9 @@ int main(void)
     failures += test_max_length_payload();
     failures += test_oversized_data_len();
     failures += test_truncated_frame();
+    failures += test_malformed_data_len_in_frame();
+    failures += test_decode_minimum_valid_frame();
+    failures += test_decode_buffer_len_too_short();
 
     if (failures == 0)
     {

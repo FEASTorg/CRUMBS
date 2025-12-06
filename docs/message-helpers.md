@@ -144,7 +144,7 @@ void handle_led_set_one(crumbs_context_t *ctx, uint8_t cmd,
 
 ## Creating Command Headers
 
-The recommended pattern is to create a command header file for each device type. See `examples/commands/` for complete examples.
+The recommended pattern is to create a command header file for each device type. See `examples/common/` for complete examples.
 
 ### Pattern
 

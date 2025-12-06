@@ -3,7 +3,7 @@
  * @brief OLED display rendering for the controller example.
  *
  * This file provides drawDisplay() which is called from the main .ino.
- * All state variables are defined in display_controller_example.ino.
+ * All state variables are defined in display_controller.ino.
  */
 
 #include <Arduino.h>
@@ -11,7 +11,7 @@
 #include "crumbs_arduino.h"
 #include <stdio.h>
 
-// External references to state defined in display_controller_example.ino
+// External references to state defined in display_controller.ino
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
 extern struct LastExchange lastExchange;
 extern bool hasError;

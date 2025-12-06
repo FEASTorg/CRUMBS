@@ -69,7 +69,7 @@ jobs:
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake -S examples/native/controller -B build-native \
+          cmake -S examples/linux/simple_native_controller -B build-native \
             -DCRUMBS_BUILD_IN_TREE=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
@@ -86,8 +86,8 @@ jobs:
 
       - name: Build PlatformIO controller example
         run: |
-          pio run -d examples/platformio/controller -e nanoatmega328new
+          pio run -d examples/platformio/simple_controller -e nanoatmega328new
 
       - name: Build PlatformIO peripheral example
         run: |
-          pio run -d examples/platformio/peripheral -e nanoatmega328new
+          pio run -d examples/platformio/simple_peripheral -e nanoatmega328new

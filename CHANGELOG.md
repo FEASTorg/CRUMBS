@@ -18,17 +18,18 @@
   - All functions return 0 on success, -1 on bounds overflow
   - Header-only design: `static inline` functions for zero call overhead
 
-- **Example Command Headers** (`examples/commands/`):
+- **Example Command Headers** (`examples/common/`):
 
   - `led_commands.h`: LED device command definitions and sender functions
   - `servo_commands.h`: Servo device command definitions and sender functions
   - Demonstrates the "copy and customize" pattern for user commands
 
-- **Example Applications** (`examples/handlers/`):
+- **Example Applications**:
 
-  - `arduino/led_peripheral/`: LED control peripheral using handler dispatch
-  - `arduino/servo_peripheral/`: Dual servo peripheral with message reading
-  - `linux/multi_controller/`: Linux controller using multiple command headers
+  - `examples/arduino/handler_peripheral_led/`: LED control peripheral using handler dispatch
+  - `examples/arduino/handler_peripheral_servo/`: Servo peripheral with message reading
+  - `examples/linux/multi_handler_controller/`: Linux controller using multiple command headers
+  - `examples/platformio/`: PlatformIO projects ready to build with `pio run`
 
 - **Configurable Handler Table Size** (`CRUMBS_MAX_HANDLERS`):
   - New compile-time option to control handler dispatch table size
@@ -61,8 +62,8 @@
   - Handlers are invoked after `on_message` callback (if both are set)
   - O(1) dispatch via 256-entry lookup table per context
 - **Handler Examples**:
-  - `examples/arduino/handler_peripheral_example/` - Arduino peripheral using per-command handlers (LED control, echo)
-  - `examples/linux/handler_controller/` - Linux controller CLI for handler peripheral
+  - `examples/arduino/handler_peripheral_led/` - Arduino peripheral using per-command handlers (LED control)
+  - `examples/linux/multi_handler_controller/` - Linux controller CLI for handler peripherals
 
 ## [0.7.x] - Variable-Length Payload
 

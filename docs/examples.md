@@ -2,7 +2,7 @@
 
 ## Controller Example
 
-Send commands via serial interface and request data from peripherals. The examples in `examples/arduino` show both controller and peripheral sketches using the C core API (see `crumbs_arduino.h`).
+Send commands via serial interface and request data from peripherals. The examples in `examples/arduino/` and `examples/platformio/` show both controller and peripheral sketches using the C core API (see `crumbs_arduino.h`).
 
 ### Usage
 
@@ -126,7 +126,7 @@ msg.data[1] = 20;  // delay = 20 * 10ms = 200ms
 crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
 ```
 
-See `examples/arduino/handler_peripheral_example/` and `examples/linux/handler_controller/` for complete working examples.
+See `examples/arduino/handler_peripheral_led/` and `examples/linux/multi_handler_controller/` for complete working examples.
 
 ## Message Helpers Pattern
 
@@ -137,7 +137,7 @@ The `crumbs_msg.h` header provides type-safe payload building and reading. This 
 ```c
 #include <crumbs_msg.h>
 
-// Define command header (see examples/commands/ for full pattern)
+// Define command header (see examples/common/ for full pattern)
 #define SERVO_TYPE_ID    0x02
 #define SERVO_CMD_ANGLE  0x01
 
@@ -172,11 +172,11 @@ void setup() {
 }
 ```
 
-See `examples/handlers/` for complete working examples:
+See the handler examples for complete working code:
 
-- `arduino/led_peripheral/` — LED strip control with RGB values
-- `arduino/servo_peripheral/` — Dual servo control with pulse widths
-- `linux/multi_controller/` — Linux controller using multiple device command headers
+- `examples/arduino/handler_peripheral_led/` — LED strip control with RGB values
+- `examples/arduino/handler_peripheral_servo/` — Servo control with pulse widths
+- `examples/linux/multi_handler_controller/` — Linux controller using multiple device command headers
 
 See [Message Helpers](message-helpers.md) for complete API documentation.
 
@@ -218,14 +218,14 @@ For protocol-aware discovery (find devices that actually speak CRUMBS) use the c
 
 ## Native C example (CMake + static link)
 
-There is a minimal native C example that demonstrates using CRUMBS as a compiled library and linking a small program against the `crumbs` static target. The example is located at `examples/native/controller`.
+There is a minimal native C example that demonstrates using CRUMBS as a compiled library and linking a small program against the `crumbs` static target. The example is located at `examples/linux/simple_native_controller`.
 
 Build the example in-tree (recommended for local development):
 
 ```bash
-cmake -S examples/native/controller -B examples/native/controller/build -DCRUMBS_BUILD_IN_TREE=ON
-cmake --build examples/native/controller/build --config Release
-./examples/native/controller/build/crumbs_native_example
+cmake -S examples/linux/simple_native_controller -B examples/linux/simple_native_controller/build -DCRUMBS_BUILD_IN_TREE=ON
+cmake --build examples/linux/simple_native_controller/build --config Release
+./examples/linux/simple_native_controller/build/crumbs_native_example
 ```
 
 If you have installed CRUMBS (and supplied CMake config files to your install prefix) you can instead build the example against an installed package by turning off `CRUMBS_BUILD_IN_TREE` and setting `CMAKE_PREFIX_PATH` accordingly.
@@ -240,17 +240,19 @@ target_link_libraries(myprog PRIVATE crumbs::crumbs)
 
 ## PlatformIO examples (Arduino Nano)
 
-There are two small PlatformIO examples that target the Arduino Nano:
+There are several PlatformIO examples that target the Arduino Nano:
 
-- `examples/platformio/controller` — controller sketch that reads serial CSV commands (addr,type_id,command_type,data...) and sends them to a peripheral.
-- `examples/platformio/peripheral` — peripheral sketch (address 0x08) that prints received commands to Serial and returns a sample reply for requests.
+- `examples/platformio/simple_controller/` — controller sketch that reads serial CSV commands and sends them to a peripheral.
+- `examples/platformio/simple_peripheral/` — peripheral sketch (address 0x08) that prints received commands and returns sample replies.
+- `examples/platformio/handler_peripheral_led/` — LED peripheral using handler dispatch pattern.
+- `examples/platformio/handler_peripheral_servo/` — servo peripheral using handler dispatch pattern.
 
 Build with PlatformIO CLI inside the example directories:
 
 ```bash
-cd examples/platformio/controller
+cd examples/platformio/simple_controller
 pio run -e nanoatmega328new
 
-cd ../peripheral
+cd ../simple_peripheral
 pio run -e nanoatmega328new
 ```

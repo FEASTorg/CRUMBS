@@ -1,5 +1,5 @@
 /**
- * @file crumbs_slice_test.ino
+ * @file simple_peripheral.ino
  * @brief CRUMBS Slice example sketch to receive messages from a CRUMBS Controller and respond to requests.
  */
 

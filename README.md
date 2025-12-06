@@ -71,13 +71,12 @@ Documentation is available in the [docs](docs/) directory:
 
 ## Examples
 
-Working examples for both Arduino and Linux are provided under `examples/`:
+Working examples for Arduino, Linux, and PlatformIO are provided under `examples/`:
 
-- `examples/arduino/` — Controller and peripheral sketches using the C API
-- `examples/linux/` — Native controller example using the Linux HAL
-- `examples/handlers/` — Handler-based peripherals (LED, servo) with message helpers
-- `examples/commands/` — Reusable command header definitions
-- `examples/platformio/` — PlatformIO Arduino examples
+- `examples/arduino/` — Arduino sketches (simple, display, and handler-based examples)
+- `examples/linux/` — Native Linux controller examples using the Linux HAL
+- `examples/platformio/` — PlatformIO projects (ready to build with `pio run`)
+- `examples/common/` — Shared command header definitions (LED, servo)
 
 ## License
 

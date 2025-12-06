@@ -20,8 +20,8 @@
   ],
   "platforms": "*",
   "examples": [
-    "examples/arduino/simple/controller_example",
-    "examples/arduino/simple/peripheral_example",
-    "examples/platformio/controller"
+    "examples/arduino/simple_controller",
+    "examples/arduino/simple_peripheral",
+    "examples/platformio/simple_controller"
   ]
 }

@@ -71,12 +71,12 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
 
-    add_executable(crumbs_multi_controller
-        examples/handlers/linux/multi_controller/multi_controller.c
+    add_executable(crumbs_multi_handler_controller
+        examples/linux/multi_handler_controller/multi_handler_controller.c
     )
-    target_link_libraries(crumbs_multi_controller PRIVATE crumbs)
-    target_include_directories(crumbs_multi_controller PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/commands
+    target_link_libraries(crumbs_multi_handler_controller PRIVATE crumbs)
+    target_include_directories(crumbs_multi_handler_controller PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/common
     )
 endif()
 
@@ -102,6 +102,22 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_handlers tests/test_handlers.c)
     target_link_libraries(test_handlers PRIVATE crumbs)
     add_test(NAME handlers_test COMMAND test_handlers)
+
+    add_executable(test_msg_helpers tests/test_msg_helpers.c)
+    target_link_libraries(test_msg_helpers PRIVATE crumbs)
+    # Link math library on non-MSVC platforms (MSVC has it built-in)
+    if(NOT MSVC)
+        target_link_libraries(test_msg_helpers PRIVATE m)
+    endif()
+    add_test(NAME msg_helpers_test COMMAND test_msg_helpers)
+
+    add_executable(test_context tests/test_context.c)
+    target_link_libraries(test_context PRIVATE crumbs)
+    add_test(NAME context_test COMMAND test_context)
+
+    add_executable(test_peripheral_flow tests/test_peripheral_flow.c)
+    target_link_libraries(test_peripheral_flow PRIVATE crumbs)
+    add_test(NAME peripheral_flow_test COMMAND test_peripheral_flow)
 endif()
 
 # -----------------------------------------------------------------------------

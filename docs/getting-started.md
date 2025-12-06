@@ -33,7 +33,7 @@ target_link_libraries(myprog PRIVATE crumbs::crumbs)
 
 Tips
 
-- For local development prefer the in-tree example usage (examples/native/controller) which will link the in-repo `crumbs` target via `add_subdirectory`.
+- For local development prefer the in-tree example usage (`examples/linux/simple_native_controller/`) which will link the in-repo `crumbs` target via `add_subdirectory`.
 - When packaging for distribution ensure you install the exported cmake files (the top-level CMake provided export/install rules place crumbs targets under lib/cmake/crumbs) so `find_package(crumbs CONFIG)` can locate them via CMAKE_PREFIX_PATH or an installed system prefix.
 
 Linux HAL dependency note
@@ -111,7 +111,7 @@ Once basic communication is working:
 
 1. **Handler dispatch**: Register per-command handlers instead of switch statements — see [API Reference](api-reference.md#command-handler-dispatch)
 2. **Message helpers**: Use `crumbs_msg.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
-3. **Command headers**: Create reusable command definitions — see `examples/commands/`
+3. **Command headers**: Create reusable command definitions — see `examples/common/`
 4. **Memory optimization**: Reduce handler table size with `CRUMBS_MAX_HANDLERS` — see below
 
 ## Memory Optimization

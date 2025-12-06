@@ -1,6 +1,6 @@
 # Triple Display Rig
 
-Minimal three-board demo for CRUMBS: `display_controller_example` issues SEND/REQUEST commands, while each `display_peripheral_example` slice drives three LEDs and reports its state.
+Minimal three-board demo for CRUMBS: `display_controller` issues SEND/REQUEST commands, while each `display_peripheral` slice drives three LEDs and reports its state.
 
 ## Rig at a Glance
 
@@ -24,8 +24,8 @@ Pull-ups only here                        (no extra pull-ups)
 ## Flashing the Sketches
 
 1. Install **CRUMBS** and **U8g2**.
-2. Set `kSliceI2cAddress` per slice (e.g. `0x08`, `0x09`) in `peripheral_example.ino`.
-3. Upload `controller_example` to the controller Nano and the slice sketch (with its address) to each peripheral Nano.
+2. Set `kSliceI2cAddress` per slice (e.g. `0x08`, `0x09`) in `display_peripheral.ino`.
+3. Upload `display_controller` to the controller Nano and the slice sketch (with its address) to each peripheral Nano.
 
 ## Serial Commands (115200 baud)
 

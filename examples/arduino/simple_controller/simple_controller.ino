@@ -1,5 +1,5 @@
 /**
- * @file crumbs_controller_test.ino
+ * @file simple_controller.ino
  * @brief CRUMBS Controller example sketch to send messages to a CRUMBS Slice.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file led_peripheral.ino
+ * @file handler_peripheral_led.ino
  * @brief Example CRUMBS LED peripheral using command interface.
  *
  * This sketch demonstrates:

@@ -3,7 +3,7 @@
  * @brief OLED display and LED helpers for the peripheral example.
  *
  * Provides drawDisplay(), refreshLeds(), pulseActivity(), setOk(), setError().
- * All state variables are defined in display_peripheral_example.ino.
+ * All state variables are defined in display_peripheral.ino.
  */
 
 #include <Arduino.h>
@@ -11,7 +11,7 @@
 #include "crumbs_arduino.h"
 #include <stdio.h>
 
-// External references to state defined in display_peripheral_example.ino
+// External references to state defined in display_peripheral.ino
 extern U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2;
 extern const uint8_t LED_GREEN;
 extern const uint8_t LED_YELLOW;
