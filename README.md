@@ -39,8 +39,8 @@ m.type_id = 1;
 m.command_type = 1;
 
 // Type-safe payload building
-crumbs_msg_add_float(&m, 25.5f);  // Add temperature
-crumbs_msg_add_u8(&m, 1);         // Add sensor ID
+crumbs_msg_add_float(&m, 25.5f);  // e.g. change a temperature value
+crumbs_msg_add_u8(&m, 0x01);      // e.g. configure the channel index
 
 crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```
