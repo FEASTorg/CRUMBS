@@ -15,8 +15,9 @@ if(NOT DEFINED CRUMBS_PATH)
 endif()
 
 if(CRUMBS_BUILD_IN_TREE)
-    # Enable Linux HAL for I2C support
+    # Enable Linux HAL for I2C support, disable examples to avoid target conflicts
     set(CRUMBS_ENABLE_LINUX_HAL ON CACHE BOOL "" FORCE)
+    set(CRUMBS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory(${CRUMBS_PATH} ${CMAKE_BINARY_DIR}/crumbs_subbuild)
     
     add_executable(crumbs_multi_handler_controller multi_handler_controller.c)
