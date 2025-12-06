@@ -124,31 +124,27 @@ This allows combining both approaches: use `on_message` for logging/statistics w
 
 #### Memory Optimization (CRUMBS_MAX_HANDLERS)
 
-By default, the handler table supports 256 commands using O(1) direct lookup. This costs ~1KB on AVR (2-byte pointers) or ~2KB on 32-bit platforms.
+By default, the handler table supports 16 handlers using O(n) linear search. This costs ~68 bytes on AVR (2-byte pointers) or ~132 bytes on 32-bit platforms.
 
-For memory-constrained devices, define `CRUMBS_MAX_HANDLERS` before including `crumbs.h`:
-
-```c
-#define CRUMBS_MAX_HANDLERS 8  // Only need 8 handlers
-#include <crumbs.h>
-```
-
-Or via compiler flags (PlatformIO example):
+For different handler counts, set `CRUMBS_MAX_HANDLERS` via compiler flags:
 
 ```ini
+# platformio.ini
 build_flags = -DCRUMBS_MAX_HANDLERS=8
 ```
+
+> **Important:** On Arduino/PlatformIO, you MUST use `build_flags` — defining `CRUMBS_MAX_HANDLERS` in your sketch before including `crumbs.h` does NOT work because Arduino precompiles the library separately.
 
 Memory usage by configuration:
 
 | CRUMBS_MAX_HANDLERS | AVR (2-byte ptr) | 32-bit (4-byte ptr) | Lookup |
 | ------------------- | ---------------- | ------------------- | ------ |
-| 256 (default)       | ~1025 bytes      | ~2049 bytes         | O(1)   |
-| 16                  | ~65 bytes        | ~129 bytes          | O(n)   |
-| 8                   | ~33 bytes        | ~65 bytes           | O(n)   |
+| 16 (default)        | ~68 bytes        | ~132 bytes          | O(n)   |
+| 8                   | ~36 bytes        | ~68 bytes           | O(n)   |
+| 4                   | ~21 bytes        | ~37 bytes           | O(n)   |
 | 0 (disabled)        | 0 bytes          | 0 bytes             | —      |
 
-When < 256, dispatch uses linear search which is fast for typical handler counts (4-16).
+Dispatch uses linear search which is fast for typical handler counts (4-16).
 
 ---
 

@@ -153,14 +153,16 @@ For complete examples, see `examples/arduino/handler_peripheral_led/` and `examp
 
 ## Memory Optimization
 
-The default handler table (256 entries) uses ~1KB RAM on AVR. For memory-constrained devices, reduce it:
+The default handler table (16 entries) uses ~68 bytes RAM on AVR. For very constrained devices, reduce it via build flags:
 
-```c
-#define CRUMBS_MAX_HANDLERS 8  // Before including crumbs.h
-#include <crumbs.h>
+```ini
+# platformio.ini
+build_flags = -DCRUMBS_MAX_HANDLERS=8
 ```
 
-This reduces handler memory from ~1KB to ~33 bytes. See [API Reference](api-reference.md#memory-optimization-crumbs_max_handlers) for details.
+> **Important:** On Arduino/PlatformIO, you MUST use `build_flags` — defining it in your sketch before `#include` does NOT work due to Arduino's separate library compilation.
+
+See [API Reference](api-reference.md#memory-optimization-crumbs_max_handlers) for details.
 
 ## Debug & Troubleshooting
 

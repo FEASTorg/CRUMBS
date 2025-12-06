@@ -36,12 +36,11 @@ All notable changes to CRUMBS are documented in this file.
   - `examples/platformio/`: PlatformIO projects ready to build with `pio run`
 
 - **Configurable Handler Table Size** (`CRUMBS_MAX_HANDLERS`):
-  - New compile-time option to control handler dispatch table size
-  - Default: 256 (full O(1) lookup, backward compatible)
-  - Set lower values (e.g., 8) to reduce RAM on constrained devices
-  - Memory savings: 256 → 8 handlers saves ~990 bytes on AVR
-  - When < 256, uses O(n) linear search (fast for small n)
+  - Compile-time option to control handler dispatch table size
+  - Default: 16 (good balance of RAM vs handler capacity)
+  - Set lower values (e.g., 4 or 8) to reduce RAM on constrained devices
   - Set to 0 to disable handler dispatch entirely
+  - Uses O(n) linear search (fast for typical handler counts)
 
 ### Documentation
 

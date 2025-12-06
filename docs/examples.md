@@ -182,6 +182,38 @@ See [Message Helpers](message-helpers.md) for complete API documentation.
 
 ## Common Patterns
 
+### Device Proxy Pattern (Controller-Side)
+
+When sending many commands to the same device, you can bundle the context, address, and I/O function into a struct to reduce repetition:
+
+```c
+// Bundle device parameters (user-side pattern, not library API)
+typedef struct {
+    crumbs_context_t *ctx;
+    uint8_t addr;
+    crumbs_i2c_write_fn write_fn;
+    void *io;
+} led_device_t;
+
+// Initialize once
+led_device_t led = { &ctx, 0x08, crumbs_arduino_wire_write, NULL };
+
+// Shorter sender wrapper
+static inline int led_set_all(led_device_t *dev, uint8_t bitmask) {
+    crumbs_message_t msg;
+    crumbs_msg_init(&msg);
+    msg.type_id = LED_TYPE_ID;
+    msg.command_type = LED_CMD_SET_ALL;
+    crumbs_msg_add_u8(&msg, bitmask);
+    return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
+}
+
+// Clean usage
+led_set_all(&led, 0x0F);
+```
+
+This is an optional convenience pattern. The library's explicit parameter passing remains the primitive for maximum flexibility.
+
 ### Multiple Devices
 
 ```cpp

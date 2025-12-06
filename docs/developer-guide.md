@@ -85,10 +85,11 @@ This design allows both patterns:
 
 Implementation details:
 
-- O(1) dispatch via direct array indexing (256-entry table per context)
-- Memory cost: 256 × (function pointer + void\*) ≈ 2KB on 32-bit, 4KB on 64-bit
+- O(n) dispatch via linear search (default 16-entry table, configurable via `CRUMBS_MAX_HANDLERS`)
+- Memory cost: ~68 bytes on AVR, ~132 bytes on 32-bit (with default 16 handlers)
 - Registering a handler for an already-registered command_type overwrites silently
 - Passing fn=NULL clears the handler
+- See [Developer Notes](developer-notes.md) for design history and trade-offs
 
 HAL primitives and integration
 
