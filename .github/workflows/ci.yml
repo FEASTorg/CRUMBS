@@ -99,10 +99,10 @@ jobs:
 
       - name: Build Linux multi_handler_controller
         env:
-          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install
         run: |
           cmake -S examples/linux/multi_handler_controller -B build-multi-handler \
-            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCRUMBS_BUILD_IN_TREE=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
           cmake --build build-multi-handler --parallel
