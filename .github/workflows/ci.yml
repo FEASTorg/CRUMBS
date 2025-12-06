@@ -5,6 +5,11 @@ on:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -14,23 +19,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Cache APT packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential cmake ninja-build git pkg-config libi2c-dev libudev-dev
+          version: 1.0
+
+      - name: Install Python
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            pkg-config \
-            libi2c-dev \
-            libudev-dev \
-            python3-pip
+          sudo apt-get install -y python3-pip
 
       # ---------------------------------------------------------------------
       # Build & install linux-wire
       # ---------------------------------------------------------------------
+      - name: Cache linux-wire
+        id: cache-linux-wire
+        uses: actions/cache@v4
+        with:
+          path: third_party/linux-wire/install
+          key: linux-wire-${{ runner.os }}-v1
+
       - name: Build linux-wire
+        if: steps.cache-linux-wire.outputs.cache-hit != 'true'
         run: |
           git clone --depth=1 https://github.com/FEASTorg/linux-wire.git third_party/linux-wire
           cmake -S third_party/linux-wire -B third_party/linux-wire/build \
@@ -60,12 +71,12 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       # ---------------------------------------------------------------------
-      # Out-of-tree example build
+      # Out-of-tree example builds (Linux)
       # ---------------------------------------------------------------------
       - name: Install CRUMBS locally
         run: cmake --install build --prefix ${{ github.workspace }}/install
 
-      - name: Build native example (out-of-tree)
+      - name: Build Linux simple_native_controller (out-of-tree)
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
@@ -76,18 +87,64 @@ jobs:
           cmake --build build-native --parallel
           ./build-native/crumbs_native_example
 
-      # ---------------------------------------------------------------------
-      # PlatformIO builds
-      # ---------------------------------------------------------------------
+      - name: Build Linux simple_controller
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
+        run: |
+          cmake -S examples/linux/simple_controller -B build-simple-controller \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+          cmake --build build-simple-controller --parallel
+
+      - name: Build Linux multi_handler_controller
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
+        run: |
+          cmake -S examples/linux/multi_handler_controller -B build-multi-handler \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+          cmake --build build-multi-handler --parallel
+
+  # ---------------------------------------------------------------------------
+  # PlatformIO Builds
+  # ---------------------------------------------------------------------------
+  platformio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('examples/platformio/**/platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-
+
       - name: Install PlatformIO
         run: |
-          python3 -m pip install -U pip
-          python3 -m pip install -U platformio
+          python -m pip install -U pip
+          python -m pip install -U platformio
 
-      - name: Build PlatformIO controller example
-        run: |
-          pio run -d examples/platformio/simple_controller -e nanoatmega328new
+      - name: Build simple_controller
+        run: pio run -d examples/platformio/simple_controller -e nanoatmega328new
 
-      - name: Build PlatformIO peripheral example
-        run: |
-          pio run -d examples/platformio/simple_peripheral -e nanoatmega328new
+      - name: Build simple_peripheral
+        run: pio run -d examples/platformio/simple_peripheral -e nanoatmega328new
+
+      - name: Build handler_peripheral_led
+        run: pio run -d examples/platformio/handler_peripheral_led -e nanoatmega328new
+
+      - name: Build handler_peripheral_servo
+        run: pio run -d examples/platformio/handler_peripheral_servo -e nanoatmega328new
