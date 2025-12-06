@@ -28,11 +28,11 @@ _Static_assert(CRUMBS_MAX_PAYLOAD == 27u, "CRUMBS_MAX_PAYLOAD must be 27");
  * This function initializes only the core (fixed-size) fields of the context.
  * Handler arrays are NOT touched to ensure safety when the caller's
  * CRUMBS_MAX_HANDLERS differs from the library's compiled value.
- * 
+ *
  * For handler dispatch to work correctly, callers should either:
  * - Use static/global context (automatically zero-initialized), or
  * - Explicitly zero-initialize: `crumbs_context_t ctx = {0};`
- * 
+ *
  * This is particularly important for Arduino/PlatformIO where the library
  * is precompiled with the default CRUMBS_MAX_HANDLERS but user code may
  * define a different value.
@@ -46,7 +46,7 @@ void crumbs_init(crumbs_context_t *ctx,
         return;
     }
 
-    /* 
+    /*
      * Initialize only fixed-size fields. DO NOT use memset(ctx, 0, sizeof(*ctx))
      * because sizeof(*ctx) uses the LIBRARY's CRUMBS_MAX_HANDLERS, which
      * may differ from the CALLER's value if they defined it differently.
@@ -60,7 +60,7 @@ void crumbs_init(crumbs_context_t *ctx,
     ctx->on_request = NULL;
     ctx->user_data = NULL;
 
-    /* 
+    /*
      * Handler arrays are left untouched. If the context is in static storage,
      * they're already zero. If on stack, caller must have zero-initialized.
      * We reset handler_count to ensure no stale handlers are dispatched.

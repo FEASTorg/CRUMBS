@@ -34,7 +34,7 @@ crumbs_context_t crumbs_ctx;
 
 // ---------- Status LED state ----------
 // Green = solid when OK
-// Red = blink when ERROR  
+// Red = blink when ERROR
 // Yellow = activity pulse on CRUMBS message RX
 unsigned long errorBlinkLast = 0;
 const unsigned long ERROR_BLINK_MS = 250;
@@ -94,5 +94,3 @@ void loop()
 {
     refreshLeds();
 }
-
-

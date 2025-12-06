@@ -36,11 +36,13 @@ static void crumbs_arduino_dbg_hex(const char *prefix, const uint8_t *data, size
     Serial.print(prefix);
     for (size_t i = 0; i < len && i < 8; i++)
     {
-        if (data[i] < 0x10) Serial.print('0');
+        if (data[i] < 0x10)
+            Serial.print('0');
         Serial.print(data[i], HEX);
         Serial.print(' ');
     }
-    if (len > 8) Serial.print(F("..."));
+    if (len > 8)
+        Serial.print(F("..."));
     Serial.println();
 }
 #else

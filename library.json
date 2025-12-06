@@ -15,7 +15,13 @@
     }
   ],
   "license": "GPL-3.0-or-later",
-  "frameworks": ["arduino"],
+  "frameworks": [
+    "arduino"
+  ],
   "platforms": "*",
-  "examples": ["examples/arduino/simple/controller_example","examples/arduino/simple/peripheral_example","examples/platformio/controller"]
+  "examples": [
+    "examples/arduino/simple/controller_example",
+    "examples/arduino/simple/peripheral_example",
+    "examples/platformio/controller"
+  ]
 }

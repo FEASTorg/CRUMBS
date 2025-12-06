@@ -68,7 +68,7 @@ extern "C"
      * IMPORTANT: For Arduino/PlatformIO, you must add this to your
      * platformio.ini build_flags to affect the library compilation:
      *   build_flags = -DCRUMBS_MAX_HANDLERS=8
-     * 
+     *
      * Defining it only in your sketch does NOT work because Arduino
      * precompiles the library separately.
      */
@@ -158,12 +158,12 @@ extern "C"
          *  Size controlled by CRUMBS_MAX_HANDLERS (default 16).
          *  Uses linear search for dispatch (O(n) but portable/safe).
          *  @{ */
-        uint8_t handler_count;                        /**< Number of registered handlers. */
-        uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];     /**< Command type for each slot. */
-        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];  /**< Handler functions. */
-        void *handler_userdata[CRUMBS_MAX_HANDLERS];      /**< User data for each handler. */
-        /** @} */
-#endif /* CRUMBS_MAX_HANDLERS > 0 */
+        uint8_t handler_count;                           /**< Number of registered handlers. */
+        uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];        /**< Command type for each slot. */
+        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS]; /**< Handler functions. */
+        void *handler_userdata[CRUMBS_MAX_HANDLERS];     /**< User data for each handler. */
+                                                         /** @} */
+#endif                                                   /* CRUMBS_MAX_HANDLERS > 0 */
     };
 
     /**

@@ -5,7 +5,7 @@ extern void sendCrumbs(uint8_t address, crumbs_message_t &message);
 extern void requestCrumbs(uint8_t address);
 
 // Premade test messages
-void sendPremade(uint8_t addr, const char* name)
+void sendPremade(uint8_t addr, const char *name)
 {
     crumbs_message_t m = {};
     m.type_id = 1;
@@ -14,27 +14,34 @@ void sendPremade(uint8_t addr, const char* name)
     if (strcmp(name, "MSG4B") == 0)
     {
         m.data_len = 4;
-        m.data[0] = 0x12; m.data[1] = 0x34; m.data[2] = 0x56; m.data[3] = 0x78;
+        m.data[0] = 0x12;
+        m.data[1] = 0x34;
+        m.data[2] = 0x56;
+        m.data[3] = 0x78;
     }
     else if (strcmp(name, "MSG8B") == 0)
     {
         m.data_len = 8;
-        for (uint8_t i = 0; i < 8; i++) m.data[i] = 0x10 + i;
+        for (uint8_t i = 0; i < 8; i++)
+            m.data[i] = 0x10 + i;
     }
     else if (strcmp(name, "MSG12B") == 0)
     {
         m.data_len = 12;
-        for (uint8_t i = 0; i < 12; i++) m.data[i] = 0x20 + i;
+        for (uint8_t i = 0; i < 12; i++)
+            m.data[i] = 0x20 + i;
     }
     else if (strcmp(name, "MSG16B") == 0)
     {
         m.data_len = 16;
-        for (uint8_t i = 0; i < 16; i++) m.data[i] = 0x30 + i;
+        for (uint8_t i = 0; i < 16; i++)
+            m.data[i] = 0x30 + i;
     }
     else if (strcmp(name, "MSG27B") == 0)
     {
         m.data_len = 27;
-        for (uint8_t i = 0; i < 27; i++) m.data[i] = 0x40 + i;
+        for (uint8_t i = 0; i < 27; i++)
+            m.data[i] = 0x40 + i;
     }
     else if (strcmp(name, "MSG0B") == 0)
     {
@@ -103,7 +110,7 @@ void handleSerial()
     if (toks[0] == "SEND" && tokenCount >= 3)
     {
         uint8_t addr = (uint8_t)strtoul(toks[1].c_str(), NULL, 0);
-        
+
         // Check for premade message names
         toks[2].toUpperCase();
         if (toks[2].startsWith("MSG"))

@@ -20,11 +20,15 @@ static void on_message(crumbs_context_t *ctx, const crumbs_message_t *m)
   // Print payload bytes (hex)
   for (size_t i = 0; i < m->data_len; ++i)
   {
-    Serial.print(F(" data[")); Serial.print(i); Serial.print(F("]=0x"));
-    if (m->data[i] < 0x10) Serial.print('0');
+    Serial.print(F(" data["));
+    Serial.print(i);
+    Serial.print(F("]=0x"));
+    if (m->data[i] < 0x10)
+      Serial.print('0');
     Serial.print(m->data[i], HEX);
   }
-  if (m->data_len > 0) Serial.println();
+  if (m->data_len > 0)
+    Serial.println();
 }
 
 static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
@@ -42,7 +46,10 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial) { delay(1); }
+  while (!Serial)
+  {
+    delay(1);
+  }
   Serial.println("CRUMBS PlatformIO peripheral (Nano) — init at address 0x08");
 
   crumbs_arduino_init_peripheral(&per_ctx, 0x08);

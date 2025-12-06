@@ -101,7 +101,7 @@ void drawDisplay()
         // If len > 21: show first 20, then .., then last byte
         char buf[24];
         uint8_t len = lastRxMessage.data_len;
-        
+
         if (len == 0)
         {
             u8g2.drawStr(0, y, "(no data)");

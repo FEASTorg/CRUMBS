@@ -91,7 +91,8 @@ void handleSerialInput()
                 for (int i = 0; i < response.data_len; i++)
                 {
                     Serial.print(F("0x"));
-                    if (response.data[i] < 0x10) Serial.print('0');
+                    if (response.data[i] < 0x10)
+                        Serial.print('0');
                     Serial.print(response.data[i], HEX);
                     Serial.print(F(" "));
                 }
@@ -264,7 +265,8 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_messag
     for (int i = 0; i < message.data_len; i++)
     {
         Serial.print(F("0x"));
-        if (message.data[i] < 0x10) Serial.print('0');
+        if (message.data[i] < 0x10)
+            Serial.print('0');
         Serial.print(message.data[i], HEX);
         Serial.print(F(" "));
     }

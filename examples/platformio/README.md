@@ -4,11 +4,11 @@ This directory contains PlatformIO project examples for CRUMBS.
 
 ## Examples
 
-| Directory | Description |
-|-----------|-------------|
-| `controller/` | Basic controller example |
-| `peripheral/` | Basic peripheral example |
-| `handlers/led_peripheral/` | LED peripheral with command handlers |
+| Directory                    | Description                            |
+| ---------------------------- | -------------------------------------- |
+| `controller/`                | Basic controller example               |
+| `peripheral/`                | Basic peripheral example               |
+| `handlers/led_peripheral/`   | LED peripheral with command handlers   |
 | `handlers/servo_peripheral/` | Servo peripheral with command handlers |
 
 ## Quick Start
@@ -31,6 +31,7 @@ lib_deps = cameronbrooks11/CRUMBS@^0.9.4
 ```
 
 Or via git reference:
+
 ```ini
 lib_deps = https://github.com/FEASTorg/CRUMBS.git#v0.9.4
 ```

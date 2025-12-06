@@ -15,7 +15,10 @@ crumbs_context_t controller_ctx;
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial) { delay(1); }
+  while (!Serial)
+  {
+    delay(1);
+  }
   Serial.println("CRUMBS PlatformIO example — initializing controller...");
 
   crumbs_arduino_init_controller(&controller_ctx);
@@ -61,10 +64,18 @@ void loop()
 
   long addr = strtol(tok, NULL, 0);
   tok = strtok(NULL, ",");
-  if (!tok) { Serial.println(F("Missing type_id")); return; }
+  if (!tok)
+  {
+    Serial.println(F("Missing type_id"));
+    return;
+  }
   int type_id = (int)strtol(tok, NULL, 0);
   tok = strtok(NULL, ",");
-  if (!tok) { Serial.println(F("Missing command_type")); return; }
+  if (!tok)
+  {
+    Serial.println(F("Missing command_type"));
+    return;
+  }
   int cmd = (int)strtol(tok, NULL, 0);
 
   crumbs_message_t m = {};

@@ -5,6 +5,7 @@
 ### Added
 
 - **Message Builder/Reader API** (`src/crumbs_msg.h`): Zero-overhead inline helpers for structured payload construction and reading
+
   - `crumbs_msg_init(msg)`: Initialize a message builder
   - `crumbs_msg_add_u8/u16/u32()`: Append unsigned integers (little-endian)
   - `crumbs_msg_add_i8/i16/i32()`: Append signed integers (little-endian)
@@ -18,11 +19,13 @@
   - Header-only design: `static inline` functions for zero call overhead
 
 - **Example Command Headers** (`examples/commands/`):
+
   - `led_commands.h`: LED device command definitions and sender functions
   - `servo_commands.h`: Servo device command definitions and sender functions
   - Demonstrates the "copy and customize" pattern for user commands
 
 - **Example Applications** (`examples/handlers/`):
+
   - `arduino/led_peripheral/`: LED control peripheral using handler dispatch
   - `arduino/servo_peripheral/`: Dual servo peripheral with message reading
   - `linux/multi_controller/`: Linux controller using multiple command headers

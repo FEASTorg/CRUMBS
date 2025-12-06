@@ -29,7 +29,8 @@ void handleMessage(crumbs_context_t *ctx, const crumbs_message_t *m)
     for (int i = 0; i < m->data_len && i < 8; i++)
     {
         Serial.print(F("0x"));
-        if (m->data[i] < 0x10) Serial.print('0');
+        if (m->data[i] < 0x10)
+            Serial.print('0');
         Serial.print(m->data[i], HEX);
         Serial.print(' ');
     }

@@ -57,7 +57,8 @@ void handleMessage(crumbs_context_t *ctx, crumbs_message_t *message)
     for (int i = 0; i < message->data_len; i++)
     {
         Serial.print(F("0x"));
-        if (message->data[i] < 0x10) Serial.print('0');
+        if (message->data[i] < 0x10)
+            Serial.print('0');
         Serial.print(message->data[i], HEX);
         Serial.print(F(" "));
     }

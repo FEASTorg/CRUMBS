@@ -111,6 +111,7 @@ For memory-constrained devices, define `CRUMBS_MAX_HANDLERS` before including `c
 ```
 
 Or via compiler flags (PlatformIO example):
+
 ```ini
 build_flags = -DCRUMBS_MAX_HANDLERS=8
 ```
@@ -118,7 +119,7 @@ build_flags = -DCRUMBS_MAX_HANDLERS=8
 Memory usage by configuration:
 
 | CRUMBS_MAX_HANDLERS | AVR (2-byte ptr) | 32-bit (4-byte ptr) | Lookup |
-|---------------------|------------------|---------------------|--------|
+| ------------------- | ---------------- | ------------------- | ------ |
 | 256 (default)       | ~1025 bytes      | ~2049 bytes         | O(1)   |
 | 16                  | ~65 bytes        | ~129 bytes          | O(n)   |
 | 8                   | ~33 bytes        | ~65 bytes           | O(n)   |
