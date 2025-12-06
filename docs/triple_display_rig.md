@@ -49,7 +49,7 @@ REQUEST <addr>
 1. Power all boards: both OLEDs should show CRUMBS banners.
 2. `SEND 8 0.5 0 0.25 1500` – controller yellow LED blips, slice LEDs match the ratios.
 3. `REQUEST 8` – controller prints the reply and shows an `RX` line; slice logs “response sent”.
-4. Repeat for the second slice address.
+4. Repeat for the second device address.
 
 If a transfer fails, the controller flips to red, prints the Wire error code, and the OLED marks the last exchange as `FAIL`. Recheck wiring, addresses, or long cable runs introducing noise.
 

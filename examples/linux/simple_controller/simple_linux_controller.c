@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     crumbs_linux_i2c_t lw;
 
     //----------------------------------------------------------------------
-    // Parse optional arguments: device path, slice address
+    // Parse optional arguments: device path, device address
     // Usage: ./crumbs_simple_linux_controller [i2c-device] [slice-addr]
     // Example: ./crumbs_simple_linux_controller /dev/i2c-1 0x08
     //----------------------------------------------------------------------
