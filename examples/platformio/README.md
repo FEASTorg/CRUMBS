@@ -1,22 +1,54 @@
-# PlatformIO Example
+# PlatformIO Examples
 
-This project includes a `library.json` manifest so it can be used as a PlatformIO library. There is a small PlatformIO example project in `examples/platformio/controller`.
+This directory contains PlatformIO project examples for CRUMBS.
 
-Quick usage (from a PlatformIO project):
+## Examples
 
-1. Add the library via a git reference or the registry in your project's `platformio.ini`:
+| Directory | Description |
+|-----------|-------------|
+| `controller/` | Basic controller example |
+| `peripheral/` | Basic peripheral example |
+| `handlers/led_peripheral/` | LED peripheral with command handlers |
+| `handlers/servo_peripheral/` | Servo peripheral with command handlers |
+
+## Quick Start
+
+1. Open any example folder in VS Code with PlatformIO extension
+2. Update the COM port in `platformio.ini`
+3. Build and upload: `pio run -t upload`
+4. Monitor: `pio device monitor`
+
+## Using CRUMBS in Your Project
+
+Add the library via the registry in your project's `platformio.ini`:
 
 ```ini
 [env:myboard]
 platform = atmelavr
 framework = arduino
-board = uno
-lib_deps = https://github.com/FEASTorg/CRUMBS.git#v0.6.1
+board = nanoatmega328new
+lib_deps = cameronbrooks11/CRUMBS@^0.9.4
 ```
 
-2. Include and use the library in your code: `#include <crumbs_arduino.h>`
+Or via git reference:
+```ini
+lib_deps = https://github.com/FEASTorg/CRUMBS.git#v0.9.4
+```
 
-Notes:
+Then include in your code: `#include <crumbs_arduino.h>`
 
-- `library.json` declares frameworks=arduino and platforms=\* which helps PlatformIO resolve and install the library.
-- Local example uses `lib_extra_dirs` to reference the repo root so you can build the example during development.
+## Memory Optimization
+
+For memory-constrained devices, reduce handler table size:
+
+```ini
+build_flags = -DCRUMBS_MAX_HANDLERS=8
+```
+
+This saves ~40 bytes of RAM on AVR (from default of 16 handlers).
+
+## Notes
+
+- `library.json` declares frameworks=arduino and platforms=\* for PlatformIO resolution
+- Handler examples demonstrate `crumbs_register_handler()` for command dispatch
+- Command headers in `include/` define device-specific commands
