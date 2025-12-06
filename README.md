@@ -65,6 +65,7 @@ Documentation is available in the [docs](docs/) directory:
 
 - [Getting Started](docs/getting-started.md) - Installation and basic usage
 - [API Reference](docs/api-reference.md) - Core C API and platform HALs
+- [Handler Guide](docs/handler-guide.md) - Per-command handler dispatch tutorial
 - [Message Helpers](docs/message-helpers.md) - Payload building and reading helpers
 - [Protocol Specification](docs/protocol.md) - Message format details
 - [Examples](docs/examples.md) - Code examples and patterns

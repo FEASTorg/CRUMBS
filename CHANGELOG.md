@@ -1,5 +1,9 @@
 # CHANGELOG
 
+All notable changes to CRUMBS are documented in this file.
+
+---
+
 ## [0.9.x] - Message Builder/Reader Helpers
 
 ### Added
@@ -148,3 +152,20 @@ All code using CRUMBS must be updated.
 
 - Fixed float-based payload (`float data[7]`)
 - `CRUMBS_DATA_LENGTH` and `CRUMBS_MESSAGE_SIZE` constants
+
+---
+
+## [0.1.x – 0.6.x] - Early Development (2024)
+
+### Summary
+
+Initial development of the CRUMBS protocol and library:
+
+- **0.1.x**: Initial protocol design with fixed 31-byte frames and 7-float payload
+- **0.2.x**: Basic encode/decode implementation with CRC-8 integrity checking
+- **0.3.x**: Arduino HAL with Wire library integration (controller/peripheral)
+- **0.4.x**: Event-driven callbacks (`on_message`, `on_request`)
+- **0.5.x**: Linux HAL with linux-wire dependency for Raspberry Pi support
+- **0.6.x**: I²C bus scanner helpers, documentation improvements
+
+These versions established the core architecture used in all later releases.

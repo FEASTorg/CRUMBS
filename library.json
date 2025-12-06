@@ -22,6 +22,8 @@
   "examples": [
     "examples/arduino/simple_controller",
     "examples/arduino/simple_peripheral",
+    "examples/arduino/handler_peripheral_led",
+    "examples/arduino/handler_peripheral_servo",
     "examples/platformio/simple_controller"
   ]
 }

@@ -19,9 +19,9 @@
 
 **Notes**:
 
-- `sliceAddress` exists in the struct but is not serialized.
+- `address` exists in the struct but is not serialized (used for routing at the application layer).
 - Maximum frame size is 31 bytes to fit within Arduino Wire's 32-byte buffer.
-- CRC excludes `sliceAddress` and the CRC byte itself.
+- CRC excludes `address` and the CRC byte itself.
 - Payload is opaque bytes; applications can encode floats, ints, structs, etc.
 
 ## Communication Patterns
