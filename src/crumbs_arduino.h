@@ -22,6 +22,8 @@ extern "C"
      * This uses the default global Wire instance and calls Wire.begin().
      * You can still call crumbs_set_callbacks() afterwards if you want to
      * attach any controller-side metadata or debug hooks.
+     *
+     * @param ctx Pointer to the CRUMBS context to initialize.
      */
     void crumbs_arduino_init_controller(crumbs_context_t *ctx);
 
@@ -36,6 +38,9 @@ extern "C"
      *
      * You must call crumbs_set_callbacks() to install your on_message/on_request
      * callbacks before or after this, as long as it is done before traffic arrives.
+     *
+     * @param ctx     Pointer to the CRUMBS context to initialize.
+     * @param address I2C peripheral address (7-bit).
      */
     void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t address);
 
@@ -44,13 +49,11 @@ extern "C"
      *
      * This is intended to be passed to crumbs_controller_send().
      *
-     * The @p user_ctx parameter is expected to be:
-     *   - a pointer to a TwoWire instance (e.g., &Wire), or
-     *   - NULL, in which case the default &Wire is used.
-     *
-     * Return value:
-     *   - 0 on success (Wire.endTransmission() == 0 and all bytes written)
-     *   - non-zero on error.
+     * @param user_ctx Pointer to TwoWire instance or NULL to use &Wire.
+     * @param addr     7-bit I2C address of the target peripheral.
+     * @param data     Pointer to data buffer to transmit.
+     * @param len      Number of bytes to transmit.
+     * @return 0 on success, non-zero on error.
      */
     int crumbs_arduino_wire_write(void *user_ctx,
                                   uint8_t addr,
@@ -76,10 +79,14 @@ extern "C"
                             size_t max_found);
 
     /**
-     * @brief Read up to @p len bytes from @p addr using TwoWire (or provided
-     *        TwoWire via user_ctx). Honors @p timeout_us as a microsecond hint.
+     * @brief Read bytes from an I2C peripheral using TwoWire.
      *
-     * @return number of bytes read (>=0) or negative on error.
+     * @param user_ctx   Pointer to TwoWire instance or NULL to use &Wire.
+     * @param addr       7-bit I2C address of the target peripheral.
+     * @param buffer     Output buffer to receive data.
+     * @param len        Maximum number of bytes to read.
+     * @param timeout_us Timeout hint in microseconds.
+     * @return Number of bytes read (>=0) or negative on error.
      */
     int crumbs_arduino_read(void *user_ctx,
                             uint8_t addr,

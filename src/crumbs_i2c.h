@@ -34,12 +34,16 @@ extern "C"
     /**
      * @brief Simple I2C bus scanner helper signature.
      *
-     * Implementations should probe addresses in the inclusive range [start_addr, end_addr]
-     * and write responsive 7-bit addresses into @p found (up to @p max_found entries).
+     * Implementations should probe addresses in the inclusive range
+     * [start_addr, end_addr] and write responsive addresses into @p found.
      *
-     * The @p strict flag selects stricter probing (e.g., perform a write-data-phase) vs
-     * a lighter probe that accepts address-only ACKs. Return value should be the number
-     * of found addresses on success, or a negative error code.
+     * @param user_ctx   Opaque implementation pointer.
+     * @param start_addr First address to probe (inclusive).
+     * @param end_addr   Last address to probe (inclusive).
+     * @param strict     Non-zero for strict probing (write-data-phase ACK).
+     * @param found      Output buffer for discovered addresses.
+     * @param max_found  Capacity of @p found buffer.
+     * @return Number of found addresses on success, negative on error.
      */
     typedef int (*crumbs_i2c_scan_fn)(
         void *user_ctx,
@@ -52,12 +56,14 @@ extern "C"
     /**
      * @brief Simple I2C read primitive signature for HALs.
      *
-     * Implementations should attempt to read up to @p len bytes from the
-     * peripheral at @p addr into @p buffer. Implementations may honor
-     * @p timeout_us as a hint for how long to wait for data.
+     * Implementations should read up to @p len bytes from the peripheral.
      *
-     * Return value: number of bytes read on success (>=0). Negative values
-     * indicate an error.
+     * @param user_ctx   Opaque implementation pointer.
+     * @param addr       7-bit I²C address of peripheral.
+     * @param buffer     Output buffer for received bytes.
+     * @param len        Maximum bytes to read.
+     * @param timeout_us Timeout hint in microseconds (0 = no wait).
+     * @return Number of bytes read (>=0) on success, negative on error.
      */
     typedef int (*crumbs_i2c_read_fn)(
         void *user_ctx,
