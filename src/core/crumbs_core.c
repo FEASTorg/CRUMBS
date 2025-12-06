@@ -300,7 +300,7 @@ int crumbs_decode_message(const uint8_t *buffer,
         return -2; /* CRC mismatch */
     }
 
-    /* Populate message fields. slice_address is not transmitted. */
+    /* Populate message fields. address is not transmitted. */
     msg->type_id = buffer[0];
     msg->command_type = buffer[1];
     msg->data_len = data_len;
@@ -400,11 +400,11 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     }
 
     /*
-     * slice_address is not encoded on the wire. If you want to track "which
-     * slice" a message belongs to, you can set msg.slice_address here from
+     * address is not encoded on the wire. If you want to track which
+     * device a message belongs to, you can set msg.address here from
      * ctx->address or some higher-level routing logic.
      */
-    msg.slice_address = ctx->address;
+    msg.address = ctx->address;
 
     /* Invoke general on_message callback if set. */
     if (ctx->on_message)

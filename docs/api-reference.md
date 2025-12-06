@@ -8,7 +8,7 @@ The core is intentionally small and C-friendly so it is easy to consume from Ard
 
 - `crumbs_message_t` — message struct (see `src/crumbs_message.h`). Fields:
 
-  - `slice_address` — (logical) slice address (NOT serialized)
+  - `address` — device address (NOT serialized)
   - `type_id` — 1 byte
   - `command_type` — 1 byte
   - `data_len` — payload length (0–27)

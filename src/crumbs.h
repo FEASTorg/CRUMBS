@@ -247,7 +247,7 @@ extern "C"
     /**
      * @brief Encode a message into the CRUMBS wire frame.
      *
-     * Note: msg->slice_address is not serialized on the wire.
+     * Note: msg->address is not serialized on the wire.
      *
      * @param msg Pointer to message to encode.
      * @param buffer Destination buffer.

@@ -31,12 +31,12 @@ extern "C"
     /**
      * @brief Variable-length message structure for CRUMBS communication.
      *
-     * The `slice_address` field is a logical address and is not serialized
+     * The `address` field is a logical address and is not serialized
      * by the encoder/decoder; it is left for user-level routing.
      */
     typedef struct crumbs_message_s
     {
-        uint8_t slice_address;            /**< Logical slice address (not serialized) */
+        uint8_t address;                  /**< Device address (not serialized) */
         uint8_t type_id;                  /**< Identifier for the module type */
         uint8_t command_type;             /**< Command or opcode identifier */
         uint8_t data_len;                 /**< Number of payload bytes (0–27) */
