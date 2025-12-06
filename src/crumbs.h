@@ -8,6 +8,36 @@
 #include "crumbs_crc.h"
 #include "crumbs_i2c.h"
 
+/* ============================================================================
+ * Debug Configuration
+ * ============================================================================ */
+
+/**
+ * @brief Enable CRUMBS debug output.
+ *
+ * Define CRUMBS_DEBUG before including crumbs.h to enable debug messages.
+ * You must also define CRUMBS_DEBUG_PRINT to specify how to output debug.
+ *
+ * Example for Arduino:
+ *   #define CRUMBS_DEBUG
+ *   #define CRUMBS_DEBUG_PRINT(fmt, ...) Serial.printf(fmt, ##__VA_ARGS__)
+ *
+ * Example for Linux/stdio:
+ *   #define CRUMBS_DEBUG
+ *   #define CRUMBS_DEBUG_PRINT(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+ *
+ * When CRUMBS_DEBUG is not defined, all debug calls compile to nothing.
+ */
+#ifdef CRUMBS_DEBUG
+#ifndef CRUMBS_DEBUG_PRINT
+/* Default: no-op if user didn't define a print function */
+#define CRUMBS_DEBUG_PRINT(fmt, ...) ((void)0)
+#endif
+#define CRUMBS_DBG(fmt, ...) CRUMBS_DEBUG_PRINT("[CRUMBS] " fmt, ##__VA_ARGS__)
+#else
+#define CRUMBS_DBG(fmt, ...) ((void)0)
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -20,6 +50,31 @@ extern "C"
      * declares the public types and functions used by both controller and
      * peripheral roles.
      */
+
+    /**
+     * @brief Maximum number of command handlers that can be registered.
+     *
+     * Define this before including crumbs.h to adjust memory usage.
+     * Default is 16 which balances memory use and typical needs.
+     *
+     * Memory usage: CRUMBS_MAX_HANDLERS * (sizeof(void*) * 2 + 2) bytes
+     * - 16 handlers: ~68 bytes on AVR, ~132 bytes on 32-bit
+     * - 8 handlers: ~36 bytes on AVR, ~68 bytes on 32-bit
+     * - 32 handlers: ~132 bytes on AVR, ~260 bytes on 32-bit
+     *
+     * Dispatch always uses O(n) linear search for portability.
+     * Set to 0 to disable handler dispatch entirely.
+     *
+     * IMPORTANT: For Arduino/PlatformIO, you must add this to your
+     * platformio.ini build_flags to affect the library compilation:
+     *   build_flags = -DCRUMBS_MAX_HANDLERS=8
+     * 
+     * Defining it only in your sketch does NOT work because Arduino
+     * precompiles the library separately.
+     */
+#ifndef CRUMBS_MAX_HANDLERS
+#define CRUMBS_MAX_HANDLERS 16
+#endif
 
     /**
      * @brief Role of a CRUMBS endpoint on the I²C bus.
@@ -44,7 +99,7 @@ extern "C"
      * @param msg Pointer to the decoded message (valid only for callback duration).
      */
     typedef void (*crumbs_message_cb_t)(
-        crumbs_context_t *ctx,
+        struct crumbs_context_s *ctx,
         const crumbs_message_t *msg);
 
     /**
@@ -56,8 +111,28 @@ extern "C"
      * @param msg Pointer to message object to fill with the reply.
      */
     typedef void (*crumbs_request_cb_t)(
-        crumbs_context_t *ctx,
+        struct crumbs_context_s *ctx,
         crumbs_message_t *msg);
+
+    /**
+     * @brief Command handler function type for dispatch-based message handling.
+     *
+     * Handlers are registered per command_type and called when a message with
+     * that command is received. This provides an alternative to the on_message
+     * callback for command-specific processing.
+     *
+     * @param ctx Pointer to the active CRUMBS context.
+     * @param command_type The command type that triggered this handler.
+     * @param data Pointer to the payload bytes (may be NULL if data_len==0).
+     * @param data_len Number of payload bytes (0–27).
+     * @param user_data Opaque pointer registered with the handler.
+     */
+    typedef void (*crumbs_handler_fn)(
+        struct crumbs_context_s *ctx,
+        uint8_t command_type,
+        const uint8_t *data,
+        uint8_t data_len,
+        void *user_data);
 
     /**
      * @brief State and configuration for a CRUMBS endpoint.
@@ -76,6 +151,19 @@ extern "C"
         crumbs_message_cb_t on_message; /**< Called when a message is received (peripheral). */
         crumbs_request_cb_t on_request; /**< Called when the bus master requests a reply. */
         void *user_data;                /**< Opaque pointer for user code (forwarded to callbacks). */
+
+#if CRUMBS_MAX_HANDLERS > 0
+        /** @name Command Handler Dispatch Table
+         *  Per-command_type handler functions and associated user data.
+         *  Size controlled by CRUMBS_MAX_HANDLERS (default 16).
+         *  Uses linear search for dispatch (O(n) but portable/safe).
+         *  @{ */
+        uint8_t handler_count;                        /**< Number of registered handlers. */
+        uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];     /**< Command type for each slot. */
+        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];  /**< Handler functions. */
+        void *handler_userdata[CRUMBS_MAX_HANDLERS];      /**< User data for each handler. */
+        /** @} */
+#endif /* CRUMBS_MAX_HANDLERS > 0 */
     };
 
     /**
@@ -100,6 +188,61 @@ extern "C"
                               crumbs_message_cb_t on_message,
                               crumbs_request_cb_t on_request,
                               void *user_data);
+
+    /**
+     * @brief Get the size of crumbs_context_t as compiled in the library.
+     *
+     * This can be used to verify that the user's context size matches the
+     * library's expected size. On Arduino, a mismatch occurs when the user
+     * defines CRUMBS_MAX_HANDLERS in their sketch instead of build_flags.
+     *
+     * Usage:
+     * @code
+     * if (sizeof(crumbs_context_t) != crumbs_context_size()) {
+     *     // ERROR: CRUMBS_MAX_HANDLERS mismatch!
+     * }
+     * @endcode
+     *
+     * @return Size of crumbs_context_t in bytes as seen by the library.
+     */
+    size_t crumbs_context_size(void);
+
+    /** @name Command Handler Registration
+     *  Register/unregister per-command handlers for dispatch-based processing.
+     *  Maximum handlers controlled by CRUMBS_MAX_HANDLERS (default 16).
+     *  @{ */
+
+    /**
+     * @brief Register a handler for a specific command type.
+     *
+     * The handler will be invoked when a message with the given command_type
+     * is received (after on_message, if configured). Registering a handler
+     * for a command_type that already has one will overwrite the previous.
+     *
+     * @param ctx Context to register the handler on.
+     * @param command_type The command type to handle (0–255).
+     * @param fn Handler function to call (NULL to unregister).
+     * @param user_data Opaque pointer passed to the handler when invoked.
+     * @return 0 on success, -1 if ctx is NULL or handler table is full.
+     */
+    int crumbs_register_handler(crumbs_context_t *ctx,
+                                uint8_t command_type,
+                                crumbs_handler_fn fn,
+                                void *user_data);
+
+    /**
+     * @brief Unregister a handler for a specific command type.
+     *
+     * Equivalent to crumbs_register_handler(ctx, command_type, NULL, NULL).
+     *
+     * @param ctx Context to unregister from.
+     * @param command_type The command type to unregister.
+     * @return 0 on success, -1 if ctx is NULL.
+     */
+    int crumbs_unregister_handler(crumbs_context_t *ctx,
+                                  uint8_t command_type);
+
+    /** @} */
 
     /**
      * @brief Encode a message into the CRUMBS wire frame.

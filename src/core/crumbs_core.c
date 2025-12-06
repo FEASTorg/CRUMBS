@@ -25,7 +25,17 @@ _Static_assert(CRUMBS_MAX_PAYLOAD == 27u, "CRUMBS_MAX_PAYLOAD must be 27");
 /**
  * @brief Initialize a CRUMBS context structure.
  *
- * Clears the structure and sets the role and address as provided.
+ * This function initializes only the core (fixed-size) fields of the context.
+ * Handler arrays are NOT touched to ensure safety when the caller's
+ * CRUMBS_MAX_HANDLERS differs from the library's compiled value.
+ * 
+ * For handler dispatch to work correctly, callers should either:
+ * - Use static/global context (automatically zero-initialized), or
+ * - Explicitly zero-initialize: `crumbs_context_t ctx = {0};`
+ * 
+ * This is particularly important for Arduino/PlatformIO where the library
+ * is precompiled with the default CRUMBS_MAX_HANDLERS but user code may
+ * define a different value.
  */
 void crumbs_init(crumbs_context_t *ctx,
                  crumbs_role_t role,
@@ -36,9 +46,40 @@ void crumbs_init(crumbs_context_t *ctx,
         return;
     }
 
-    memset(ctx, 0, sizeof(*ctx));
-    ctx->role = role;
+    /* 
+     * Initialize only fixed-size fields. DO NOT use memset(ctx, 0, sizeof(*ctx))
+     * because sizeof(*ctx) uses the LIBRARY's CRUMBS_MAX_HANDLERS, which
+     * may differ from the CALLER's value if they defined it differently.
+     * Writing beyond the caller's struct size causes stack/heap corruption.
+     */
     ctx->address = (role == CRUMBS_ROLE_PERIPHERAL) ? address : 0u;
+    ctx->role = role;
+    ctx->crc_error_count = 0u;
+    ctx->last_crc_ok = 0u;
+    ctx->on_message = NULL;
+    ctx->on_request = NULL;
+    ctx->user_data = NULL;
+
+    /* 
+     * Handler arrays are left untouched. If the context is in static storage,
+     * they're already zero. If on stack, caller must have zero-initialized.
+     * We reset handler_count to ensure no stale handlers are dispatched.
+     */
+#if CRUMBS_MAX_HANDLERS > 0
+    ctx->handler_count = 0u;
+#endif
+}
+
+/**
+ * @brief Get the size of crumbs_context_t as compiled in the library.
+ *
+ * This allows runtime detection of CRUMBS_MAX_HANDLERS mismatches between
+ * the library and user code (common on Arduino when user defines in sketch
+ * instead of build_flags).
+ */
+size_t crumbs_context_size(void)
+{
+    return sizeof(crumbs_context_t);
 }
 
 /**
@@ -57,6 +98,87 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
     ctx->on_message = on_message;
     ctx->on_request = on_request;
     ctx->user_data = user_data;
+}
+
+/**
+ * @brief Register a handler for a specific command type.
+ *
+ * Uses linear search for slot management (O(n) but safe and portable).
+ * When CRUMBS_MAX_HANDLERS == 0, handlers are disabled.
+ */
+int crumbs_register_handler(crumbs_context_t *ctx,
+                            uint8_t command_type,
+                            crumbs_handler_fn fn,
+                            void *user_data)
+{
+#if CRUMBS_MAX_HANDLERS == 0
+    /* Handlers disabled */
+    (void)ctx;
+    (void)command_type;
+    (void)fn;
+    (void)user_data;
+    return -1;
+#else
+    /* Linear search table */
+    if (!ctx)
+    {
+        return -1;
+    }
+
+    /* Check if command already registered (overwrite) */
+    for (uint8_t i = 0; i < ctx->handler_count; i++)
+    {
+        if (ctx->handler_cmd[i] == command_type)
+        {
+            if (fn == NULL)
+            {
+                /* Unregister: remove slot by swapping with last */
+                ctx->handler_count--;
+                if (i < ctx->handler_count)
+                {
+                    ctx->handler_cmd[i] = ctx->handler_cmd[ctx->handler_count];
+                    ctx->handlers[i] = ctx->handlers[ctx->handler_count];
+                    ctx->handler_userdata[i] = ctx->handler_userdata[ctx->handler_count];
+                }
+            }
+            else
+            {
+                /* Overwrite existing */
+                ctx->handlers[i] = fn;
+                ctx->handler_userdata[i] = user_data;
+            }
+            return 0;
+        }
+    }
+
+    /* Not found - add new handler if fn is non-NULL */
+    if (fn == NULL)
+    {
+        /* Nothing to unregister */
+        return 0;
+    }
+
+    if (ctx->handler_count >= CRUMBS_MAX_HANDLERS)
+    {
+        /* Table full */
+        return -1;
+    }
+
+    uint8_t slot = ctx->handler_count++;
+    ctx->handler_cmd[slot] = command_type;
+    ctx->handlers[slot] = fn;
+    ctx->handler_userdata[slot] = user_data;
+    return 0;
+#endif
+}
+
+/**
+ * @brief Unregister a handler for a specific command type.
+ */
+int crumbs_unregister_handler(crumbs_context_t *ctx,
+                              uint8_t command_type)
+{
+    return crumbs_register_handler(ctx, command_type, NULL, NULL);
 }
 
 /**
@@ -119,12 +241,15 @@ int crumbs_decode_message(const uint8_t *buffer,
 {
     if (!buffer || !msg)
     {
+        CRUMBS_DBG("decode: NULL buffer or msg\n");
         return -1;
     }
 
     /* Minimum frame: type_id + command_type + data_len + crc8 = 4 bytes. */
     if (buffer_len < k_min_frame_len)
     {
+        CRUMBS_DBG("decode: too short (%u < %u)\n",
+                   (unsigned)buffer_len, (unsigned)k_min_frame_len);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -136,6 +261,8 @@ int crumbs_decode_message(const uint8_t *buffer,
     uint8_t data_len = buffer[2];
     if (data_len > CRUMBS_MAX_PAYLOAD)
     {
+        CRUMBS_DBG("decode: data_len %u > max %u\n",
+                   data_len, CRUMBS_MAX_PAYLOAD);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -147,6 +274,8 @@ int crumbs_decode_message(const uint8_t *buffer,
     size_t expected_len = k_header_len + data_len + 1u;
     if (buffer_len < expected_len)
     {
+        CRUMBS_DBG("decode: truncated (%u < %u)\n",
+                   (unsigned)buffer_len, (unsigned)expected_len);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -161,6 +290,8 @@ int crumbs_decode_message(const uint8_t *buffer,
 
     if (computed != received)
     {
+        CRUMBS_DBG("decode: CRC mismatch (got 0x%02X, expected 0x%02X)\n",
+                   received, computed);
         if (ctx)
         {
             ctx->last_crc_ok = 0u;
@@ -181,6 +312,9 @@ int crumbs_decode_message(const uint8_t *buffer,
 
     msg->crc8 = received;
 
+    CRUMBS_DBG("decode: OK type=0x%02X cmd=0x%02X len=%u\n",
+               msg->type_id, msg->command_type, msg->data_len);
+
     if (ctx)
     {
         ctx->last_crc_ok = 1u;
@@ -200,11 +334,13 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
 {
     if (!ctx || !msg || !write_fn)
     {
+        CRUMBS_DBG("tx: invalid ctx/msg/write_fn\n");
         return -1;
     }
 
     if (ctx->role != CRUMBS_ROLE_CONTROLLER)
     {
+        CRUMBS_DBG("tx: not controller role\n");
         return -2;
     }
 
@@ -212,10 +348,19 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
     size_t written = crumbs_encode_message(msg, frame, sizeof(frame));
     if (written == 0u)
     {
+        CRUMBS_DBG("tx: encode failed\n");
         return -3;
     }
 
-    return write_fn(write_ctx, target_addr, frame, written);
+    CRUMBS_DBG("tx: addr=0x%02X %u bytes type=0x%02X cmd=0x%02X\n",
+               target_addr, (unsigned)written, msg->type_id, msg->command_type);
+
+    int rc = write_fn(write_ctx, target_addr, frame, written);
+    if (rc != 0)
+    {
+        CRUMBS_DBG("tx: write failed (%d)\n", rc);
+    }
+    return rc;
 }
 
 /**
@@ -227,8 +372,22 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
 {
     if (!ctx || ctx->role != CRUMBS_ROLE_PERIPHERAL || !buffer)
     {
+        CRUMBS_DBG("rx: invalid ctx/role/buffer\n");
         return -1;
     }
+
+    CRUMBS_DBG("rx: %u bytes [", (unsigned)len);
+#ifdef CRUMBS_DEBUG
+    for (size_t i = 0; i < len && i < 8; i++)
+    {
+        CRUMBS_DEBUG_PRINT("%02X ", buffer[i]);
+    }
+    if (len > 8)
+    {
+        CRUMBS_DEBUG_PRINT("...");
+    }
+    CRUMBS_DEBUG_PRINT("]\n");
+#endif
 
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
@@ -236,6 +395,7 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     int rc = crumbs_decode_message(buffer, len, &msg, ctx);
     if (rc != 0)
     {
+        CRUMBS_DBG("rx: decode failed (%d)\n", rc);
         return rc;
     }
 
@@ -246,10 +406,40 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
      */
     msg.slice_address = ctx->address;
 
+    /* Invoke general on_message callback if set. */
     if (ctx->on_message)
     {
+        CRUMBS_DBG("rx: calling on_message\n");
         ctx->on_message(ctx, &msg);
     }
+
+#if CRUMBS_MAX_HANDLERS > 0
+    /* Dispatch to per-command handler if registered (linear search). */
+    uint8_t found = 0;
+    for (uint8_t i = 0; i < ctx->handler_count; i++)
+    {
+        if (ctx->handler_cmd[i] == msg.command_type)
+        {
+            crumbs_handler_fn handler = ctx->handlers[i];
+            if (handler)
+            {
+                CRUMBS_DBG("rx: dispatch cmd 0x%02X (slot %u)\n", msg.command_type, i);
+                handler(ctx,
+                        msg.command_type,
+                        msg.data,
+                        msg.data_len,
+                        ctx->handler_userdata[i]);
+            }
+            found = 1;
+            break;
+        }
+    }
+    if (!found)
+    {
+        CRUMBS_DBG("rx: no handler for cmd 0x%02X (searched %u slots)\n",
+                   msg.command_type, ctx->handler_count);
+    }
+#endif /* CRUMBS_MAX_HANDLERS > 0 */
 
     return 0;
 }
@@ -269,11 +459,13 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
 
     if (!ctx || ctx->role != CRUMBS_ROLE_PERIPHERAL || !out_buf)
     {
+        CRUMBS_DBG("reply: invalid ctx/role/buffer\n");
         return -1;
     }
 
     if (!ctx->on_request)
     {
+        CRUMBS_DBG("reply: no on_request callback\n");
         /* No reply configured. */
         return 0;
     }
@@ -282,13 +474,18 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
     memset(&msg, 0, sizeof(msg));
 
     /* Allow application to fill in the reply. */
+    CRUMBS_DBG("reply: calling on_request\n");
     ctx->on_request(ctx, &msg);
 
     size_t written = crumbs_encode_message(&msg, out_buf, out_buf_len);
     if (written == 0u)
     {
+        CRUMBS_DBG("reply: encode failed\n");
         return -2;
     }
+
+    CRUMBS_DBG("reply: %u bytes type=0x%02X cmd=0x%02X\n",
+               (unsigned)written, msg.type_id, msg.command_type);
 
     if (out_len)
     {

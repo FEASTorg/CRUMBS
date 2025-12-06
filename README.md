@@ -18,28 +18,29 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 
 - **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
+- **Per-Command Handler Dispatch**: Register handlers for specific command types
+- **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_msg.h`
 - **Event-Driven Communication**: Callback-based message handling
-- **Built-in Serialization**: Automatic encoding/decoding of message structures
 - **CRC-8 Protection**: Integrity check on every message
-- **Debug Support**: Optional debug output for development and troubleshooting
-- **CRUMBS-aware discovery**: Core scanner helper and HAL read adapters to discover devices that actually speak the CRUMBS protocol
+- **CRUMBS-aware Discovery**: Core scanner helper to find devices that speak CRUMBS
 
 ## Quick Start (Arduino — C API)
 
 ```c
 #include <crumbs_arduino.h>
+#include <crumbs_msg.h>
 
 crumbs_context_t controller_ctx;
 crumbs_arduino_init_controller(&controller_ctx);
 
-crumbs_message_t m = {};
+crumbs_message_t m;
+crumbs_msg_init(&m);
 m.type_id = 1;
 m.command_type = 1;
 
-// Variable-length payload: send a float as 4 bytes
-float value = 1.0f;
-m.data_len = sizeof(float);
-memcpy(m.data, &value, sizeof(float));
+// Type-safe payload building
+crumbs_msg_add_float(&m, 25.5f);  // Add temperature
+crumbs_msg_add_u8(&m, 1);         // Add sensor ID
 
 crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```
@@ -48,11 +49,9 @@ crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NUL
 
 1. Download or clone this repository
 2. Place the CRUMBS folder in your Arduino `libraries` directory
-3. No external CRC runtime dependency required — generated CRC implementations are included under `src/crc`.
+3. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
 
-The CRC code is generated with `pycrc` using the generator script in `scripts/` (see `scripts/generate_crc8.py`).
-
-1. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
+No external dependencies required — CRC implementations are included under `src/crc`.
 
 ## Hardware Requirements
 
@@ -66,6 +65,7 @@ Documentation is available in the [docs](docs/) directory:
 
 - [Getting Started](docs/getting-started.md) - Installation and basic usage
 - [API Reference](docs/api-reference.md) - Core C API and platform HALs
+- [Message Helpers](docs/message-helpers.md) - Payload building and reading helpers
 - [Protocol Specification](docs/protocol.md) - Message format details
 - [Examples](docs/examples.md) - Code examples and patterns
 
@@ -73,9 +73,11 @@ Documentation is available in the [docs](docs/) directory:
 
 Working examples for both Arduino and Linux are provided under `examples/`:
 
-- `examples/arduino` — controller and peripheral sketches using the C API and `crumbs_arduino.h`
-- `examples/linux` — native controller example using the Linux HAL
-- `examples/platformio/controller` — small PlatformIO Arduino example showing how to use the Arduino HAL (see examples/platformio)
+- `examples/arduino/` — Controller and peripheral sketches using the C API
+- `examples/linux/` — Native controller example using the Linux HAL
+- `examples/handlers/` — Handler-based peripherals (LED, servo) with message helpers
+- `examples/commands/` — Reusable command header definitions
+- `examples/platformio/` — PlatformIO Arduino examples
 
 ## License
 

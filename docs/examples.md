@@ -56,6 +56,130 @@ void setup() {
 }
 ```
 
+## Handler-Based Peripheral (Alternative Pattern)
+
+Instead of using a switch statement inside `on_message`, you can register individual handler functions for each command type. This pattern is cleaner when you have many commands.
+
+### Arduino Peripheral with Handlers
+
+```cpp
+#include <crumbs.h>
+#include <crumbs_arduino.h>
+
+#define CMD_LED_ON  0x01
+#define CMD_LED_OFF 0x02
+#define CMD_BLINK   0x03
+
+static crumbs_context_t ctx;
+
+void handleLedOn(crumbs_context_t *ctx, uint8_t cmd,
+                 const uint8_t *data, uint8_t len, void *user) {
+    digitalWrite(LED_BUILTIN, HIGH);
+}
+
+void handleLedOff(crumbs_context_t *ctx, uint8_t cmd,
+                  const uint8_t *data, uint8_t len, void *user) {
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void handleBlink(crumbs_context_t *ctx, uint8_t cmd,
+                 const uint8_t *data, uint8_t len, void *user) {
+    if (len < 2) return;
+    uint8_t count = data[0];
+    uint8_t delayMs = data[1] * 10;
+    for (uint8_t i = 0; i < count; i++) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(delayMs);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(delayMs);
+    }
+}
+
+void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    crumbs_arduino_init_peripheral(&ctx, 0x08);
+
+    // Register per-command handlers
+    crumbs_register_handler(&ctx, CMD_LED_ON,  handleLedOn,  NULL);
+    crumbs_register_handler(&ctx, CMD_LED_OFF, handleLedOff, NULL);
+    crumbs_register_handler(&ctx, CMD_BLINK,   handleBlink,  NULL);
+}
+
+void loop() { }
+```
+
+### Linux Controller for Handler Peripheral
+
+```c
+// Send LED ON command
+crumbs_message_t msg = {0};
+msg.type_id = 1;
+msg.command_type = 0x01;  // CMD_LED_ON
+msg.data_len = 0;
+crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
+
+// Send BLINK command: 5 blinks, 200ms delay
+msg.command_type = 0x03;  // CMD_BLINK
+msg.data_len = 2;
+msg.data[0] = 5;   // count
+msg.data[1] = 20;  // delay = 20 * 10ms = 200ms
+crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
+```
+
+See `examples/arduino/handler_peripheral_example/` and `examples/linux/handler_controller/` for complete working examples.
+
+## Message Helpers Pattern
+
+The `crumbs_msg.h` header provides type-safe payload building and reading. This pattern is cleaner than manual byte manipulation:
+
+### Controller with Message Helpers
+
+```c
+#include <crumbs_msg.h>
+
+// Define command header (see examples/commands/ for full pattern)
+#define SERVO_TYPE_ID    0x02
+#define SERVO_CMD_ANGLE  0x01
+
+crumbs_message_t msg;
+crumbs_msg_init(&msg);
+msg.type_id = SERVO_TYPE_ID;
+msg.command_type = SERVO_CMD_ANGLE;
+crumbs_msg_add_u8(&msg, servo_index);    // Which servo
+crumbs_msg_add_u16(&msg, 1500);          // Pulse width in μs
+
+crumbs_controller_send(&ctx, 0x10, &msg, write_fn, write_ctx);
+```
+
+### Peripheral Handler with Message Readers
+
+```c
+void handle_servo_angle(crumbs_context_t *ctx, uint8_t cmd,
+                        const uint8_t *data, uint8_t len, void *user) {
+    size_t off = 0;
+    uint8_t index;
+    uint16_t pulse;
+
+    if (crumbs_msg_read_u8(data, len, &off, &index) < 0) return;
+    if (crumbs_msg_read_u16(data, len, &off, &pulse) < 0) return;
+
+    servo_set_pulse(index, pulse);
+}
+
+void setup() {
+    crumbs_arduino_init_peripheral(&ctx, 0x10);
+    crumbs_register_handler(&ctx, SERVO_CMD_ANGLE, handle_servo_angle, NULL);
+}
+```
+
+See `examples/handlers/` for complete working examples:
+
+- `arduino/led_peripheral/` — LED strip control with RGB values
+- `arduino/servo_peripheral/` — Dual servo control with pulse widths
+- `linux/multi_controller/` — Linux controller using multiple device command headers
+
+See [Message Helpers](message-helpers.md) for complete API documentation.
+
 ## Common Patterns
 
 ### Multiple Devices

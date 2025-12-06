@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(CRUMBS
-    VERSION 0.7.1
+    VERSION 0.9.4
     LANGUAGES C
 )
 
@@ -69,8 +69,15 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     add_executable(crumbs_simple_linux_controller
         examples/linux/simple_controller/simple_linux_controller.c
     )
-
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
+
+    add_executable(crumbs_multi_controller
+        examples/handlers/linux/multi_controller/multi_controller.c
+    )
+    target_link_libraries(crumbs_multi_controller PRIVATE crumbs)
+    target_include_directories(crumbs_multi_controller PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/commands
+    )
 endif()
 
 # -----------------------------------------------------------------------------
@@ -91,6 +98,10 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_crc_failure tests/test_crc_failure.c)
     target_link_libraries(test_crc_failure PRIVATE crumbs)
     add_test(NAME crc_failure_test COMMAND test_crc_failure)
+
+    add_executable(test_handlers tests/test_handlers.c)
+    target_link_libraries(test_handlers PRIVATE crumbs)
+    add_test(NAME handlers_test COMMAND test_handlers)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -108,8 +119,9 @@ install(FILES
     src/crumbs_arduino.h
     src/crumbs_crc.h
     src/crumbs_i2c.h
-    src/crumbs_message.h
     src/crumbs_linux.h
+    src/crumbs_message.h
+    src/crumbs_msg.h
     DESTINATION include/crumbs
 )
 

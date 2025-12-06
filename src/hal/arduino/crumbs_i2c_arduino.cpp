@@ -18,6 +18,39 @@
 static crumbs_context_t *g_crumbs_ctx = nullptr;
 
 /* ------------------------------------------------------------------------- */
+/* Debug helpers (Arduino-specific)                                          */
+/* ------------------------------------------------------------------------- */
+
+#ifdef CRUMBS_DEBUG
+#ifndef CRUMBS_DEBUG_PRINT
+/* Default Arduino debug via Serial */
+#define CRUMBS_ARDUINO_DBG_ENABLED 1
+static void crumbs_arduino_dbg(const char *msg)
+{
+    Serial.print(F("[CRUMBS] "));
+    Serial.println(msg);
+}
+static void crumbs_arduino_dbg_hex(const char *prefix, const uint8_t *data, size_t len)
+{
+    Serial.print(F("[CRUMBS] "));
+    Serial.print(prefix);
+    for (size_t i = 0; i < len && i < 8; i++)
+    {
+        if (data[i] < 0x10) Serial.print('0');
+        Serial.print(data[i], HEX);
+        Serial.print(' ');
+    }
+    if (len > 8) Serial.print(F("..."));
+    Serial.println();
+}
+#else
+#define CRUMBS_ARDUINO_DBG_ENABLED 0
+#endif
+#else
+#define CRUMBS_ARDUINO_DBG_ENABLED 0
+#endif
+
+/* ------------------------------------------------------------------------- */
 /* Internal helpers                                                          */
 /* ------------------------------------------------------------------------- */
 
@@ -25,6 +58,9 @@ static void crumbs_arduino_on_receive(int numBytes)
 {
     if (g_crumbs_ctx == nullptr || numBytes <= 0)
     {
+#if CRUMBS_ARDUINO_DBG_ENABLED
+        crumbs_arduino_dbg("on_receive: no ctx or 0 bytes");
+#endif
         // Drain pending bytes to avoid leaving the Wire buffer full.
         while (Wire.available() > 0)
         {
@@ -47,16 +83,36 @@ static void crumbs_arduino_on_receive(int numBytes)
         (void)Wire.read();
     }
 
+#if CRUMBS_ARDUINO_DBG_ENABLED
+    crumbs_arduino_dbg_hex("on_receive: ", buffer, index);
+#endif
+
     // Pass bytes to the core decoder which will call on_message() when valid.
-    (void)crumbs_peripheral_handle_receive(g_crumbs_ctx, buffer, index);
+    int rc = crumbs_peripheral_handle_receive(g_crumbs_ctx, buffer, index);
+#if CRUMBS_ARDUINO_DBG_ENABLED
+    if (rc != 0)
+    {
+        Serial.print(F("[CRUMBS] on_receive: handle failed rc="));
+        Serial.println(rc);
+    }
+#else
+    (void)rc;
+#endif
 }
 
 static void crumbs_arduino_on_request()
 {
     if (g_crumbs_ctx == nullptr)
     {
+#if CRUMBS_ARDUINO_DBG_ENABLED
+        crumbs_arduino_dbg("on_request: no ctx");
+#endif
         return;
     }
+
+#if CRUMBS_ARDUINO_DBG_ENABLED
+    crumbs_arduino_dbg("on_request: building reply");
+#endif
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
     size_t frame_len = 0;
@@ -67,7 +123,20 @@ static void crumbs_arduino_on_request()
                                            &frame_len);
     if (rc == 0 && frame_len > 0)
     {
+#if CRUMBS_ARDUINO_DBG_ENABLED
+        crumbs_arduino_dbg_hex("on_request: tx ", frame, frame_len);
+#endif
         Wire.write(frame, frame_len);
+    }
+    else
+    {
+#if CRUMBS_ARDUINO_DBG_ENABLED
+        Serial.print(F("[CRUMBS] on_request: no reply (rc="));
+        Serial.print(rc);
+        Serial.print(F(", len="));
+        Serial.print(frame_len);
+        Serial.println(F(")"));
+#endif
     }
 }
 
@@ -95,6 +164,10 @@ extern "C" void crumbs_arduino_init_controller(crumbs_context_t *ctx)
     // Controller mode keeps Wire configured but does not register callbacks.
     // Users should call crumbs_controller_send() paired with crumbs_arduino_wire_write().
     g_crumbs_ctx = ctx;
+
+#if CRUMBS_ARDUINO_DBG_ENABLED
+    crumbs_arduino_dbg("init_controller: ready");
+#endif
 }
 
 extern "C" void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t address)
@@ -118,6 +191,11 @@ extern "C" void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t ad
     // Register Wire callbacks that route into the CRUMBS core.
     Wire.onReceive(crumbs_arduino_on_receive);
     Wire.onRequest(crumbs_arduino_on_request);
+
+#if CRUMBS_ARDUINO_DBG_ENABLED
+    Serial.print(F("[CRUMBS] init_peripheral: addr=0x"));
+    Serial.println(address, HEX);
+#endif
 }
 
 extern "C" int crumbs_arduino_wire_write(void *user_ctx,
