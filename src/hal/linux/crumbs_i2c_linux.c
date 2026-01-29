@@ -11,6 +11,7 @@
 
 #include <string.h> /* memset */
 #include <errno.h>
+#include <time.h>   /* clock_gettime */
 
 #include "crumbs_crc.h" /* for CRUMBS_MESSAGE_MAX_SIZE, etc., via crumbs.h tree */
 
@@ -246,6 +247,16 @@ int crumbs_linux_read(void *user_ctx,
     return (int)total;
 }
 
+uint32_t crumbs_linux_millis(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+    {
+        return 0;
+    }
+    return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
 #else /* non-Linux builds */
 
 /* Stubs for non-Linux builds (Arduino/embedded). They return errors so
@@ -323,6 +334,12 @@ int crumbs_linux_read(void *user_ctx,
     (void)len;
     (void)timeout_us;
     return -1;
+}
+
+uint32_t crumbs_linux_millis(void)
+{
+    /* No-op stub for non-Linux platforms */
+    return 0;
 }
 
 #endif /* defined(__linux__) */

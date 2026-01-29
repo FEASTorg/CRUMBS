@@ -19,7 +19,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 - **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
 - **Per-Command Handler Dispatch**: Register handlers for specific command types
-- **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_msg.h`
+- **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_message_helpers.h`
 - **Event-Driven Communication**: Callback-based message handling
 - **CRC-8 Protection**: Integrity check on every message
 - **CRUMBS-aware Discovery**: Core scanner helper to find devices that speak CRUMBS
@@ -28,7 +28,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 
 ```c
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 crumbs_context_t controller_ctx;
 crumbs_arduino_init_controller(&controller_ctx);
@@ -36,7 +36,7 @@ crumbs_arduino_init_controller(&controller_ctx);
 crumbs_message_t m;
 crumbs_msg_init(&m);
 m.type_id = 1;
-m.command_type = 1;
+m.opcode = 1;
 
 // Type-safe payload building
 crumbs_msg_add_float(&m, 25.5f);  // e.g. change a temperature value

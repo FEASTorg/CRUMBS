@@ -17,7 +17,7 @@
 #include <Arduino.h>
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 #include "led_commands.h"
 

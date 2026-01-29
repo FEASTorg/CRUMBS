@@ -9,10 +9,10 @@
 
 /* ---- Internal constants (file-local) ----------------------------------- */
 
-/** @brief Minimum frame size: type_id + command_type + data_len + crc8 = 4 bytes. */
+/** @brief Minimum frame size: type_id + opcode + data_len + crc8 = 4 bytes. */
 static const size_t k_min_frame_len = 4u;
 
-/** @brief Header size: type_id + command_type + data_len = 3 bytes. */
+/** @brief Header size: type_id + opcode + data_len = 3 bytes. */
 static const size_t k_header_len = 3u;
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
@@ -107,14 +107,14 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
  * When CRUMBS_MAX_HANDLERS == 0, handlers are disabled.
  */
 int crumbs_register_handler(crumbs_context_t *ctx,
-                            uint8_t command_type,
+                            uint8_t opcode,
                             crumbs_handler_fn fn,
                             void *user_data)
 {
 #if CRUMBS_MAX_HANDLERS == 0
     /* Handlers disabled */
     (void)ctx;
-    (void)command_type;
+    (void)opcode;
     (void)fn;
     (void)user_data;
     return -1;
@@ -128,7 +128,7 @@ int crumbs_register_handler(crumbs_context_t *ctx,
     /* Check if command already registered (overwrite) */
     for (uint8_t i = 0; i < ctx->handler_count; i++)
     {
-        if (ctx->handler_cmd[i] == command_type)
+        if (ctx->handler_opcode[i] == opcode)
         {
             if (fn == NULL)
             {
@@ -136,7 +136,7 @@ int crumbs_register_handler(crumbs_context_t *ctx,
                 ctx->handler_count--;
                 if (i < ctx->handler_count)
                 {
-                    ctx->handler_cmd[i] = ctx->handler_cmd[ctx->handler_count];
+                    ctx->handler_opcode[i] = ctx->handler_opcode[ctx->handler_count];
                     ctx->handlers[i] = ctx->handlers[ctx->handler_count];
                     ctx->handler_userdata[i] = ctx->handler_userdata[ctx->handler_count];
                 }
@@ -165,7 +165,7 @@ int crumbs_register_handler(crumbs_context_t *ctx,
     }
 
     uint8_t slot = ctx->handler_count++;
-    ctx->handler_cmd[slot] = command_type;
+    ctx->handler_opcode[slot] = opcode;
     ctx->handlers[slot] = fn;
     ctx->handler_userdata[slot] = user_data;
     return 0;
@@ -176,15 +176,15 @@ int crumbs_register_handler(crumbs_context_t *ctx,
  * @brief Unregister a handler for a specific command type.
  */
 int crumbs_unregister_handler(crumbs_context_t *ctx,
-                              uint8_t command_type)
+                              uint8_t opcode)
 {
-    return crumbs_register_handler(ctx, command_type, NULL, NULL);
+    return crumbs_register_handler(ctx, opcode, NULL, NULL);
 }
 
 /**
  * @brief Serialize a crumbs_message_t into a flat byte buffer.
  *
- * Wire format: [type_id, command_type, data_len, data[0..data_len-1], crc8]
+ * Wire format: [type_id, opcode, data_len, data[0..data_len-1], crc8]
  * Returns the encoded length (4 + data_len) on success, or 0 on error.
  */
 size_t crumbs_encode_message(const crumbs_message_t *msg,
@@ -212,7 +212,7 @@ size_t crumbs_encode_message(const crumbs_message_t *msg,
     size_t index = 0u;
 
     buffer[index++] = msg->type_id;
-    buffer[index++] = msg->command_type;
+    buffer[index++] = msg->opcode;
     buffer[index++] = msg->data_len;
 
     /* Copy payload bytes. */
@@ -245,7 +245,7 @@ int crumbs_decode_message(const uint8_t *buffer,
         return -1;
     }
 
-    /* Minimum frame: type_id + command_type + data_len + crc8 = 4 bytes. */
+    /* Minimum frame: type_id + opcode + data_len + crc8 = 4 bytes. */
     if (buffer_len < k_min_frame_len)
     {
         CRUMBS_DBG("decode: too short (%u < %u)\n",
@@ -302,7 +302,7 @@ int crumbs_decode_message(const uint8_t *buffer,
 
     /* Populate message fields. address is not transmitted. */
     msg->type_id = buffer[0];
-    msg->command_type = buffer[1];
+    msg->opcode = buffer[1];
     msg->data_len = data_len;
 
     if (data_len > 0u)
@@ -313,7 +313,7 @@ int crumbs_decode_message(const uint8_t *buffer,
     msg->crc8 = received;
 
     CRUMBS_DBG("decode: OK type=0x%02X cmd=0x%02X len=%u\n",
-               msg->type_id, msg->command_type, msg->data_len);
+               msg->type_id, msg->opcode, msg->data_len);
 
     if (ctx)
     {
@@ -353,7 +353,7 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
     }
 
     CRUMBS_DBG("tx: addr=0x%02X %u bytes type=0x%02X cmd=0x%02X\n",
-               target_addr, (unsigned)written, msg->type_id, msg->command_type);
+               target_addr, (unsigned)written, msg->type_id, msg->opcode);
 
     int rc = write_fn(write_ctx, target_addr, frame, written);
     if (rc != 0)
@@ -418,14 +418,14 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     uint8_t found = 0;
     for (uint8_t i = 0; i < ctx->handler_count; i++)
     {
-        if (ctx->handler_cmd[i] == msg.command_type)
+        if (ctx->handler_opcode[i] == msg.opcode)
         {
             crumbs_handler_fn handler = ctx->handlers[i];
             if (handler)
             {
-                CRUMBS_DBG("rx: dispatch cmd 0x%02X (slot %u)\n", msg.command_type, i);
+                CRUMBS_DBG("rx: dispatch cmd 0x%02X (slot %u)\n", msg.opcode, i);
                 handler(ctx,
-                        msg.command_type,
+                        msg.opcode,
                         msg.data,
                         msg.data_len,
                         ctx->handler_userdata[i]);
@@ -437,7 +437,7 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     if (!found)
     {
         CRUMBS_DBG("rx: no handler for cmd 0x%02X (searched %u slots)\n",
-                   msg.command_type, ctx->handler_count);
+                   msg.opcode, ctx->handler_count);
     }
 #endif /* CRUMBS_MAX_HANDLERS > 0 */
 
@@ -485,7 +485,7 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
     }
 
     CRUMBS_DBG("reply: %u bytes type=0x%02X cmd=0x%02X\n",
-               (unsigned)written, msg.type_id, msg.command_type);
+               (unsigned)written, msg.type_id, msg.opcode);
 
     if (out_len)
     {

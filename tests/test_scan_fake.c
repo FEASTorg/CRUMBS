@@ -35,7 +35,7 @@ static int fake_read(void *user_ctx, uint8_t addr, uint8_t *buffer, size_t len, 
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = (uint8_t)addr; /* unique but arbitrary */
-    m.command_type = 0x1;
+    m.opcode = 0x1;
     m.data_len = 3;
     m.data[0] = (uint8_t)addr;
     m.data[1] = 0xAA;

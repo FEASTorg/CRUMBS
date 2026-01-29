@@ -1,5 +1,5 @@
 /*
- * Unit tests for crumbs_msg.h message building and payload reading helpers.
+ * Unit tests for crumbs_message_helpers.h message building and payload reading helpers.
  *
  * These test the inline helper functions for type-safe payload construction
  * and bounds-checked reading.
@@ -11,7 +11,7 @@
 #include <math.h>
 
 #include "crumbs.h"
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 /* ---- Message Building Tests ------------------------------------------- */
 
@@ -27,9 +27,9 @@ static int test_msg_init(void)
         fprintf(stderr, "msg_init: type_id mismatch\n");
         return 1;
     }
-    if (msg.command_type != 0x55)
+    if (msg.opcode != 0x55)
     {
-        fprintf(stderr, "msg_init: command_type mismatch\n");
+        fprintf(stderr, "msg_init: opcode mismatch\n");
         return 1;
     }
     if (msg.data_len != 0)

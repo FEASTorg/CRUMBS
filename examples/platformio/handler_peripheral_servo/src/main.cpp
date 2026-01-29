@@ -19,7 +19,7 @@
 #include <Servo.h>
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 #include "servo_commands.h"
 

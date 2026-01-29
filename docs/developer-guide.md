@@ -29,10 +29,10 @@ Message format (wire format)
 
 - Variable serialized length: 4–31 bytes (CRUMBS_MESSAGE_MAX_SIZE = 31)
   - type_id: 1 byte
-  - command_type: 1 byte
+  - opcode: 1 byte
   - data_len: 1 byte (0–27)
   - data: data_len bytes (raw opaque payload)
-  - crc8: 1 byte (CRC-8 computed over type_id + command_type + data_len + data[0..data_len-1])
+  - crc8: 1 byte (CRC-8 computed over type_id + opcode + data_len + data[0..data_len-1])
 
 Design rationale
 
@@ -58,14 +58,14 @@ Command Handler Dispatch
 
 For structured message processing, CRUMBS provides per-command-type handler registration as an alternative (or complement) to the general `on_message` callback.
 
-- `crumbs_register_handler(ctx, command_type, fn, user_data)` — register a handler for a specific command type (0–255)
-- `crumbs_unregister_handler(ctx, command_type)` — clear a registered handler
+- `crumbs_register_handler(ctx, opcode, fn, user_data)` — register a handler for a specific command type (0–255)
+- `crumbs_unregister_handler(ctx, opcode)` — clear a registered handler
 
 Handler signature:
 
 ```c
 typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
-                                  uint8_t command_type,
+                                  uint8_t opcode,
                                   const uint8_t *data,
                                   uint8_t data_len,
                                   void *user_data);
@@ -75,7 +75,7 @@ Dispatch flow in `crumbs_peripheral_handle_receive()`:
 
 1. Decode message and validate CRC
 2. Invoke `on_message` callback (if set)
-3. Invoke registered handler for `msg.command_type` (if set)
+3. Invoke registered handler for `msg.opcode` (if set)
 
 This design allows both patterns:
 
@@ -87,7 +87,7 @@ Implementation details:
 
 - O(n) dispatch via linear search (default 16-entry table, configurable via `CRUMBS_MAX_HANDLERS`)
 - Memory cost: ~68 bytes on AVR, ~132 bytes on 32-bit (with default 16 handlers)
-- Registering a handler for an already-registered command_type overwrites silently
+- Registering a handler for an already-registered opcode overwrites silently
 - Passing fn=NULL clears the handler
 - See [Developer Notes](developer-notes.md) for design history and trade-offs
 
@@ -138,7 +138,7 @@ How CRUMBS identifies a device as CRUMBS
 
 Recommended production hardening
 
-- Add an explicit PING/PONG handshake (command_type set aside for discovery) for higher confidence and to report device metadata/version. This reduces the already small risk of accidentally accepting non-CRUMBS devices.
+- Add an explicit PING/PONG handshake (opcode set aside for discovery) for higher confidence and to report device metadata/version. This reduces the already small risk of accidentally accepting non-CRUMBS devices.
 - Validate meaningful fields (e.g., type_id, command ranges) after decode to help avoid spurious matches
 
 Examples & patterns
@@ -150,7 +150,7 @@ crumbs_context_t ctx;
 crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
 crumbs_message_t m = {0};
 m.type_id = 1;
-m.command_type = 1;
+m.opcode = 1;
 // example: encode a float into bytes
 float val = 1.0f;
 m.data_len = sizeof(float);

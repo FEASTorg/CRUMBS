@@ -10,7 +10,7 @@ The core is intentionally small and C-friendly so it is easy to consume from Ard
 
   - `address` — device address (NOT serialized)
   - `type_id` — 1 byte
-  - `command_type` — 1 byte
+  - `opcode` — 1 byte
   - `data_len` — payload length (0–27)
   - `data[27]` — raw byte payload (opaque to CRUMBS)
   - `crc8` — 1 byte CRC-8 computed over the serialized header + payload
@@ -22,12 +22,12 @@ The core is intentionally small and C-friendly so it is easy to consume from Ard
 Serialized frame layout (4–31 bytes):
 
 - type_id (1)
-- command_type (1)
+- opcode (1)
 - data_len (1)
 - data[0..data_len-1] (variable, 0–27 bytes)
 - crc8 (1)
 
-CRC is computed over: type_id + command_type + data_len + data[0..data_len-1]
+CRC is computed over: type_id + opcode + data_len + data[0..data_len-1]
 
 ## Core API
 
@@ -42,8 +42,8 @@ void crumbs_set_callbacks(crumbs_context_t *ctx,
                           void *user_data);
 
 /* Per-command handler registration */
-int crumbs_register_handler(crumbs_context_t *ctx, uint8_t command_type, crumbs_handler_fn fn, void *user_data);
-int crumbs_unregister_handler(crumbs_context_t *ctx, uint8_t command_type);
+int crumbs_register_handler(crumbs_context_t *ctx, uint8_t opcode, crumbs_handler_fn fn, void *user_data);
+int crumbs_unregister_handler(crumbs_context_t *ctx, uint8_t opcode);
 
 /* Encoding/decoding */
 size_t crumbs_encode_message(const crumbs_message_t *msg, uint8_t *buffer, size_t buffer_len);
@@ -96,7 +96,7 @@ The handler dispatch system provides per-command-type function registration for 
 ```c
 /* Handler function signature */
 typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
-                                  uint8_t command_type,
+                                  uint8_t opcode,
                                   const uint8_t *data,
                                   uint8_t data_len,
                                   void *user_data);
@@ -104,7 +104,7 @@ typedef void (*crumbs_handler_fn)(crumbs_context_t *ctx,
 /* Register a handler for command type 0x10 */
 crumbs_register_handler(&ctx, 0x10, my_handler, my_userdata);
 
-/* Handler is invoked when that command_type is received */
+/* Handler is invoked when that opcode is received */
 void my_handler(crumbs_context_t *ctx, uint8_t cmd, const uint8_t *data, uint8_t len, void *ud) {
     // Process command 0x10
 }
@@ -114,7 +114,7 @@ Handler dispatch happens inside `crumbs_peripheral_handle_receive()`:
 
 1. Message is decoded and CRC is validated
 2. `on_message` callback is invoked (if set)
-3. Registered handler for `msg.command_type` is invoked (if set)
+3. Registered handler for `msg.opcode` is invoked (if set)
 
 This allows combining both approaches: use `on_message` for logging/statistics while using handlers for command-specific logic.
 
@@ -150,9 +150,9 @@ Dispatch uses linear search which is fast for typical handler counts (4-16).
 
 ### Message Builder/Reader Helpers
 
-The `crumbs_msg.h` header provides zero-overhead inline helpers for structured payload construction and reading. These eliminate manual byte manipulation for multi-byte integers and floats.
+The `crumbs_message_helpers.h` header provides zero-overhead inline helpers for structured payload construction and reading. These eliminate manual byte manipulation for multi-byte integers and floats.
 
-Include: `#include "crumbs_msg.h"` (Linux) or `#include <crumbs_msg.h>` (Arduino)
+Include: `#include "crumbs_message_helpers.h"` (Linux) or `#include <crumbs_message_helpers.h>` (Arduino)
 
 ```c
 /* Initialize a message for building */
@@ -182,12 +182,12 @@ static inline int crumbs_msg_read_bytes(const uint8_t *data, size_t len, size_t 
 Usage example (controller side):
 
 ```c
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 crumbs_message_t msg;
 crumbs_msg_init(&msg);
 msg.type_id = 0x02;
-msg.command_type = 0x01;
+msg.opcode = 0x01;
 crumbs_msg_add_u8(&msg, servo_index);
 crumbs_msg_add_u16(&msg, pulse_us);
 crumbs_controller_send(&ctx, addr, &msg, write_fn, write_ctx);
@@ -301,7 +301,7 @@ crumbs_arduino_init_controller(&ctx);
 // build message with byte payload
 crumbs_message_t msg = {0};
 msg.type_id = 1;
-msg.command_type = 1;
+msg.opcode = 1;
 // example: encode a float into bytes
 float val = 1.23f;
 msg.data_len = sizeof(float);

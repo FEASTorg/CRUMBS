@@ -17,7 +17,7 @@ static int test_basic_encode_decode(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0xAA;
-    m.command_type = 0x55;
+    m.opcode = 0x55;
     m.data_len = 5;
     for (size_t i = 0; i < m.data_len; ++i)
         m.data[i] = (uint8_t)(i + 1);
@@ -43,7 +43,7 @@ static int test_basic_encode_decode(void)
         return 1;
     }
 
-    if (out.type_id != m.type_id || out.command_type != m.command_type)
+    if (out.type_id != m.type_id || out.opcode != m.opcode)
     {
         fprintf(stderr, "decoded header mismatch\n");
         return 1;
@@ -82,7 +82,7 @@ static int test_zero_length_payload(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x01;
-    m.command_type = 0x02;
+    m.opcode = 0x02;
     m.data_len = 0; /* zero-length payload */
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
@@ -123,7 +123,7 @@ static int test_max_length_payload(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0xFF;
-    m.command_type = 0xFE;
+    m.opcode = 0xFE;
     m.data_len = CRUMBS_MAX_PAYLOAD; /* 27 bytes */
     for (size_t i = 0; i < CRUMBS_MAX_PAYLOAD; ++i)
         m.data[i] = (uint8_t)(i ^ 0xAA);
@@ -172,7 +172,7 @@ static int test_oversized_data_len(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x01;
-    m.command_type = 0x02;
+    m.opcode = 0x02;
     m.data_len = CRUMBS_MAX_PAYLOAD + 1; /* invalid */
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE + 10];
@@ -197,7 +197,7 @@ static int test_truncated_frame(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x10;
-    m.command_type = 0x20;
+    m.opcode = 0x20;
     m.data_len = 5;
     for (size_t i = 0; i < 5; ++i)
         m.data[i] = (uint8_t)i;
@@ -230,11 +230,11 @@ static int test_malformed_data_len_in_frame(void)
      * more payload bytes than actually present. This tests the decoder's
      * bounds checking against the provided buffer_len.
      *
-     * Frame format: [type_id, command_type, data_len, ...payload..., CRC]
+     * Frame format: [type_id, opcode, data_len, ...payload..., CRC]
      */
     uint8_t malformed[8];
     malformed[0] = 0x01; /* type_id */
-    malformed[1] = 0x02; /* command_type */
+    malformed[1] = 0x02; /* opcode */
     malformed[2] = 20;   /* data_len claims 20 bytes of payload */
     malformed[3] = 0xAA; /* Only 1 byte of actual payload */
     malformed[4] = 0x00; /* Fake CRC (doesn't matter, should fail length check first) */
@@ -259,11 +259,11 @@ static int test_decode_minimum_valid_frame(void)
     crumbs_context_t ctx;
     crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
 
-    /* Minimum valid frame: 4 bytes (type_id, command_type, data_len=0, CRC) */
+    /* Minimum valid frame: 4 bytes (type_id, opcode, data_len=0, CRC) */
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0xAA;
-    m.command_type = 0xBB;
+    m.opcode = 0xBB;
     m.data_len = 0;
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
@@ -284,7 +284,7 @@ static int test_decode_minimum_valid_frame(void)
         return 1;
     }
 
-    if (out.type_id != 0xAA || out.command_type != 0xBB || out.data_len != 0)
+    if (out.type_id != 0xAA || out.opcode != 0xBB || out.data_len != 0)
     {
         fprintf(stderr, "minimum frame decode mismatch\n");
         return 1;

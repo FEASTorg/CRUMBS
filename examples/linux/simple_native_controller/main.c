@@ -12,7 +12,7 @@ int main(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x10;
-    m.command_type = 0x01;
+    m.opcode = 0x01;
 
     /* Encode a float as 4 bytes (little-endian) in the payload */
     float value = 3.1415926f;
@@ -48,7 +48,7 @@ int main(void)
     }
 
     printf("Decoded message: type_id=%u cmd=%u data_len=%u value=%f crc_ok=%d\n",
-           out.type_id, out.command_type, out.data_len, decoded_value, crumbs_last_crc_ok(&ctx));
+           out.type_id, out.opcode, out.data_len, decoded_value, crumbs_last_crc_ok(&ctx));
 
     return 0;
 }

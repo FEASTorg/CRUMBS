@@ -55,7 +55,7 @@ void setup() {
 
     crumbs_message_t m = {};
     m.type_id = 1;
-    m.command_type = 1;
+    m.opcode = 1;
 
     // Variable-length payload: send a float as 4 bytes
     float temp = 25.5f;
@@ -87,7 +87,7 @@ void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
 // Request callback — fill reply message
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
     reply->type_id = 1;
-    reply->command_type = 0;
+    reply->opcode = 0;
     float val = 42.0f;
     reply->data_len = sizeof(float);
     memcpy(reply->data, &val, sizeof(float));
@@ -112,7 +112,7 @@ void setup() {
 Once basic communication is working:
 
 1. **Handler dispatch**: Register per-command handlers instead of switch statements — see [API Reference](api-reference.md#command-handler-dispatch)
-2. **Message helpers**: Use `crumbs_msg.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
+2. **Message helpers**: Use `crumbs_message_helpers.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
 3. **Command headers**: Create reusable command definitions — see `examples/common/`
 4. **Memory optimization**: Reduce handler table size with `CRUMBS_MAX_HANDLERS` — see below
 

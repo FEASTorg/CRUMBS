@@ -72,6 +72,16 @@ extern "C"
         size_t len,
         uint32_t timeout_us);
 
+    /**
+     * @brief Platform millisecond timer function signature.
+     *
+     * Implementations should return monotonic milliseconds since boot.
+     * Used for multi-frame timeout detection (v0.11.0+).
+     *
+     * @return Milliseconds elapsed since boot/epoch.
+     */
+    typedef uint32_t (*crumbs_platform_millis_fn)(void);
+
 #ifdef __cplusplus
 }
 #endif

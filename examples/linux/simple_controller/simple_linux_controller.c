@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     memset(&msg, 0, sizeof(msg));
 
     msg.type_id = 1;
-    msg.command_type = 1;
+    msg.opcode = 1;
 
     // Example data payload (3 floats encoded as bytes)
     float values[] = {12.34f, 5.0f, 9.87f};
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------------
     printf("Reply received:\n");
     printf("  type_id:       %u\n", reply.type_id);
-    printf("  command_type:  %u\n", reply.command_type);
+    printf("  opcode:  %u\n", reply.opcode);
     printf("  data_len:      %u\n", reply.data_len);
     printf("  data:          ");
 

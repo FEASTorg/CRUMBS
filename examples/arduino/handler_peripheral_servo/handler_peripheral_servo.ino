@@ -3,7 +3,7 @@
  * @brief Example CRUMBS servo controller peripheral using command interface.
  *
  * This sketch demonstrates:
- * - Using crumbs_msg.h for payload parsing
+ * - Using crumbs_message_helpers.h for payload parsing
  * - Using servo_commands.h for command definitions
  * - Registering handlers with crumbs_register_handler()
  * - Responding to I2C read requests
@@ -59,7 +59,7 @@
 #include <Servo.h>
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 /* Include for command definitions */
 #include "servo_commands.h"

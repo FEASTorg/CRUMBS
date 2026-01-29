@@ -1,5 +1,5 @@
 /**
- * @file crumbs_msg.h
+ * @file crumbs_message_helpers.h
  * @brief Message building and payload reading helpers for CRUMBS.
  *
  * This header provides inline helpers for:
@@ -30,8 +30,8 @@
  * @endcode
  */
 
-#ifndef CRUMBS_MSG_H
-#define CRUMBS_MSG_H
+#ifndef CRUMBS_MESSAGE_HELPERS_H
+#define CRUMBS_MESSAGE_HELPERS_H
 
 #include "crumbs_message.h"
 #include <string.h>
@@ -46,21 +46,21 @@ extern "C"
      * ============================================================================ */
 
     /**
-     * @brief Initialize a message with type_id and command_type.
+     * @brief Initialize a message with type_id and opcode.
      *
      * Clears all fields and sets the header. data_len starts at 0.
      *
      * @param msg         Pointer to message to initialize.
      * @param type_id     Device/module type identifier.
-     * @param command_type Command opcode.
+     * @param opcode Command opcode.
      */
     static inline void crumbs_msg_init(crumbs_message_t *msg,
                                        uint8_t type_id,
-                                       uint8_t command_type)
+                                       uint8_t opcode)
     {
         memset(msg, 0, sizeof(*msg));
         msg->type_id = type_id;
-        msg->command_type = command_type;
+        msg->opcode = opcode;
     }
 
     /**
@@ -347,4 +347,4 @@ extern "C"
 }
 #endif
 
-#endif /* CRUMBS_MSG_H */
+#endif /* CRUMBS_MESSAGE_HELPERS_H */

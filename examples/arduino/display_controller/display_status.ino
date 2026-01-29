@@ -41,7 +41,7 @@ void drawDisplay()
 
         sprintf(line, "t:%u c:%u len:%u ok:%u",
                 lastExchange.message.type_id,
-                lastExchange.message.command_type,
+                lastExchange.message.opcode,
                 lastExchange.message.data_len,
                 (uint8_t)lastExchange.success);
         u8g2.drawStr(0, y, line);

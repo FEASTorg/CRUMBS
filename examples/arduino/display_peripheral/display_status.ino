@@ -91,7 +91,7 @@ void drawDisplay()
         char line[26];
         sprintf(line, "t:%u c:%u len:%u crc:%02X",
                 lastRxMessage.type_id,
-                lastRxMessage.command_type,
+                lastRxMessage.opcode,
                 lastRxMessage.data_len,
                 lastRxMessage.crc8);
         u8g2.drawStr(0, y, line);

@@ -49,8 +49,8 @@ void handleMessage(crumbs_context_t *ctx, crumbs_message_t *message)
     Serial.println(F("Slice: Received Message:"));
     Serial.print(F("type_id: "));
     Serial.println(message->type_id);
-    Serial.print(F("command_type: "));
-    Serial.println(message->command_type);
+    Serial.print(F("opcode: "));
+    Serial.println(message->opcode);
     Serial.print(F("data_len: "));
     Serial.println(message->data_len);
     Serial.print(F("data: "));
@@ -66,22 +66,22 @@ void handleMessage(crumbs_context_t *ctx, crumbs_message_t *message)
     Serial.print(F("crc8: 0x"));
     Serial.println(message->crc8, HEX);
 
-    // Process the message based on command_type
-    switch (message->command_type)
+    // Process the message based on opcode
+    switch (message->opcode)
     {
     case 0:
-        // command_type 0: Data Format Request
+        // opcode 0: Data Format Request
         Serial.println(F("Slice: Data Format Request Received."));
         // Perform actions to alter the data mapped to the callback message to be sent on wire request
         break;
 
     case 1:
-        // command_type 1: Example Command (e.g., Set Parameters)
+        // opcode 1: Example Command (e.g., Set Parameters)
         Serial.println(F("Slice: Set Parameters Command Received."));
         // Example: Update internal state based on data
         break;
 
-        // Add more case blocks for different command_types as needed
+        // Add more case blocks for different opcodes as needed
 
     default:
         Serial.println(F("Slice: Unknown Command Type."));
@@ -101,7 +101,7 @@ void handleRequest(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
     // User fills reply, nothing more.
     reply->type_id = 1;
-    reply->command_type = 0;
+    reply->opcode = 0;
 
     // Variable-length payload: send 7 bytes
     reply->data_len = 7;

@@ -94,6 +94,12 @@ extern "C"
                             size_t len,
                             uint32_t timeout_us);
 
+    /**
+     * @brief Arduino platform millisecond timer.
+     * @return Milliseconds since boot.
+     */
+    uint32_t crumbs_arduino_millis(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -9,7 +9,7 @@ void sendPremade(uint8_t addr, const char *name)
 {
     crumbs_message_t m = {};
     m.type_id = 1;
-    m.command_type = 1;
+    m.opcode = 1;
 
     if (strcmp(name, "MSG4B") == 0)
     {
@@ -126,7 +126,7 @@ void handleSerial()
         {
             crumbs_message_t m = {};
             m.type_id = (uint8_t)strtoul(toks[2].c_str(), NULL, 0);
-            m.command_type = (uint8_t)strtoul(toks[3].c_str(), NULL, 0);
+            m.opcode = (uint8_t)strtoul(toks[3].c_str(), NULL, 0);
             m.data_len = 0;
             for (size_t i = 0; i < CRUMBS_MAX_PAYLOAD && (4 + i) < tokenCount; ++i)
             {

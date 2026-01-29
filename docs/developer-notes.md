@@ -18,7 +18,7 @@ struct crumbs_context_s {
 };
 
 // O(1) dispatch
-crumbs_handler_fn fn = ctx->handlers[command_type];
+crumbs_handler_fn fn = ctx->handlers[opcode];
 if (fn) fn(ctx, cmd, data, len, ctx->handler_userdata[cmd]);
 ```
 
@@ -34,14 +34,14 @@ Switched to a configurable sparse table with linear search:
 struct crumbs_context_s {
     // ...
     uint8_t handler_count;
-    uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];
+    uint8_t handler_opcode[CRUMBS_MAX_HANDLERS];
     crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];
     void *handler_userdata[CRUMBS_MAX_HANDLERS];
 };
 
 // O(n) dispatch
 for (uint8_t i = 0; i < ctx->handler_count; i++) {
-    if (ctx->handler_cmd[i] == cmd) {
+    if (ctx->handler_opcode[i] == cmd) {
         ctx->handlers[i](ctx, cmd, data, len, ctx->handler_userdata[i]);
         break;
     }
@@ -143,7 +143,7 @@ This catches the bug before `crumbs_init()` can corrupt memory.
 
 ```text
 type_id        1 byte
-command_type   1 byte
+opcode   1 byte
 data[7]        28 bytes (float32 × 7)
 crc8           1 byte
 ```
@@ -158,7 +158,7 @@ crc8           1 byte
 
 ```text
 type_id        1 byte
-command_type   1 byte
+opcode   1 byte
 data_len       1 byte (0–27)
 data[]         0–27 bytes (opaque)
 crc8           1 byte

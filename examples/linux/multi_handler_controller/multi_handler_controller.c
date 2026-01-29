@@ -51,7 +51,7 @@
 
 #include "crumbs.h"
 #include "crumbs_linux.h"
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 /* Command definitions */
 #include "led_commands.h"

@@ -3,7 +3,7 @@
  * @brief Example CRUMBS LED peripheral using command interface.
  *
  * This sketch demonstrates:
- * - Using crumbs_msg.h for payload parsing
+ * - Using crumbs_message_helpers.h for payload parsing
  * - Using led_commands.h for command definitions
  * - Registering handlers with crumbs_register_handler()
  * - Responding to I2C read requests
@@ -59,7 +59,7 @@
 
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 /* Include for command definitions */
 #include "led_commands.h"

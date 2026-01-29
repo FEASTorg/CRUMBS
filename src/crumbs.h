@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "crumbs_version.h"
 #include "crumbs_message.h"
 #include "crumbs_crc.h"
 #include "crumbs_i2c.h"
@@ -117,19 +118,19 @@ extern "C"
     /**
      * @brief Command handler function type for dispatch-based message handling.
      *
-     * Handlers are registered per command_type and called when a message with
+     * Handlers are registered per opcode and called when a message with
      * that command is received. This provides an alternative to the on_message
      * callback for command-specific processing.
      *
      * @param ctx Pointer to the active CRUMBS context.
-     * @param command_type The command type that triggered this handler.
+     * @param opcode The command type that triggered this handler.
      * @param data Pointer to the payload bytes (may be NULL if data_len==0).
      * @param data_len Number of payload bytes (0–27).
      * @param user_data Opaque pointer registered with the handler.
      */
     typedef void (*crumbs_handler_fn)(
         struct crumbs_context_s *ctx,
-        uint8_t command_type,
+        uint8_t opcode,
         const uint8_t *data,
         uint8_t data_len,
         void *user_data);
@@ -154,13 +155,13 @@ extern "C"
 
 #if CRUMBS_MAX_HANDLERS > 0
         /** @name Command Handler Dispatch Table
-         *  Per-command_type handler functions and associated user data.
+         *  Per-opcode handler functions and associated user data.
          *  Size controlled by CRUMBS_MAX_HANDLERS (default 16).
          *  Uses linear search for dispatch (O(n) but portable/safe).
          *  @{ */
-        uint8_t handler_count;                           /**< Number of registered handlers. */
-        uint8_t handler_cmd[CRUMBS_MAX_HANDLERS];        /**< Command type for each slot. */
-        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS]; /**< Handler functions. */
+        uint8_t handler_count;                             /**< Number of registered handlers. */
+        uint8_t handler_opcode[CRUMBS_MAX_HANDLERS];       /**< Opcode for each handler slot. */
+        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];   /**< Handler functions. */
         void *handler_userdata[CRUMBS_MAX_HANDLERS];     /**< User data for each handler. */
                                                          /** @} */
 #endif                                                   /* CRUMBS_MAX_HANDLERS > 0 */
@@ -215,32 +216,32 @@ extern "C"
     /**
      * @brief Register a handler for a specific command type.
      *
-     * The handler will be invoked when a message with the given command_type
+     * The handler will be invoked when a message with the given opcode
      * is received (after on_message, if configured). Registering a handler
-     * for a command_type that already has one will overwrite the previous.
+     * for a opcode that already has one will overwrite the previous.
      *
      * @param ctx Context to register the handler on.
-     * @param command_type The command type to handle (0–255).
+     * @param opcode The command type to handle (0–255).
      * @param fn Handler function to call (NULL to unregister).
      * @param user_data Opaque pointer passed to the handler when invoked.
      * @return 0 on success, -1 if ctx is NULL or handler table is full.
      */
     int crumbs_register_handler(crumbs_context_t *ctx,
-                                uint8_t command_type,
+                                uint8_t opcode,
                                 crumbs_handler_fn fn,
                                 void *user_data);
 
     /**
      * @brief Unregister a handler for a specific command type.
      *
-     * Equivalent to crumbs_register_handler(ctx, command_type, NULL, NULL).
+     * Equivalent to crumbs_register_handler(ctx, opcode, NULL, NULL).
      *
      * @param ctx Context to unregister from.
-     * @param command_type The command type to unregister.
+     * @param opcode The command type to unregister.
      * @return 0 on success, -1 if ctx is NULL.
      */
     int crumbs_unregister_handler(crumbs_context_t *ctx,
-                                  uint8_t command_type);
+                                  uint8_t opcode);
 
     /** @} */
 

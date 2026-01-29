@@ -83,8 +83,8 @@ void handleSerialInput()
                 Serial.println(F("Controller: Decoded response:"));
                 Serial.print(F("type_id: "));
                 Serial.println(response.type_id);
-                Serial.print(F("command_type: "));
-                Serial.println(response.command_type);
+                Serial.print(F("opcode: "));
+                Serial.println(response.opcode);
                 Serial.print(F("data_len: "));
                 Serial.println(response.data_len);
                 Serial.print(F("data: "));
@@ -189,7 +189,7 @@ void handleSerialInput()
 /**
  * @brief Parses a comma-separated serial input string into a target address and crumbs_message_t.
  *
- * Format: addr,type_id,command_type,byte0,byte1,...
+ * Format: addr,type_id,opcode,byte0,byte1,...
  * Bytes can be decimal or hex (e.g., 0x12).
  *
  * @param input The input string from serial.
@@ -205,7 +205,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_messag
 
     // Initialize message fields to default values
     message.type_id = 0;
-    message.command_type = 0;
+    message.opcode = 0;
     message.data_len = 0;
     for (int i = 0; i < CRUMBS_MAX_PAYLOAD; i++)
     {
@@ -230,7 +230,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_messag
                 message.type_id = (uint8_t)strtol(value.c_str(), NULL, 0); /**< Parse type_id */
                 break;
             case 2:
-                message.command_type = (uint8_t)strtol(value.c_str(), NULL, 0); /**< Parse command_type */
+                message.opcode = (uint8_t)strtol(value.c_str(), NULL, 0); /**< Parse opcode */
                 break;
             default:
                 // Parse payload bytes
@@ -244,7 +244,7 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_messag
         }
     }
 
-    // Check if the required number of fields are parsed (at least addr, type_id, command_type)
+    // Check if the required number of fields are parsed (at least addr, type_id, opcode)
     if (fieldCount < 3)
     {
         Serial.println(F("Controller: Not enough fields in input (need at least addr,type_id,cmd)."));
@@ -257,8 +257,8 @@ bool parseSerialInput(const String &input, uint8_t &targetAddress, crumbs_messag
     Serial.println(targetAddress, HEX);
     Serial.print(F("Parsed Message -> type_id: "));
     Serial.print(message.type_id);
-    Serial.print(F(", command_type: "));
-    Serial.print(message.command_type);
+    Serial.print(F(", opcode: "));
+    Serial.print(message.opcode);
     Serial.print(F(", data_len: "));
     Serial.print(message.data_len);
     Serial.print(F(", data: "));

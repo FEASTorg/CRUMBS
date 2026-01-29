@@ -3,19 +3,19 @@
 ## Message Format (Variable Length: 4–31 bytes)
 
 ```yml
-┌──────────┬─────────────┬──────────┬─────────────────┬──────────┐
-│  typeID  │ commandType │ data_len │   data[0..N]    │   crc8   │
-│ (1 byte) │  (1 byte)   │ (1 byte) │ (0–27 bytes)    │ (1 byte) │
-└──────────┴─────────────┴──────────┴─────────────────┴──────────┘
+┌──────────┬──────────┬──────────┬─────────────────┬──────────┐
+│  typeID  │  opcode  │ data_len │   data[0..N]    │   crc8   │
+│ (1 byte) │ (1 byte) │ (1 byte) │ (0–27 bytes)    │ (1 byte) │
+└──────────┴──────────┴──────────┴─────────────────┴──────────┘
 ```
 
 | Field         | Size       | Description                                              |
 | ------------- | ---------- | -------------------------------------------------------- |
 | `typeID`      | 1 byte     | Module type (sensor=1, motor=2, etc.)                    |
-| `commandType` | 1 byte     | Command (read=0, set=1, reset=2, etc.)                   |
+| `opcode`      | 1 byte     | Command (read=0, set=1, reset=2, etc.)                   |
 | `data_len`    | 1 byte     | Number of payload bytes (0–27)                           |
 | `data[]`      | 0–27 bytes | Opaque payload data (user-defined format)                |
-| `crc8`        | 1 byte     | CRC-8 over `typeID`, `commandType`, `data_len`, `data[]` |
+| `crc8`        | 1 byte     | CRC-8 over `typeID`, `opcode`, `data_len`, `data[]`      |
 
 **Notes**:
 
@@ -69,7 +69,7 @@ To send a float value in the payload:
 ```c
 crumbs_message_t m = {0};
 m.type_id = 1;
-m.command_type = 1;
+m.opcode = 1;
 
 float value = 3.14f;
 m.data_len = sizeof(float);

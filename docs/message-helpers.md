@@ -1,6 +1,6 @@
 # Message Helpers
 
-The `crumbs_msg.h` header provides zero-overhead inline helpers for building and reading message payloads. These helpers eliminate manual byte manipulation when working with multi-byte integers and floats.
+The `crumbs_message_helpers.h` header provides zero-overhead inline helpers for building and reading message payloads. These helpers eliminate manual byte manipulation when working with multi-byte integers and floats.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Use the message helpers:
 
 ```c
 // With helpers (type-safe, bounds-checked)
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 crumbs_msg_init(&msg);
 crumbs_msg_add_u16(&msg, angle);
@@ -26,8 +26,8 @@ crumbs_msg_add_u16(&msg, angle);
 ## Including the Header
 
 ```c
-#include "crumbs_msg.h"    // Linux/CMake projects
-#include <crumbs_msg.h>    // Arduino projects
+#include "crumbs_message_helpers.h"    // Linux/CMake projects
+#include <crumbs_message_helpers.h>    // Arduino projects
 ```
 
 The header is standalone and only depends on `<stdint.h>`, `<stddef.h>`, and `<string.h>`.
@@ -42,9 +42,9 @@ Always initialize a message before adding data:
 crumbs_message_t msg;
 crumbs_msg_init(&msg);
 
-// Now set type_id and command_type
+// Now set type_id and opcode
 msg.type_id = MY_TYPE_ID;
-msg.command_type = MY_COMMAND;
+msg.opcode = MY_COMMAND;
 ```
 
 `crumbs_msg_init()` zeros the message and sets `data_len = 0`.
@@ -77,7 +77,7 @@ crumbs_msg_add_bytes(&msg, ptr, len);
 crumbs_message_t msg;
 crumbs_msg_init(&msg);
 msg.type_id = 0x02;           // Servo device type
-msg.command_type = 0x02;      // Set both servos
+msg.opcode = 0x02;      // Set both servos
 
 crumbs_msg_add_u16(&msg, 1500);  // Servo 1: 1500μs
 crumbs_msg_add_u16(&msg, 2000);  // Servo 2: 2000μs
@@ -154,7 +154,7 @@ The recommended pattern is to create a command header file for each device type.
 #define MY_DEVICE_COMMANDS_H
 
 #include "crumbs.h"
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 #define MY_DEVICE_TYPE_ID   0x10
 
@@ -169,7 +169,7 @@ static inline int my_send_action_a(crumbs_context_t *ctx, uint8_t addr,
     crumbs_message_t msg;
     crumbs_msg_init(&msg);
     msg.type_id = MY_DEVICE_TYPE_ID;
-    msg.command_type = MY_CMD_ACTION_A;
+    msg.opcode = MY_CMD_ACTION_A;
 
     crumbs_msg_add_u16(&msg, param1);
     crumbs_msg_add_u8(&msg, param2);

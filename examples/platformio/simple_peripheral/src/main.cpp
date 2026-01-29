@@ -13,7 +13,7 @@ static void on_message(crumbs_context_t *ctx, const crumbs_message_t *m)
   Serial.print(F("Received message: type_id="));
   Serial.print(m->type_id);
   Serial.print(F(" cmd="));
-  Serial.print(m->command_type);
+  Serial.print(m->opcode);
   Serial.print(F(" data_len="));
   Serial.println(m->data_len);
 
@@ -35,7 +35,7 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
   // Provide a simple reply payload for demo purposes
   reply->type_id = 0x10;
-  reply->command_type = 0x42; // arbitrary
+  reply->opcode = 0x42; // arbitrary
   reply->data_len = 4;
   reply->data[0] = 0xDE;
   reply->data[1] = 0xAD;

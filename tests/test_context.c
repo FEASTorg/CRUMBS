@@ -186,7 +186,7 @@ static int test_crc_error_count_increments(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 2;
     msg.data[0] = 0xAA;
     msg.data[1] = 0xBB;
@@ -234,7 +234,7 @@ static int test_last_crc_ok(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
@@ -350,7 +350,7 @@ static int test_encode_buffer_too_small(void)
 {
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 5;
 
     /* Buffer too small for frame (need 4 + 5 = 9 bytes) */
@@ -398,7 +398,7 @@ static int test_decode_without_ctx(void)
     /* Decoding should work without a context (just no stats updated) */
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
@@ -412,7 +412,7 @@ static int test_decode_without_ctx(void)
         return 1;
     }
 
-    if (out.type_id != 0x01 || out.command_type != 0x02)
+    if (out.type_id != 0x01 || out.opcode != 0x02)
     {
         fprintf(stderr, "decode_without_ctx: header mismatch\n");
         return 1;
@@ -444,7 +444,7 @@ static int test_controller_send_wrong_role(void)
 
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
 
     g_fake_write_called = 0;
 

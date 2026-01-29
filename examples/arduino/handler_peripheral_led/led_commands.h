@@ -16,7 +16,7 @@
 #define LED_COMMANDS_H
 
 #include "crumbs.h"
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 #ifdef __cplusplus
 extern "C"

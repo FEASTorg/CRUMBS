@@ -26,7 +26,7 @@ void setup()
 }
 
 // Read a line from Serial and parse simple CSV commands in the form:
-// addr,type_id,command_type,byte0,byte1,...
+// addr,type_id,opcode,byte0,byte1,...
 // Example: 0x08,1,1,0x12,0x34
 void loop()
 {
@@ -50,7 +50,7 @@ void loop()
   // Help
   if (strcmp(start, "help") == 0)
   {
-    Serial.println(F("Usage: addr,type_id,command_type,byte0,byte1,.. (e.g. 0x08,1,1,0x12,0x34)"));
+    Serial.println(F("Usage: addr,type_id,opcode,byte0,byte1,.. (e.g. 0x08,1,1,0x12,0x34)"));
     return;
   }
 
@@ -73,14 +73,14 @@ void loop()
   tok = strtok(NULL, ",");
   if (!tok)
   {
-    Serial.println(F("Missing command_type"));
+    Serial.println(F("Missing opcode"));
     return;
   }
   int cmd = (int)strtol(tok, NULL, 0);
 
   crumbs_message_t m = {};
   m.type_id = (uint8_t)type_id;
-  m.command_type = (uint8_t)cmd;
+  m.opcode = (uint8_t)cmd;
   m.data_len = 0;
 
   // parse payload bytes (up to CRUMBS_MAX_PAYLOAD)

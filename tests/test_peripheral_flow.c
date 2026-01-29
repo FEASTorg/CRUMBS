@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #include "crumbs.h"
-#include "crumbs_msg.h"
+#include "crumbs_message_helpers.h"
 
 /* ---- Test Infrastructure ---------------------------------------------- */
 
@@ -58,7 +58,7 @@ static void test_on_request(crumbs_context_t *ctx, crumbs_message_t *msg)
     {
         /* Default minimal reply */
         msg->type_id = 0xFF;
-        msg->command_type = 0xFE;
+        msg->opcode = 0xFE;
         msg->data_len = 0;
     }
 }
@@ -95,7 +95,7 @@ static int test_handle_receive_valid(void)
         return 1;
     }
 
-    if (g_last_message.type_id != 0x42 || g_last_message.command_type != 0x55)
+    if (g_last_message.type_id != 0x42 || g_last_message.opcode != 0x55)
     {
         fprintf(stderr, "handle_receive_valid: header mismatch\n");
         return 1;
@@ -128,7 +128,7 @@ static int test_handle_receive_wrong_role(void)
     /* Build a valid frame */
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
@@ -189,7 +189,7 @@ static int test_handle_receive_corrupt_crc(void)
     /* Build a valid frame then corrupt it */
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 2;
     msg.data[0] = 0xAA;
     msg.data[1] = 0xBB;
@@ -233,7 +233,7 @@ static int test_handle_receive_no_callback(void)
     /* Build a valid frame */
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
@@ -262,7 +262,7 @@ static int test_handle_receive_sets_address(void)
     /* Build a valid frame */
     crumbs_message_t msg = {0};
     msg.type_id = 0x01;
-    msg.command_type = 0x02;
+    msg.opcode = 0x02;
     msg.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
@@ -334,7 +334,7 @@ static int test_build_reply_valid(void)
         return 1;
     }
 
-    if (decoded.type_id != 0x42 || decoded.command_type != 0x55)
+    if (decoded.type_id != 0x42 || decoded.opcode != 0x55)
     {
         fprintf(stderr, "build_reply_valid: decoded header mismatch\n");
         return 1;

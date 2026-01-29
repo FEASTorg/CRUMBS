@@ -149,6 +149,12 @@ typedef struct crumbs_linux_i2c_s
                           uint8_t *found,
                           size_t max_found);
 
+    /**
+     * @brief Linux platform millisecond timer.
+     * @return Milliseconds since boot.
+     */
+    uint32_t crumbs_linux_millis(void);
+
 #ifdef __cplusplus
 }
 #endif

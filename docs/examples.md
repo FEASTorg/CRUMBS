@@ -8,7 +8,7 @@ Send commands via serial interface and request data from peripherals. The exampl
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
-3. Send: `address,type_id,command_type,byte0,byte1,...` (comma-separated bytes)
+3. Send: `address,type_id,opcode,byte0,byte1,...` (comma-separated bytes)
 4. Request: `request=address`
 
 ### Example Commands
@@ -27,7 +27,7 @@ Respond to controller commands and data requests. The C core uses callbacks with
 ```cpp
 // Message callback from the core
 void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
-    switch (m->command_type) {
+    switch (m->opcode) {
         case 0: // Data request (handled in on_request instead)
             break;
         case 1: // Set parameters
@@ -44,7 +44,7 @@ void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
 // Build reply for onRequest — the framework will encode and Wire.write the result
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
     reply->type_id = 1;
-    reply->command_type = 0;
+    reply->opcode = 0;
     float val = 42.0f;
     reply->data_len = sizeof(float);
     memcpy(reply->data, &val, sizeof(float));
@@ -114,12 +114,12 @@ void loop() { }
 // Send LED ON command
 crumbs_message_t msg = {0};
 msg.type_id = 1;
-msg.command_type = 0x01;  // CMD_LED_ON
+msg.opcode = 0x01;  // CMD_LED_ON
 msg.data_len = 0;
 crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
 
 // Send BLINK command: 5 blinks, 200ms delay
-msg.command_type = 0x03;  // CMD_BLINK
+msg.opcode = 0x03;  // CMD_BLINK
 msg.data_len = 2;
 msg.data[0] = 5;   // count
 msg.data[1] = 20;  // delay = 20 * 10ms = 200ms
@@ -130,12 +130,12 @@ See `examples/arduino/handler_peripheral_led/` and `examples/linux/multi_handler
 
 ## Message Helpers Pattern
 
-The `crumbs_msg.h` header provides type-safe payload building and reading. This pattern is cleaner than manual byte manipulation:
+The `crumbs_message_helpers.h` header provides type-safe payload building and reading. This pattern is cleaner than manual byte manipulation:
 
 ### Controller with Message Helpers
 
 ```c
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 // Define command header (see examples/common/ for full pattern)
 #define SERVO_TYPE_ID    0x02
@@ -144,7 +144,7 @@ The `crumbs_msg.h` header provides type-safe payload building and reading. This 
 crumbs_message_t msg;
 crumbs_msg_init(&msg);
 msg.type_id = SERVO_TYPE_ID;
-msg.command_type = SERVO_CMD_ANGLE;
+msg.opcode = SERVO_CMD_ANGLE;
 crumbs_msg_add_u8(&msg, servo_index);    // Which servo
 crumbs_msg_add_u16(&msg, 1500);          // Pulse width in μs
 
@@ -203,7 +203,7 @@ static inline int led_set_all(led_device_t *dev, uint8_t bitmask) {
     crumbs_message_t msg;
     crumbs_msg_init(&msg);
     msg.type_id = LED_TYPE_ID;
-    msg.command_type = LED_CMD_SET_ALL;
+    msg.opcode = LED_CMD_SET_ALL;
     crumbs_msg_add_u8(&msg, bitmask);
     return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
 }

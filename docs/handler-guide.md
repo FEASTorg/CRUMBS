@@ -20,7 +20,7 @@ All handlers use this signature:
 ```c
 typedef void (*crumbs_handler_fn)(
     crumbs_context_t *ctx,      // The CRUMBS context
-    uint8_t command_type,       // The command that triggered this handler
+    uint8_t opcode,       // The command that triggered this handler
     const uint8_t *data,        // Payload bytes (may be NULL if len==0)
     uint8_t data_len,           // Payload length (0–27)
     void *user_data             // Opaque pointer registered with handler
@@ -33,7 +33,7 @@ Use `crumbs_register_handler()` to associate a command with a function:
 
 ```c
 int crumbs_register_handler(crumbs_context_t *ctx,
-                            uint8_t command_type,
+                            uint8_t opcode,
                             crumbs_handler_fn fn,
                             void *user_data);
 ```
@@ -53,7 +53,7 @@ crumbs_register_handler(&ctx, 0x10, handle_led_query, &led_state);
 Remove a handler with:
 
 ```c
-int crumbs_unregister_handler(crumbs_context_t *ctx, uint8_t command_type);
+int crumbs_unregister_handler(crumbs_context_t *ctx, uint8_t opcode);
 ```
 
 Or call `crumbs_register_handler()` with `fn = NULL`.
@@ -63,7 +63,7 @@ Or call `crumbs_register_handler()` with `fn = NULL`.
 ```cpp
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include <crumbs_msg.h>
+#include <crumbs_message_helpers.h>
 
 #define I2C_ADDRESS 0x08
 
@@ -101,7 +101,7 @@ void handle_set_one(crumbs_context_t *c, uint8_t cmd,
 // Handler: Respond to state query
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
     reply->type_id = 0x01;
-    reply->command_type = 0x10;  // GET_STATE response
+    reply->opcode = 0x10;  // GET_STATE response
     crumbs_msg_init(reply);
     crumbs_msg_add_u8(reply, led_state);
 }
@@ -124,7 +124,7 @@ void loop() {
 
 ## Using Message Helpers
 
-The `crumbs_msg.h` helpers provide type-safe payload parsing:
+The `crumbs_message_helpers.h` helpers provide type-safe payload parsing:
 
 ```c
 // Reading values (peripheral handler)
@@ -193,7 +193,7 @@ build_flags = -DCRUMBS_MAX_HANDLERS=0
 When a message arrives:
 
 1. `on_message` callback is invoked first (if registered)
-2. Handler dispatch searches for a matching `command_type`
+2. Handler dispatch searches for a matching `opcode`
 3. If found, the handler is invoked with payload data
 
 Both mechanisms can coexist — use `on_message` for logging/validation, handlers for command processing.

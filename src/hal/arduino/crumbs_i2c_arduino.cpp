@@ -319,3 +319,12 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
 
     return (int)idx; /* number of bytes read (may be less than requested) */
 }
+
+/**
+ * @brief Arduino platform millisecond timer.
+ * @return Milliseconds since boot.
+ */
+uint32_t crumbs_arduino_millis(void)
+{
+    return millis();
+}

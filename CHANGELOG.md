@@ -4,11 +4,37 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
-## [0.9.x] - Message Builder/Reader Helpers
+## [0.9.5] - Foundation Revision
 
 ### Added
 
-- **Message Builder/Reader API** (`src/crumbs_msg.h`): Zero-overhead inline helpers for structured payload construction and reading
+- **Version Header** (`src/crumbs_version.h`): Runtime version query and conditional compilation
+  - `CRUMBS_VERSION_MAJOR`, `CRUMBS_VERSION_MINOR`, `CRUMBS_VERSION_PATCH`
+  - `CRUMBS_VERSION_STRING` - String representation ("0.9.5")
+  - `CRUMBS_VERSION` - Integer version (905 = major*10000 + minor*100 + patch)
+
+- **Platform Timing API**: Foundation for multi-frame timeout detection (v0.11.0)
+  - `crumbs_platform_millis_fn` typedef in `crumbs_i2c.h`
+  - `crumbs_arduino_millis()` - Arduino millisecond timer
+  - `crumbs_linux_millis()` - Linux CLOCK_MONOTONIC millisecond timer
+
+### Changed
+
+- **BREAKING**: Renamed `crumbs_msg.h` → `crumbs_message_helpers.h` for clarity
+  - Eliminates confusion with `crumbs_message.h` (structure definition)
+  - All includes and documentation updated
+
+- **BREAKING**: Renamed `command_type` field → `opcode` in `crumbs_message_t`
+  - Semantically correct terminology for protocol operations
+  - Updated all references across codebase, examples, tests, and documentation
+
+---
+
+## [0.9.4] - Message Builder/Reader Helpers
+
+### Added
+
+- **Message Builder/Reader API** (`src/crumbs_message_helpers.h`): Zero-overhead inline helpers for structured payload construction and reading
 
   - `crumbs_msg_init(msg)`: Initialize a message builder
   - `crumbs_msg_add_u8/u16/u32()`: Append unsigned integers (little-endian)
@@ -44,7 +70,7 @@ All notable changes to CRUMBS are documented in this file.
 
 ### Documentation
 
-- New documentation: `docs/message-helpers.md` — comprehensive guide to crumbs_msg.h
+- New documentation: `docs/message-helpers.md` — comprehensive guide to crumbs_message_helpers.h
 - Updated `docs/api-reference.md` with message helper API
 - Updated `docs/index.md` to reflect variable-length payload (was outdated)
 
@@ -59,9 +85,9 @@ All notable changes to CRUMBS are documented in this file.
 ### Added
 
 - **Command Handler Dispatch System**: Per-command-type handler registration for structured message processing
-  - `crumbs_handler_fn` typedef: `void (*)(crumbs_context_t*, uint8_t command_type, const uint8_t* data, uint8_t data_len, void* user_data)`
-  - `crumbs_register_handler(ctx, command_type, fn, user_data)`: Register handler for a command type
-  - `crumbs_unregister_handler(ctx, command_type)`: Clear handler for a command type
+  - `crumbs_handler_fn` typedef: `void (*)(crumbs_context_t*, uint8_t opcode, const uint8_t* data, uint8_t data_len, void* user_data)`
+  - `crumbs_register_handler(ctx, opcode, fn, user_data)`: Register handler for a command type
+  - `crumbs_unregister_handler(ctx, opcode)`: Clear handler for a command type
   - Handlers are invoked after `on_message` callback (if both are set)
   - O(1) dispatch via 256-entry lookup table per context
 - **Handler Examples**:
@@ -80,7 +106,7 @@ All code using CRUMBS must be updated.
 | Old Format (31 bytes fixed) | New Format (4–31 bytes variable) |
 | --------------------------- | -------------------------------- |
 | type_id (1)                 | type_id (1)                      |
-| command_type (1)            | command_type (1)                 |
+| opcode (1)            | opcode (1)                 |
 | data (28) — 7 × float32     | data_len (1) — 0–27              |
 | crc8 (1)                    | data (0–27) — raw bytes          |
 |                             | crc8 (1)                         |

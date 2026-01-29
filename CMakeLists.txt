@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(CRUMBS
-    VERSION 0.9.4
+    VERSION 0.9.5
     LANGUAGES C
 )
 
@@ -118,6 +118,10 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_peripheral_flow tests/test_peripheral_flow.c)
     target_link_libraries(test_peripheral_flow PRIVATE crumbs)
     add_test(NAME peripheral_flow_test COMMAND test_peripheral_flow)
+
+    add_executable(test_version tests/test_version.c)
+    target_link_libraries(test_version PRIVATE crumbs)
+    add_test(NAME version_test COMMAND test_version)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -137,7 +141,7 @@ install(FILES
     src/crumbs_i2c.h
     src/crumbs_linux.h
     src/crumbs_message.h
-    src/crumbs_msg.h
+    src/crumbs_message_helpers.h
     DESTINATION include/crumbs
 )
 

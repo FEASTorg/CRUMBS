@@ -16,7 +16,7 @@ static int test_crc_corruption_detected(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x99;
-    m.command_type = 0x42;
+    m.opcode = 0x42;
     m.data_len = 4;
     m.data[0] = 0x12;
     m.data[1] = 0x34;
@@ -64,7 +64,7 @@ static int test_crc_single_bit_flip(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x01;
-    m.command_type = 0x02;
+    m.opcode = 0x02;
     m.data_len = 2;
     m.data[0] = 0xAA;
     m.data[1] = 0x55;
@@ -95,7 +95,7 @@ static int test_crc_header_corruption(void)
     crumbs_message_t m;
     memset(&m, 0, sizeof(m));
     m.type_id = 0x10;
-    m.command_type = 0x20;
+    m.opcode = 0x20;
     m.data_len = 0;
 
     uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];

@@ -22,7 +22,7 @@ void handleMessage(crumbs_context_t *ctx, const crumbs_message_t *m)
     Serial.print(F("typeID="));
     Serial.print(m->type_id);
     Serial.print(F(" cmd="));
-    Serial.print(m->command_type);
+    Serial.print(m->opcode);
     Serial.print(F(" data_len="));
     Serial.print(m->data_len);
     Serial.print(F(" data: "));
@@ -54,7 +54,7 @@ void handleRequest(crumbs_context_t *ctx, crumbs_message_t *response)
     pulseActivity();
     // Build the response message; core will encode it & send on the bus.
     response->type_id = 1;      // slice type
-    response->command_type = 0; // status response
+    response->opcode = 0; // status response
 
     // Example status payload: 4 floats (16 bytes)
     // float[0]: sample analog value, float[1-2]: reserved, float[3]: uptime in seconds

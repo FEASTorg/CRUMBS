@@ -11,7 +11,7 @@
 /* ---- Test infrastructure ---------------------------------------------- */
 
 static int g_handler_call_count = 0;
-static uint8_t g_last_command_type = 0;
+static uint8_t g_last_opcode = 0;
 static uint8_t g_last_data[CRUMBS_MAX_PAYLOAD];
 static uint8_t g_last_data_len = 0;
 static void *g_last_user_data = NULL;
@@ -19,21 +19,21 @@ static void *g_last_user_data = NULL;
 static void reset_handler_state(void)
 {
     g_handler_call_count = 0;
-    g_last_command_type = 0;
+    g_last_opcode = 0;
     memset(g_last_data, 0, sizeof(g_last_data));
     g_last_data_len = 0;
     g_last_user_data = NULL;
 }
 
 static void test_handler(crumbs_context_t *ctx,
-                         uint8_t command_type,
+                         uint8_t opcode,
                          const uint8_t *data,
                          uint8_t data_len,
                          void *user_data)
 {
     (void)ctx;
     g_handler_call_count++;
-    g_last_command_type = command_type;
+    g_last_opcode = opcode;
     g_last_data_len = data_len;
     if (data && data_len > 0 && data_len <= CRUMBS_MAX_PAYLOAD)
     {
@@ -109,7 +109,7 @@ static int test_handler_overwrite(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x10;
+    msg.opcode = 0x10;
     msg.data_len = 2;
     msg.data[0] = 0xAA;
     msg.data[1] = 0xBB;
@@ -143,7 +143,7 @@ static int test_handler_dispatch(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x42;
+    msg.opcode = 0x42;
     msg.data_len = 3;
     msg.data[0] = 0x11;
     msg.data[1] = 0x22;
@@ -165,9 +165,9 @@ static int test_handler_dispatch(void)
         return 1;
     }
 
-    if (g_last_command_type != 0x42)
+    if (g_last_opcode != 0x42)
     {
-        fprintf(stderr, "handler got command_type 0x%02X, expected 0x42\n", g_last_command_type);
+        fprintf(stderr, "handler got opcode 0x%02X, expected 0x42\n", g_last_opcode);
         return 1;
     }
 
@@ -206,7 +206,7 @@ static int test_no_handler_registered(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x99;
+    msg.opcode = 0x99;
     msg.data_len = 1;
     msg.data[0] = 0xFF;
 
@@ -256,7 +256,7 @@ static int test_handler_with_on_message(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x77;
+    msg.opcode = 0x77;
     msg.data_len = 0;
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
@@ -295,7 +295,7 @@ static int test_handler_zero_data(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x05;
-    msg.command_type = 0x00;
+    msg.opcode = 0x00;
     msg.data_len = 0;
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
@@ -333,7 +333,7 @@ static int test_handler_max_data(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x0A;
-    msg.command_type = 0xFF;
+    msg.opcode = 0xFF;
     msg.data_len = CRUMBS_MAX_PAYLOAD;
     for (uint8_t i = 0; i < CRUMBS_MAX_PAYLOAD; ++i)
     {
@@ -431,7 +431,7 @@ static int test_handler_wrong_command_not_called(void)
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
     msg.type_id = 0x01;
-    msg.command_type = 0x99; /* Not registered */
+    msg.opcode = 0x99; /* Not registered */
     msg.data_len = 0;
 
     uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];

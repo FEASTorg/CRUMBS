@@ -111,7 +111,7 @@ static inline void test_msg_init(crumbs_message_t *msg, uint8_t type_id, uint8_t
 {
     memset(msg, 0, sizeof(*msg));
     msg->type_id = type_id;
-    msg->command_type = cmd;
+    msg->opcode = cmd;
 }
 
 /**
@@ -131,7 +131,7 @@ static inline void test_msg_create(crumbs_message_t *msg,
 {
     memset(msg, 0, sizeof(*msg));
     msg->type_id = type_id;
-    msg->command_type = cmd;
+    msg->opcode = cmd;
     if (data && data_len > 0 && data_len <= CRUMBS_MAX_PAYLOAD)
     {
         memcpy(msg->data, data, data_len);
