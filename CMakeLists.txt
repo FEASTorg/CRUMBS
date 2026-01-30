@@ -142,6 +142,7 @@ install(FILES
     src/crumbs_linux.h
     src/crumbs_message.h
     src/crumbs_message_helpers.h
+    src/crumbs_version.h
     DESTINATION include/crumbs
 )
 
