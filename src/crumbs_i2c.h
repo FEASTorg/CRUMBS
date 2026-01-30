@@ -9,6 +9,53 @@
  * @brief Lightweight HAL I²C primitive signatures used by CRUMBS adapters.
  */
 
+/* ============================================================================
+ * Timing Helper Macros
+ * ============================================================================ */
+
+/**
+ * @brief Calculate elapsed milliseconds (wraparound-safe).
+ *
+ * Uses unsigned subtraction which handles 32-bit wraparound correctly.
+ * Both platform timers wrap at ~49.7 days; this macro produces correct
+ * results even when 'now' has wrapped past 'start'.
+ *
+ * @param start Start time from platform millis function.
+ * @param now   Current time from platform millis function.
+ * @return Elapsed milliseconds (correct even across wraparound).
+ *
+ * Example:
+ * @code
+ * uint32_t start = crumbs_arduino_millis();
+ * // ... do work ...
+ * uint32_t elapsed = CRUMBS_ELAPSED_MS(start, crumbs_arduino_millis());
+ * @endcode
+ */
+#define CRUMBS_ELAPSED_MS(start, now) ((uint32_t)((now) - (start)))
+
+/**
+ * @brief Check if timeout has expired (wraparound-safe).
+ *
+ * @param start      Start time from platform millis function.
+ * @param now        Current time from platform millis function.
+ * @param timeout_ms Timeout duration in milliseconds.
+ * @return Non-zero if timeout has expired, zero otherwise.
+ *
+ * Example:
+ * @code
+ * uint32_t start = crumbs_linux_millis();
+ * while (!CRUMBS_TIMEOUT_EXPIRED(start, crumbs_linux_millis(), 1000)) {
+ *     // Wait up to 1 second
+ * }
+ * @endcode
+ */
+#define CRUMBS_TIMEOUT_EXPIRED(start, now, timeout_ms) \
+    (CRUMBS_ELAPSED_MS((start), (now)) >= (timeout_ms))
+
+/* ============================================================================
+ * I²C Function Signatures
+ * ============================================================================ */
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -76,7 +123,8 @@ extern "C"
      * @brief Platform millisecond timer function signature.
      *
      * Implementations should return monotonic milliseconds since boot.
-     * Used for multi-frame timeout detection (v0.11.0+).
+     * Use CRUMBS_ELAPSED_MS() or CRUMBS_TIMEOUT_EXPIRED() for wraparound-safe
+     * timeout calculations.
      *
      * @return Milliseconds elapsed since boot/epoch.
      */

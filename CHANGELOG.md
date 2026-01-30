@@ -17,6 +17,8 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_platform_millis_fn` typedef in `crumbs_i2c.h`
   - `crumbs_arduino_millis()` - Arduino millisecond timer
   - `crumbs_linux_millis()` - Linux CLOCK_MONOTONIC millisecond timer
+  - `CRUMBS_ELAPSED_MS(start, now)` - Wraparound-safe elapsed time calculation
+  - `CRUMBS_TIMEOUT_EXPIRED(start, now, timeout_ms)` - Wraparound-safe timeout check
 
 ### Changed
 
@@ -35,7 +37,6 @@ All notable changes to CRUMBS are documented in this file.
 ### Added
 
 - **Message Builder/Reader API** (`src/crumbs_message_helpers.h`): Zero-overhead inline helpers for structured payload construction and reading
-
   - `crumbs_msg_init(msg)`: Initialize a message builder
   - `crumbs_msg_add_u8/u16/u32()`: Append unsigned integers (little-endian)
   - `crumbs_msg_add_i8/i16/i32()`: Append signed integers (little-endian)
@@ -49,13 +50,11 @@ All notable changes to CRUMBS are documented in this file.
   - Header-only design: `static inline` functions for zero call overhead
 
 - **Example Command Headers** (`examples/common/`):
-
   - `led_commands.h`: LED device command definitions and sender functions
   - `servo_commands.h`: Servo device command definitions and sender functions
   - Demonstrates the "copy and customize" pattern for user commands
 
 - **Example Applications**:
-
   - `examples/arduino/handler_peripheral_led/`: LED control peripheral using handler dispatch
   - `examples/arduino/handler_peripheral_servo/`: Servo peripheral with message reading
   - `examples/linux/multi_handler_controller/`: Linux controller using multiple command headers
@@ -106,7 +105,7 @@ All code using CRUMBS must be updated.
 | Old Format (31 bytes fixed) | New Format (4–31 bytes variable) |
 | --------------------------- | -------------------------------- |
 | type_id (1)                 | type_id (1)                      |
-| opcode (1)            | opcode (1)                 |
+| opcode (1)                  | opcode (1)                       |
 | data (28) — 7 × float32     | data_len (1) — 0–27              |
 | crc8 (1)                    | data (0–27) — raw bytes          |
 |                             | crc8 (1)                         |

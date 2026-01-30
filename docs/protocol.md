@@ -23,6 +23,7 @@
 - Maximum frame size is 31 bytes to fit within Arduino Wire's 32-byte buffer.
 - CRC excludes `address` and the CRC byte itself.
 - Payload is opaque bytes; applications can encode floats, ints, structs, etc.
+- **Opcode convention**: Separate SET and GET ranges to avoid reply ambiguity. Common: SET `0x01`-`0x7F`, GET `0x80`-`0xFD`. Each type_id can choose allocation based on needs.
 
 ## Communication Patterns
 

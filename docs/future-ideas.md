@@ -7,3 +7,5 @@
   - CONFIG_GET/CONFIG_SET (device configuration)
   - STATS (performance/diagnostic counters)
   - Other protocol extensions as needs emerge
+
+- use the 32nd byte for the family type if its a registered family? like 0x01 for reference family, 0x02 for slice family, etc. then for custom families it can be 0x00 or 0xFF or something. maybe 0x00 for reference and 0xFF for custom, and 0x01-0xFE for (official) registered families? This would require more abstraction in the controller code but would allow it to handle multiple families on the same bus

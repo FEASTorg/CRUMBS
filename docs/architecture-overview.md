@@ -2,11 +2,11 @@
 
 ## What is CRUMBS?
 
-CRUMBS is a lightweight I²C messaging protocol enabling controllers (e.g., SBCs such as Raspberry Pi) to communicate with peripheral modules (e.g. MCUs such as Arduino) over a shared bus. The library provides the wire protocol (encoding, CRC, routing) but remains **protocol-agnostic**—it does not define specific commands. Instead, module developers create "families" of devices with their own type identifiers and command sets, allowing diverse ecosystems to be built on top of the CRUMBS transport layer.
+CRUMBS is a lightweight I²C messaging protocol enabling controllers (e.g., SBCs such as Raspberry Pi) to communicate with peripheral modules (e.g. MCUs such as Arduino) over a shared bus. The library provides the wire protocol (encoding, CRC, routing) but remains **protocol-agnostic**—it does not define specific commands. Instead, developers create "module families"—collections of device types with shared headers defining type identifiers and command vocabularies. A controller is compiled for one family and can communicate with any module type within that family.
 
 **Key Principle**: CRUMBS is the transport layer. Module families define the application layer.
 
-**Key Goal**: Enable modular systems where inexpensive microcontrollers act as intelligent peripherals on an I²C bus. CRUMBS handles the communication so you can focus on what each module does and how they interact, not how messages get there.
+**Key Constraint**: A single I²C bus uses one module family. The controller is compiled with that family's headers and only understands those type_ids and opcodes.
 
 ---
 
@@ -28,17 +28,28 @@ Four distinct roles interact with CRUMBS:
 
 ### Compile-Time Vocabulary Binding
 
-Controllers and peripherals share a common "vocabulary" through header files. Module developers publish headers like:
+A module family defines a set of device types, each with a unique `type_id` and command vocabulary. Controllers and peripherals share this vocabulary through header files:
 
 ```c
-// heater_module.h (published by module developer)
-#define HEATER_TYPE_ID 0x10
-#define HEATER_CMD_SET_TEMP  0x01
-#define HEATER_CMD_GET_TEMP  0x02
-#define HEATER_CMD_VERSION   0xFD
+// Example: lhwit_family headers (reference implementation)
+// led_module.h
+#define LED_TYPE_ID          0x01
+#define LED_CMD_SET_ALL      0x01
+#define LED_CMD_SET_ONE      0x02
+#define LED_OP_GET_STATE     0x80
+
+// servo_module.h
+#define SERVO_TYPE_ID        0x02
+#define SERVO_CMD_SET_POS    0x01
+#define SERVO_OP_GET_POS     0x80
+
+// calculator_module.h
+#define CALC_TYPE_ID         0x03
+#define CALC_CMD_ADD         0x01
+#define CALC_OP_GET_RESULT   0x80
 ```
 
-System integrators compile their controller software with headers for the module families they intend to use. This establishes what commands the controller can send and how to interpret responses. The same headers are used by peripheral firmware to implement handlers.
+The controller is compiled with headers for its target family. This establishes what module types exist (`type_id` values) and what commands each type understands (opcodes). The same headers are used by peripheral firmware to implement handlers.
 
 ### Physical Deployment
 
@@ -46,51 +57,67 @@ Modules connect to the I²C bus, each at a unique 7-bit address (0x08-0x77). Add
 
 ### Discovery & Identification
 
-**Bus Scanning**: Controller uses `crumbs_controller_scan_for_crumbs()` to find which addresses respond to CRUMBS messages. This identifies _where_ devices are, not _what_ they are.
+**Bus Scanning**: Controller uses `crumbs_controller_scan_for_crumbs()` to find which addresses respond with valid CRUMBS messages. The response contains the peripheral's `type_id`, which tells the controller what type of module is at that address.
 
-**Type Identification**: Controller queries each discovered address (typically using reserved opcode 0xFE for IDENTIFY) to retrieve:
+**How It Works**:
 
-- `type_id` - Identifies the module family (links to known headers)
-- Optional metadata (firmware version, capabilities, serial number)
+1. Scan attempts to read from each address
+2. If response is a valid CRUMBS message (correct CRC), device is discovered
+3. The decoded message contains `type_id` - the controller looks this up in its compiled headers to know what type of module it is (LED, servo, calculator, etc.)
+4. No special IDENTIFY command needed - any valid response reveals the type
+
+**Enhanced Discovery** (v0.10.0+): Use `crumbs_controller_scan_for_crumbs_with_types()` to get both addresses and type_ids in one call:
+
+```c
+uint8_t addrs[16];
+uint8_t types[16];
+int count = crumbs_controller_scan_for_crumbs_with_types(
+    &ctx, 0x08, 0x77, 0, write_fn, read_fn, io_ctx,
+    addrs, types, 16, 10000);
+
+for (int i = 0; i < count; i++) {
+    printf("Address 0x%02X -> type_id 0x%02X\n", addrs[i], types[i]);
+}
+```
 
 **Runtime Mapping**: Controller builds a device map: `{address → type_id}`. Example:
 
 ```
-0x08 → HEATER (type 0x10)
-0x09 → HEATER (type 0x10)
-0x0A → HEATER (type 0x10)
-0x0B → FAN (type 0x20)
+0x20 → LED (type 0x01)
+0x21 → LED (type 0x01)
+0x30 → SERVO (type 0x02)
+0x40 → CALCULATOR (type 0x03)
 ```
 
-The controller now knows "three heater modules and one fan module are present."
+The controller now knows "two LED modules, one servo, and one calculator are present" and can send the appropriate commands to each based on its type.
 
 ### Operation
 
-Controllers send messages to specific addresses using opcodes from the appropriate module family header:
+Controllers send messages to specific addresses using opcodes from the module's header:
 
 ```c
-// Send command to heater at address 0x08
+// Send command to servo at address 0x30
 crumbs_message_t msg;
 crumbs_msg_init(&msg);
-msg.type_id = HEATER_TYPE_ID;
-msg.opcode = HEATER_CMD_SET_TEMP;
-crumbs_msg_add_float(&msg, 75.0f);  // Set target to 75°C
-crumbs_controller_send(&ctx, 0x08, &msg, write_fn, io_ctx);
+msg.type_id = SERVO_TYPE_ID;
+msg.opcode = SERVO_CMD_SET_POS;
+crumbs_msg_add_uint8(&msg, 90);  // Set position to 90°
+crumbs_controller_send(&ctx, 0x30, &msg, write_fn, io_ctx);
 ```
 
-**Multiple Instances**: Multiple peripherals of the same type_id share command vocabulary but operate independently. Three heater modules might control different zones, all responding to the same opcode set.
+**Multiple Instances**: Multiple peripherals of the same type_id share command vocabulary but operate independently. Two LED modules at different addresses respond to the same opcodes but control different physical LEDs.
 
 ### Optional Standard Commands
 
-CRUMBS does **not** enforce specific opcodes. However, the library provides **opt-in helper functions** for common patterns:
+CRUMBS does **not** enforce specific opcodes. However, the library reserves one opcode:
 
-- `crumbs_register_identify(ctx, opcode, ...)` - Device discovery (default 0xF8)
-- `crumbs_register_ping(ctx, opcode)` - Health monitoring (default 0xFE)  
-- `crumbs_register_reset(ctx, opcode, callback)` - Soft reset (default 0xFF)
+- `0xFE` - **SET_REPLY**: Controller tells peripheral which data to stage for the next I²C read
 
-**Module developer choice:** Register if you want gateway compatibility. Skip if not needed - opcodes remain available for module-specific commands. Opcode parameter is customizable if defaults conflict with your design.
+Additionally, module developers may use common conventions:
 
-**Gateway compatibility:** Gateways work best with devices using standard commands at default opcodes, but this is a guideline, not a requirement. The protocol remains fully agnostic.
+- `0xFF` - Error responses (recommended convention)
+- `0x80-0xFD` - GET opcodes (reply data types)
+- `0x00-0x7F` - SET/command opcodes
 
 ### Versioning & Compatibility
 
@@ -104,18 +131,18 @@ Module families should implement version reporting (see [Versioning Guide](../ro
 
 Higher-level services can expose module functionality over networks (REST, MQTT, etc.). The gateway maintains a registry of connected devices and translates network requests into CRUMBS messages, abstracting I²C details from remote clients.
 
-Example: `/devices/heater-0x08/temperature` maps to `crumbs_controller_send(0x08, HEATER_CMD_GET_TEMP)`
+Example: `/devices/servo-0x30/position` maps to `crumbs_controller_send(0x30, SERVO_CMD_SET_POS)`
 
 ---
 
 ## Design Philosophy
 
-**Protocol-Agnostic Core**: CRUMBS does not enforce specific typeIDs or opcodes. The library handles framing, CRC, and transport — application semantics are defined by module families.
+**Protocol-Agnostic Core**: CRUMBS does not enforce specific type_ids or opcodes. The library handles framing, CRC, and transport — application semantics are defined by module families.
 
-**Decentralized Standards**: There is no central registry of typeIDs. Module developers choose their own (with best-effort collision avoidance). In the future, community-driven "device classes" may emerge for common module types.
+**One Family Per Bus**: A controller is compiled for one module family and only understands that family's type_ids and opcodes. You cannot mix modules from different families on the same I²C bus.
 
-**Compile-Time Safety**: Shared headers provide type safety and documentation. If controller expects `HEATER_CMD_SET_TEMP` to take a float, the header and peripheral firmware must agree.
+**Compile-Time Safety**: Shared headers provide type safety and documentation. If controller expects `SERVO_CMD_SET_POS` to take a uint8, the header and peripheral firmware must agree.
 
-**Runtime Flexibility**: Controllers discover and adapt to what's physically connected. Adding a new heater module requires no code changes—just plug it in at an unused address.
+**Runtime Flexibility**: Controllers discover and adapt to what's physically connected. Adding a new LED module requires no code changes—just plug it in at an unused address.
 
-**Reference Implementation**: The CRUMBS repository includes an internal "test family" of simple modules (LEDs, servos, basic sensors) with published headers. This family uses non-reserved typeIDs and serves as a working example for module developers to study. These test modules enable hardware validation and demonstrate best practices for creating module families. These also provide the library maintainers with a simple hardware test harness as well as a baseline for regression testing and performance benchmarking.
+**Reference Implementation**: The CRUMBS repository includes an internal "lhwit_family" of simple modules (LEDs, servos, calculators) with published headers. This family serves as a working example for developers to study, enables hardware validation, and provides a baseline for regression testing.
