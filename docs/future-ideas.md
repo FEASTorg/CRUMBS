@@ -1,0 +1,9 @@
+# Future Ideas
+
+- Maybe in the future we could have "classes" of devices (similar to USB device classes) that have pre-defined typeIDs and opcodes to make it easier for others to develop compatible hardware/firmware, but this is not a requirement of the library itself.
+
+- reserved opcodes
+  - CAPABILITIES bitmap (multi-frame support, low-power modes, streaming)
+  - CONFIG_GET/CONFIG_SET (device configuration)
+  - STATS (performance/diagnostic counters)
+  - Other protocol extensions as needs emerge

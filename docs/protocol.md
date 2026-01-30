@@ -4,18 +4,18 @@
 
 ```yml
 ┌──────────┬──────────┬──────────┬─────────────────┬──────────┐
-│  typeID  │  opcode  │ data_len │   data[0..N]    │   crc8   │
+│  type_id │  opcode  │ data_len │   data[0..N]    │   crc8   │
 │ (1 byte) │ (1 byte) │ (1 byte) │ (0–27 bytes)    │ (1 byte) │
 └──────────┴──────────┴──────────┴─────────────────┴──────────┘
 ```
 
-| Field         | Size       | Description                                              |
-| ------------- | ---------- | -------------------------------------------------------- |
-| `typeID`      | 1 byte     | Module type (sensor=1, motor=2, etc.)                    |
-| `opcode`      | 1 byte     | Command (read=0, set=1, reset=2, etc.)                   |
-| `data_len`    | 1 byte     | Number of payload bytes (0–27)                           |
-| `data[]`      | 0–27 bytes | Opaque payload data (user-defined format)                |
-| `crc8`        | 1 byte     | CRC-8 over `typeID`, `opcode`, `data_len`, `data[]`      |
+| Field      | Size       | Description                                          |
+| ---------- | ---------- | ---------------------------------------------------- |
+| `type_id`  | 1 byte     | Module type identifier (user-defined)                |
+| `opcode`   | 1 byte     | Command/operation identifier (user-defined)          |
+| `data_len` | 1 byte     | Number of payload bytes (0–27)                       |
+| `data[]`   | 0–27 bytes | Opaque payload data (user-defined format)            |
+| `crc8`     | 1 byte     | CRC-8 over `type_id`, `opcode`, `data_len`, `data[]` |
 
 **Notes**:
 
@@ -31,23 +31,6 @@ Controller [4–31 byte message]> Peripheral    # Send command
 Controller [I2C request]> Peripheral          # Request data
 Controller <[4–31 byte response] Peripheral   # Response
 ```
-
-## Standard Values
-
-### Module Types
-
-- `0`: Generic
-- `1`: Sensor
-- `2`: Actuator
-- `3`: Display
-- `4`: Input
-
-### Command Types
-
-- `0`: Read data
-- `1`: Set parameters
-- `2`: Reset
-- `3`: Calibrate
 
 ### CRC
 
