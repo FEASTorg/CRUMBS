@@ -7,11 +7,17 @@
  * included in non-Linux builds.
  */
 
+/* Enable POSIX functions like clock_gettime on older glibc */
+#if !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE < 199309L
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+
 #include "crumbs_linux.h"
 
 #include <string.h> /* memset */
 #include <errno.h>
-#include <time.h>   /* clock_gettime */
+#include <time.h>   /* clock_gettime, CLOCK_MONOTONIC */
 
 #include "crumbs_crc.h" /* for CRUMBS_MESSAGE_MAX_SIZE, etc., via crumbs.h tree */
 
