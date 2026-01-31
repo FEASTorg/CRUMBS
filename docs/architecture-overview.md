@@ -18,7 +18,7 @@ Four distinct roles interact with CRUMBS:
 
 **System Integrators** select modules, assign I²C addresses, deploy hardware, and build controller applications that orchestrate multiple peripherals. They are the primary consumers of the CRUMBS library. _(Primary stakeholders)_
 
-**Module Developers** design and implement peripheral firmware that communicates via CRUMBS. They publish headers defining their module family's type*id and command vocabulary (opcodes). *(Application-layer developers)\_
+**Module Developers** design and implement peripheral firmware that communicates via CRUMBS. They publish headers defining their module family's typeID and command vocabulary (opcodes). _(Application-layer developers)_
 
 **Library Maintainers** develop and maintain the CRUMBS core library itself, ensuring it remains portable, efficient, and protocol-agnostic. _(Platform/framework developers)_
 
@@ -82,7 +82,7 @@ for (int i = 0; i < count; i++) {
 
 **Runtime Mapping**: Controller builds a device map: `{address → type_id}`. Example:
 
-```
+```text
 0x20 → LED (type 0x01)
 0x21 → LED (type 0x01)
 0x30 → SERVO (type 0x02)

@@ -14,6 +14,8 @@
 
 CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
+> *So you've mastered bits and bytes, maybe toiled with nibbles and words—get ready to indulge in some serious crumb crunching!*
+
 ## Features
 
 - **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
