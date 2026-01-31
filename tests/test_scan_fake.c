@@ -150,6 +150,121 @@ static int test_scan_empty_range(void)
     return 0;
 }
 
+static int test_scan_with_types(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    uint8_t found[16];
+    uint8_t types[16];
+    memset(types, 0xFF, sizeof(types));
+
+    int n = crumbs_controller_scan_for_crumbs_with_types(&ctx, 0x03, 0x20, 0 /* non-strict */,
+                                                         fake_write, fake_read, NULL,
+                                                         found, types, sizeof(found), 10000);
+
+    if (n < 0)
+    {
+        fprintf(stderr, "scan_with_types: scan failed rc=%d\n", n);
+        return 1;
+    }
+
+    /* Expect to find both devices with correct type_ids */
+    /* fake_read sets type_id = addr, so DEV_A=0x08 has type_id=0x08 */
+    int sawA = 0, sawB = 0;
+    uint8_t typeA = 0, typeB = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        if (found[i] == DEV_A)
+        {
+            sawA = 1;
+            typeA = types[i];
+        }
+        if (found[i] == DEV_B)
+        {
+            sawB = 1;
+            typeB = types[i];
+        }
+    }
+
+    if (!sawA || !sawB)
+    {
+        fprintf(stderr, "scan_with_types: did not find expected devices: sawA=%d sawB=%d n=%d\n",
+                sawA, sawB, n);
+        return 1;
+    }
+
+    if (typeA != DEV_A)
+    {
+        fprintf(stderr, "scan_with_types: wrong type_id for DEV_A: got 0x%02X, expected 0x%02X\n",
+                typeA, DEV_A);
+        return 1;
+    }
+
+    if (typeB != DEV_B)
+    {
+        fprintf(stderr, "scan_with_types: wrong type_id for DEV_B: got 0x%02X, expected 0x%02X\n",
+                typeB, DEV_B);
+        return 1;
+    }
+
+    printf("  scan with types: PASS\n");
+    return 0;
+}
+
+static int test_scan_with_types_null_types(void)
+{
+    crumbs_context_t ctx;
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    uint8_t found[16];
+
+    /* types=NULL should still work (just don't return types) */
+    int n = crumbs_controller_scan_for_crumbs_with_types(&ctx, 0x03, 0x20, 0,
+                                                         fake_write, fake_read, NULL,
+                                                         found, NULL, sizeof(found), 10000);
+
+    if (n < 0)
+    {
+        fprintf(stderr, "scan_with_types_null: scan failed rc=%d\n", n);
+        return 1;
+    }
+
+    if (n < 2)
+    {
+        fprintf(stderr, "scan_with_types_null: expected at least 2 devices, got %d\n", n);
+        return 1;
+    }
+
+    printf("  scan with types (NULL types): PASS\n");
+    return 0;
+}
+
+static int test_scan_null_ctx_strict(void)
+{
+    /* ctx=NULL should work in strict mode (no probe writes needed) */
+    uint8_t found[16];
+
+    int n = crumbs_controller_scan_for_crumbs(NULL, 0x03, 0x20, 1 /* strict */,
+                                              NULL, fake_read, NULL, found, sizeof(found), 10000);
+
+    if (n < 0)
+    {
+        fprintf(stderr, "scan_null_ctx_strict: scan failed rc=%d\n", n);
+        return 1;
+    }
+
+    /* Should still find devices via direct read */
+    if (n < 2)
+    {
+        fprintf(stderr, "scan_null_ctx_strict: expected 2 devices, got %d\n", n);
+        return 1;
+    }
+
+    printf("  scan null ctx (strict): PASS\n");
+    return 0;
+}
+
 int main(void)
 {
     int failures = 0;
@@ -159,6 +274,9 @@ int main(void)
     failures += test_scan_finds_devices();
     failures += test_scan_rejects_noncrumbs();
     failures += test_scan_empty_range();
+    failures += test_scan_with_types();
+    failures += test_scan_with_types_null_types();
+    failures += test_scan_null_ctx_strict();
 
     if (failures == 0)
     {

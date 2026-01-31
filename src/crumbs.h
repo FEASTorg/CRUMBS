@@ -78,6 +78,17 @@ extern "C"
 #endif
 
     /**
+     * @brief Reserved opcode for SET_REPLY command.
+     *
+     * When a peripheral receives a message with opcode 0xFE, the library
+     * automatically stores the first payload byte in ctx->requested_opcode.
+     * This opcode is NOT dispatched to user handlers or on_message callbacks.
+     *
+     * Wire format: [type_id][0xFE][0x01][target_opcode][CRC8]
+     */
+#define CRUMBS_CMD_SET_REPLY 0xFE
+
+    /**
      * @brief Role of a CRUMBS endpoint on the I2C bus.
      */
     typedef enum
@@ -152,6 +163,18 @@ extern "C"
         crumbs_message_cb_t on_message; /**< Called when a message is received (peripheral). */
         crumbs_request_cb_t on_request; /**< Called when the bus master requests a reply. */
         void *user_data;                /**< Opaque pointer for user code (forwarded to callbacks). */
+
+        /**
+         * @brief Target opcode set by SET_REPLY command (0xFE).
+         *
+         * When a controller sends SET_REPLY with a target opcode, the library
+         * stores it here. The user's on_request callback should switch on this
+         * value to determine which data to return.
+         *
+         * Initialized to 0. By convention, opcode 0 means "default reply"
+         * (recommended: return device/version info).
+         */
+        uint8_t requested_opcode;
 
 #if CRUMBS_MAX_HANDLERS > 0
         /** @name Command Handler Dispatch Table
@@ -295,14 +318,17 @@ extern "C"
      * @brief Probe an I2C address range for CRUMBS-capable devices.
      *
      * The function attempts to read a CRUMBS frame and decode it. In
-     * non-strict mode a small probe write may be issued to stimulate a reply.
+     * non-strict mode a probe write may be issued to stimulate a reply.
      *
-     * @param ctx Optional controller context pointer (may be NULL).
+     * This is a convenience wrapper around crumbs_controller_scan_for_crumbs_with_types()
+     * that discards type information.
+     *
+     * @param ctx Controller context (may be NULL for strict mode; required for probe writes).
      * @param start_addr Address range start (inclusive).
      * @param end_addr Address range end (inclusive).
-     * @param strict Non-zero to require a strict read; 0 to use a probe write.
-     * @param write_fn Optional write function used to stimulate replies.
-     * @param read_fn Read function to use for data-phase reads.
+     * @param strict Non-zero for strict read-only; 0 to also try probe writes.
+     * @param write_fn Write function for probe writes (may be NULL if strict).
+     * @param read_fn Read function to use for reading frames.
      * @param io_ctx Opaque I/O context forwarded to read/write callbacks.
      * @param found Output buffer to receive discovered addresses.
      * @param max_found Capacity of @p found buffer.
@@ -319,6 +345,42 @@ extern "C"
                                           uint8_t *found,
                                           size_t max_found,
                                           uint32_t timeout_us);
+
+    /**
+     * @brief Probe an I2C address range for CRUMBS-capable devices with type IDs.
+     *
+     * Attempts to read a CRUMBS frame from each address in the range and
+     * validates via CRC decode. Returns both addresses and type_id values.
+     *
+     * In strict mode, only direct reads are attempted. In non-strict mode,
+     * if a direct read fails, a probe write is sent first to stimulate devices
+     * that only respond after being written to.
+     *
+     * @param ctx Controller context (may be NULL for strict mode; required for probe writes).
+     * @param start_addr Address range start (inclusive).
+     * @param end_addr Address range end (inclusive).
+     * @param strict Non-zero for strict read-only; 0 to also try probe writes.
+     * @param write_fn Write function for probe writes (may be NULL if strict).
+     * @param read_fn Read function to use for reading frames.
+     * @param io_ctx Opaque I/O context forwarded to read/write callbacks.
+     * @param found Output buffer to receive discovered addresses.
+     * @param types Output buffer for type_id from each device (parallel to found).
+     *              May be NULL if type IDs are not needed.
+     * @param max_found Capacity of @p found (and @p types) buffers.
+     * @param timeout_us Read timeout hint in microseconds.
+     * @return Number of discovered devices (>=0) or negative on error.
+     */
+    int crumbs_controller_scan_for_crumbs_with_types(const crumbs_context_t *ctx,
+                                                     uint8_t start_addr,
+                                                     uint8_t end_addr,
+                                                     int strict,
+                                                     crumbs_i2c_write_fn write_fn,
+                                                     crumbs_i2c_read_fn read_fn,
+                                                     void *io_ctx,
+                                                     uint8_t *found,
+                                                     uint8_t *types,
+                                                     size_t max_found,
+                                                     uint32_t timeout_us);
 
     /**
      * @brief Process raw bytes received by a peripheral HAL.

@@ -59,3 +59,46 @@ float value = 3.14f;
 m.data_len = sizeof(float);
 memcpy(m.data, &value, sizeof(float));
 ```
+
+## Reserved Opcodes
+
+CRUMBS reserves certain opcode values for library-level functionality:
+
+| Opcode | Name       | Description                                       |
+| ------ | ---------- | ------------------------------------------------- |
+| `0xFE` | SET_REPLY  | Library-handled: sets target opcode for next read |
+| `0xFF` | (Reserved) | Reserved for future use                           |
+
+### SET_REPLY (0xFE)
+
+The SET_REPLY command allows a controller to specify which data a peripheral
+should return on the next read. The library automatically intercepts this
+opcode and stores the target in `ctx->requested_opcode`.
+
+**Wire Format:**
+
+```yml
+┌──────────┬──────────┬──────────┬───────────────┬──────────┐
+│  type_id │   0xFE   │   0x01   │ target_opcode │   crc8   │
+│ (1 byte) │ (1 byte) │ (1 byte) │   (1 byte)    │ (1 byte) │
+└──────────┴──────────┴──────────┴───────────────┴──────────┘
+```
+
+**Workflow:**
+
+```yml
+1. Controller ──[SET_REPLY(0x10)]──> Peripheral   # "I want opcode 0x10"
+2. Library intercepts, stores ctx->requested_opcode = 0x10
+3. Controller ──[I2C read request]──> Peripheral
+4. Peripheral's on_request switches on ctx->requested_opcode
+5. Controller <──[reply with opcode 0x10 data]── Peripheral
+```
+
+**Properties:**
+
+- SET_REPLY is NOT dispatched to user handlers or `on_message` callbacks
+- `requested_opcode` persists until another SET_REPLY is received
+- Initial value is `0x00` (by convention: device/version info)
+- Empty SET_REPLY payload is ignored (no change to `requested_opcode`)
+
+See [versioning.md](versioning.md) for the opcode 0x00 convention.

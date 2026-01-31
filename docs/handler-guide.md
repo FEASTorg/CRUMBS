@@ -96,10 +96,27 @@ void handle_set_one(crumbs_context_t *c, uint8_t cmd,
     }
 }
 
-// Handler: Respond to state query
+// Handler: Respond to state query using SET_REPLY pattern
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
-    crumbs_msg_init(reply, 0x01, 0x10);  // type=LED, opcode=GET_STATE response
-    crumbs_msg_add_u8(reply, led_state);
+    switch (ctx->requested_opcode)
+    {
+        case 0x00:  // Default: device/version info
+            crumbs_msg_init(reply, 0x01, 0x00);
+            crumbs_msg_add_u16(reply, CRUMBS_VERSION);
+            crumbs_msg_add_u8(reply, 1);  // module major
+            crumbs_msg_add_u8(reply, 0);  // module minor
+            crumbs_msg_add_u8(reply, 0);  // module patch
+            break;
+
+        case 0x10:  // LED state query
+            crumbs_msg_init(reply, 0x01, 0x10);
+            crumbs_msg_add_u8(reply, led_state);
+            break;
+
+        default:  // Unknown opcode
+            crumbs_msg_init(reply, 0x01, ctx->requested_opcode);
+            break;
+    }
 }
 
 void setup() {

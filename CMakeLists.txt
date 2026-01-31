@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(CRUMBS
-    VERSION 0.9.5
+    VERSION 0.10.0
     LANGUAGES C
 )
 
@@ -130,6 +130,14 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_version tests/test_version.c)
     target_link_libraries(test_version PRIVATE crumbs)
     add_test(NAME version_test COMMAND test_version)
+
+    add_executable(test_set_reply tests/test_set_reply.c)
+    target_link_libraries(test_set_reply PRIVATE crumbs)
+    add_test(NAME set_reply_test COMMAND test_set_reply)
+
+    add_executable(test_reply_flow tests/test_reply_flow.c)
+    target_link_libraries(test_reply_flow PRIVATE crumbs)
+    add_test(NAME reply_flow_test COMMAND test_reply_flow)
 endif()
 
 # -----------------------------------------------------------------------------
