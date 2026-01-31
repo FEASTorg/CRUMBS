@@ -128,6 +128,87 @@ crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
 
 See `examples/arduino/handler_peripheral_led/` and `examples/linux/multi_handler_controller/` for complete working examples.
 
+## SET_REPLY Query Pattern
+
+The SET_REPLY mechanism allows controllers to request specific data from peripherals.
+The library handles `0xFE` automatically and stores the target opcode.
+
+### Peripheral with SET_REPLY
+
+```cpp
+#include <crumbs.h>
+#include <crumbs_arduino.h>
+#include <crumbs_message_helpers.h>
+
+#define MY_TYPE_ID       0x42
+#define MODULE_VER_MAJ   1
+#define MODULE_VER_MIN   0
+#define MODULE_VER_PAT   0
+
+static crumbs_context_t ctx;
+static uint16_t sensor_value = 0;
+
+void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+{
+    switch (ctx->requested_opcode)
+    {
+        case 0x00:  // Default: device/version info
+            crumbs_msg_init(reply, MY_TYPE_ID, 0x00);
+            crumbs_msg_add_u16(reply, CRUMBS_VERSION);
+            crumbs_msg_add_u8(reply, MODULE_VER_MAJ);
+            crumbs_msg_add_u8(reply, MODULE_VER_MIN);
+            crumbs_msg_add_u8(reply, MODULE_VER_PAT);
+            break;
+
+        case 0x10:  // Sensor reading
+            crumbs_msg_init(reply, MY_TYPE_ID, 0x10);
+            crumbs_msg_add_u16(reply, sensor_value);
+            break;
+
+        default:  // Unknown opcode
+            crumbs_msg_init(reply, MY_TYPE_ID, ctx->requested_opcode);
+            break;
+    }
+}
+
+void setup() {
+    crumbs_arduino_init_peripheral(&ctx, 0x10);
+    crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
+}
+
+void loop() {
+    sensor_value = analogRead(A0);  // Update sensor reading
+    delay(100);
+}
+```
+
+### Controller Querying Sensor Data
+
+```c
+#include <crumbs.h>
+#include <crumbs_message_helpers.h>
+
+// Step 1: Send SET_REPLY to request sensor data (opcode 0x10)
+crumbs_message_t set_reply;
+crumbs_msg_init(&set_reply, 0, CRUMBS_CMD_SET_REPLY);
+crumbs_msg_add_u8(&set_reply, 0x10);  // target opcode
+crumbs_controller_send(&ctx, 0x10, &set_reply, write_fn, io_ctx);
+
+// Step 2: Read the response
+uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
+int n = read_fn(io_ctx, 0x10, buf, sizeof(buf), 50000);
+if (n >= 4)
+{
+    crumbs_message_t reply;
+    if (crumbs_decode_message(buf, n, &reply, NULL) == 0)
+    {
+        uint16_t sensor;
+        crumbs_msg_read_u16(reply.data, reply.data_len, 0, &sensor);
+        printf("Sensor value: %u\n", sensor);
+    }
+}
+```
+
 ## Message Helpers Pattern
 
 The `crumbs_message_helpers.h` header provides type-safe payload building and reading. This pattern is cleaner than manual byte manipulation:

@@ -59,6 +59,7 @@ void crumbs_init(crumbs_context_t *ctx,
     ctx->on_message = NULL;
     ctx->on_request = NULL;
     ctx->user_data = NULL;
+    ctx->requested_opcode = 0u; /* Default: opcode 0 (device info by convention) */
 
     /*
      * Handler arrays are left untouched. If the context is in static storage,
@@ -406,6 +407,24 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
      */
     msg.address = ctx->address;
 
+    /*
+     * Intercept SET_REPLY (0xFE) before user callbacks.
+     * Store the target opcode and return without dispatching to user.
+     */
+    if (msg.opcode == CRUMBS_CMD_SET_REPLY)
+    {
+        if (msg.data_len >= 1)
+        {
+            ctx->requested_opcode = msg.data[0];
+            CRUMBS_DBG("rx: SET_REPLY target=0x%02X\n", ctx->requested_opcode);
+        }
+        else
+        {
+            CRUMBS_DBG("rx: SET_REPLY with no payload, ignoring\n");
+        }
+        return 0; /* Do not dispatch to user handlers */
+    }
+
     /* Invoke general on_message callback if set. */
     if (ctx->on_message)
     {
@@ -495,20 +514,28 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
 }
 
 /**
- * @brief Probe an address range looking for CRUMBS-capable devices.
+ * @brief Probe an address range looking for CRUMBS-capable devices with type IDs.
+ *
+ * This is the core scan implementation. It attempts to read a CRUMBS frame
+ * from each address and validates it via CRC. In non-strict mode, a probe
+ * write is sent first to stimulate replies from devices that only respond
+ * after being written to.
+ *
+ * @param types Optional output buffer for type_id from each device (may be NULL).
  */
-int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
-                                      uint8_t start_addr,
-                                      uint8_t end_addr,
-                                      int strict,
-                                      crumbs_i2c_write_fn write_fn,
-                                      crumbs_i2c_read_fn read_fn,
-                                      void *io_ctx,
-                                      uint8_t *found,
-                                      size_t max_found,
-                                      uint32_t timeout_us)
+int crumbs_controller_scan_for_crumbs_with_types(const crumbs_context_t *ctx,
+                                                 uint8_t start_addr,
+                                                 uint8_t end_addr,
+                                                 int strict,
+                                                 crumbs_i2c_write_fn write_fn,
+                                                 crumbs_i2c_read_fn read_fn,
+                                                 void *io_ctx,
+                                                 uint8_t *found,
+                                                 uint8_t *types,
+                                                 size_t max_found,
+                                                 uint32_t timeout_us)
 {
-    if (!ctx || !read_fn || !found || max_found == 0u)
+    if (!read_fn || !found || max_found == 0u)
         return -1; /* invalid args */
 
     if (start_addr > end_addr)
@@ -528,7 +555,11 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
             if (crumbs_decode_message(buf, (size_t)n, &m, NULL) == 0)
             {
                 if (count < max_found)
+                {
                     found[count] = (uint8_t)addr;
+                    if (types)
+                        types[count] = m.type_id;
+                }
                 ++count;
                 if (count >= max_found)
                     break;
@@ -538,8 +569,9 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
 
         /* In non-strict mode we try to stimulate a reply by sending a small
            CRUMBS frame then attempting to read again. This helps with
-           peripherals that only respond after being written to. */
-        if (!strict && write_fn)
+           peripherals that only respond after being written to.
+           Note: ctx is required for probe writes; if NULL, skip probing. */
+        if (!strict && write_fn && ctx)
         {
             crumbs_message_t probe;
             memset(&probe, 0, sizeof(probe));
@@ -554,7 +586,11 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
                 if (crumbs_decode_message(buf, (size_t)n2, &m2, NULL) == 0)
                 {
                     if (count < max_found)
+                    {
                         found[count] = (uint8_t)addr;
+                        if (types)
+                            types[count] = m2.type_id;
+                    }
                     ++count;
                     if (count >= max_found)
                         break;
@@ -564,6 +600,30 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
     }
 
     return (int)count;
+}
+
+/**
+ * @brief Probe an address range looking for CRUMBS-capable devices.
+ *
+ * This is a convenience wrapper around crumbs_controller_scan_for_crumbs_with_types()
+ * that discards the type_id information. Use the _with_types variant if you need
+ * both addresses and type information.
+ */
+int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
+                                      uint8_t start_addr,
+                                      uint8_t end_addr,
+                                      int strict,
+                                      crumbs_i2c_write_fn write_fn,
+                                      crumbs_i2c_read_fn read_fn,
+                                      void *io_ctx,
+                                      uint8_t *found,
+                                      size_t max_found,
+                                      uint32_t timeout_us)
+{
+    return crumbs_controller_scan_for_crumbs_with_types(ctx, start_addr, end_addr,
+                                                        strict, write_fn, read_fn,
+                                                        io_ctx, found, NULL,
+                                                        max_found, timeout_us);
 }
 
 /* ---- CRC stats helpers ------------------------------------------------- */

@@ -91,6 +91,70 @@ Implementation details:
 - Passing fn=NULL clears the handler
 - See [Developer Notes](developer-notes.md) for design history and trade-offs
 
+## SET_REPLY Pattern
+
+The SET_REPLY mechanism (opcode `0xFE`) allows controllers to specify which data
+a peripheral should return on the next read. This is the recommended pattern for
+querying peripheral data.
+
+**How it works:**
+
+1. Controller sends SET_REPLY with a target opcode in the payload
+2. Library intercepts `0xFE` and stores target in `ctx->requested_opcode`
+3. Controller issues an I²C read request
+4. Peripheral's `on_request` callback switches on `ctx->requested_opcode`
+5. Controller receives the appropriate data
+
+**Key properties:**
+
+- SET_REPLY is NOT dispatched to user handlers or `on_message` callbacks
+- `requested_opcode` is initialized to `0` (by convention: device/version info)
+- `requested_opcode` persists until another SET_REPLY is received
+
+**Peripheral implementation:**
+
+```c
+void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+{
+    switch (ctx->requested_opcode)
+    {
+        case 0x00:  // Default: device/version info
+            crumbs_msg_init(reply, MY_TYPE_ID, 0x00);
+            crumbs_msg_add_u16(reply, CRUMBS_VERSION);
+            crumbs_msg_add_u8(reply, MODULE_VER_MAJOR);
+            crumbs_msg_add_u8(reply, MODULE_VER_MINOR);
+            crumbs_msg_add_u8(reply, MODULE_VER_PATCH);
+            break;
+
+        case 0x10:  // Sensor data
+            crumbs_msg_init(reply, MY_TYPE_ID, 0x10);
+            crumbs_msg_add_u16(reply, sensor_value);
+            break;
+
+        default:  // Unknown opcode - return empty
+            crumbs_msg_init(reply, MY_TYPE_ID, ctx->requested_opcode);
+            break;
+    }
+}
+```
+
+**Controller usage:**
+
+```c
+// Request sensor data (opcode 0x10)
+crumbs_message_t set_reply;
+crumbs_msg_init(&set_reply, 0, CRUMBS_CMD_SET_REPLY);
+crumbs_msg_add_u8(&set_reply, 0x10);  // target opcode
+crumbs_controller_send(&ctx, addr, &set_reply, write_fn, io_ctx);
+
+// Now read to get the sensor data
+crumbs_message_t reply;
+// ... read and decode ...
+```
+
+See [protocol.md](protocol.md) for wire format details and [versioning.md](versioning.md)
+for the opcode 0x00 convention.
+
 HAL primitives and integration
 
 The core is platform-agnostic and relies on the HAL to provide I²C primitives:

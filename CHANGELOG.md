@@ -4,6 +4,44 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
+## [0.10.0] - SET_REPLY Mechanism
+
+### Added
+
+- **SET_REPLY Command (0xFE)**: Library-handled opcode for reply staging
+  - `CRUMBS_CMD_SET_REPLY` constant defined in `crumbs.h`
+  - Library auto-intercepts 0xFE and stores target opcode
+  - NOT dispatched to user handlers or `on_message` callbacks
+  - Wire format: `[type_id][0xFE][0x01][target_opcode][CRC8]`
+
+- **Requested Opcode Field** (`ctx->requested_opcode`)
+  - New `uint8_t requested_opcode` field in `crumbs_context_s` (+1 byte)
+  - Initialized to 0 in `crumbs_init()` (by convention: device info)
+  - User's `on_request` callback switches on this value
+
+- **Scan with Types** (`crumbs_controller_scan_for_crumbs_with_types()`)
+  - Same as `crumbs_controller_scan_for_crumbs()` but returns `type_id` array
+  - Enables device type discovery in a single scan
+  - Optional `types` parameter (may be NULL)
+
+- **New Tests**
+  - `tests/test_set_reply.c`: Unit tests for SET_REPLY mechanism (8 tests)
+  - `tests/test_reply_flow.c`: Integration tests for query flow (6 tests)
+  - Added `scan_with_types` tests to `test_scan_fake.c`
+
+- **Documentation**
+  - `docs/versioning.md`: New document for opcode 0x00 convention
+  - `docs/protocol.md`: Added Reserved Opcodes section
+  - `docs/developer-guide.md`: Added SET_REPLY Pattern section
+  - `docs/handler-guide.md`: Updated `on_request` example with case 0x00
+  - `docs/examples.md`: Added SET_REPLY Query Pattern section
+
+### Memory Impact
+
+- +1 byte per `crumbs_context_t` (for `requested_opcode` field)
+
+---
+
 ## [0.9.5] - Foundation Revision
 
 ### Added

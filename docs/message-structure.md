@@ -1,6 +1,6 @@
 # CRUMBS Message Structure Reference
 
-**Version:** 0.9.5  
+**Version:** 0.10.0  
 **Last Updated:** January 30, 2026
 
 ---
