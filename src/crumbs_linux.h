@@ -13,7 +13,7 @@ extern "C"
 #include "crumbs_i2c.h" /* crumbs_i2c_write_fn */
 
     /** @file
-     * @brief Linux-native I²C helpers (linux-wire) used by CRUMBS.
+     * @brief Linux-native I2C helpers (linux-wire) used by CRUMBS.
      */
 
     /**
@@ -37,7 +37,7 @@ typedef struct crumbs_linux_i2c_s
 #endif
 
     /**
-     * @brief Initialize a CRUMBS context as a controller on a Linux I²C bus.
+     * @brief Initialize a CRUMBS context as a controller on a Linux I2C bus.
      *
      * @param ctx          Pointer to CRUMBS context (will be initialized).
      * @param i2c          Pointer to Linux I2C handle (will be initialized).
@@ -63,7 +63,7 @@ typedef struct crumbs_linux_i2c_s
     void crumbs_linux_close(crumbs_linux_i2c_t *i2c);
 
     /**
-     * @brief I²C write adapter for CRUMBS on Linux; compatible with crumbs_i2c_write_fn.
+     * @brief I2C write adapter for CRUMBS on Linux; compatible with crumbs_i2c_write_fn.
      *
      * This uses linux-wire to:
      *   - select the slave address with lw_set_slave()

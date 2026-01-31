@@ -187,7 +187,7 @@ void sendCrumbs(uint8_t address, crumbs_message_t &message)
 
 void requestCrumbs(uint8_t address)
 {
-    /* Request up to CRUMBS_MESSAGE_MAX_SIZE bytes — cast to int for explicit overload */
+    /* Request up to CRUMBS_MESSAGE_MAX_SIZE bytes - cast to int for explicit overload */
     Wire.requestFrom((int)address, (int)CRUMBS_MESSAGE_MAX_SIZE);
     delay(5);
 

@@ -6,25 +6,24 @@ The core is intentionally small and C-friendly so it is easy to consume from Ard
 
 ## Key types and constants
 
-- `crumbs_message_t` — message struct (see `src/crumbs_message.h`). Fields:
+- `crumbs_message_t` - message struct (see `src/crumbs_message.h`). Fields:
+  - `address` - device address (NOT serialized)
+  - `type_id` - 1 byte
+  - `opcode` - 1 byte
+  - `data_len` - payload length (0-27)
+  - `data[27]` - raw byte payload (opaque to CRUMBS)
+  - `crc8` - 1 byte CRC-8 computed over the serialized header + payload
 
-  - `address` — device address (NOT serialized)
-  - `type_id` — 1 byte
-  - `opcode` — 1 byte
-  - `data_len` — payload length (0–27)
-  - `data[27]` — raw byte payload (opaque to CRUMBS)
-  - `crc8` — 1 byte CRC-8 computed over the serialized header + payload
+- `crumbs_context_t` - per-endpoint context (role, address, CRC statistics, callbacks, user_data)
+- `CRUMBS_MAX_PAYLOAD` - maximum payload size (27 bytes)
+- `CRUMBS_MESSAGE_MAX_SIZE` - maximum serialized frame size (31 bytes)
 
-- `crumbs_context_t` — per-endpoint context (role, address, CRC statistics, callbacks, user_data)
-- `CRUMBS_MAX_PAYLOAD` — maximum payload size (27 bytes)
-- `CRUMBS_MESSAGE_MAX_SIZE` — maximum serialized frame size (31 bytes)
-
-Serialized frame layout (4–31 bytes):
+Serialized frame layout (4-31 bytes):
 
 - type_id (1)
 - opcode (1)
 - data_len (1)
-- data[0..data_len-1] (variable, 0–27 bytes)
+- data[0..data_len-1] (variable, 0-27 bytes)
 - crc8 (1)
 
 CRC is computed over: type_id + opcode + data_len + data[0..data_len-1]
@@ -133,7 +132,7 @@ For different handler counts, set `CRUMBS_MAX_HANDLERS` via compiler flags:
 build_flags = -DCRUMBS_MAX_HANDLERS=8
 ```
 
-> **Important:** On Arduino/PlatformIO, you MUST use `build_flags` — defining `CRUMBS_MAX_HANDLERS` in your sketch before including `crumbs.h` does NOT work because Arduino precompiles the library separately.
+> **Important:** On Arduino/PlatformIO, you MUST use `build_flags` - defining `CRUMBS_MAX_HANDLERS` in your sketch before including `crumbs.h` does NOT work because Arduino precompiles the library separately.
 
 Memory usage by configuration:
 
@@ -142,7 +141,7 @@ Memory usage by configuration:
 | 16 (default)        | ~68 bytes        | ~132 bytes          | O(n)   |
 | 8                   | ~36 bytes        | ~68 bytes           | O(n)   |
 | 4                   | ~21 bytes        | ~37 bytes           | O(n)   |
-| 0 (disabled)        | 0 bytes          | 0 bytes             | —      |
+| 0 (disabled)        | 0 bytes          | 0 bytes             | -      |
 
 Dispatch uses linear search which is fast for typical handler counts (4-16).
 

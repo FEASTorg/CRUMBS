@@ -12,7 +12,7 @@
  *   set <ch> <deg> - Set servo ch (0-1) to angle (0-180)
  *   both <a0> <a1> - Set both servos
  *   sweep <ch> <start> <end> <ms> - Sweep servo
- *   center         - Center all servos (90°)
+ *   center         - Center all servos (90deg)
  *   test           - Run servo test sequence
  */
 
@@ -33,7 +33,7 @@ static void print_help()
     Serial.println(F("  set <ch> <deg>           - Set servo (0-1) to angle"));
     Serial.println(F("  both <a0> <a1>           - Set both servos"));
     Serial.println(F("  sweep <ch> <s> <e> <ms>  - Sweep start->end"));
-    Serial.println(F("  center                   - All servos to 90°"));
+    Serial.println(F("  center                   - All servos to 90deg"));
     Serial.println(F("  test                     - Run test sequence"));
     Serial.println();
 }
@@ -50,7 +50,7 @@ static void print_status()
         Serial.print(i);
         Serial.print(F("="));
         Serial.print(servo_angles[i]);
-        Serial.print(F("°"));
+        Serial.print(F("deg"));
         if (i < NUM_SERVOS - 1)
             Serial.print(F(", "));
     }
@@ -73,7 +73,7 @@ static void run_test()
     delay(500);
 
     /* Min position */
-    Serial.println(F("  Min (0°)"));
+    Serial.println(F("  Min (0deg)"));
     for (uint8_t i = 0; i < NUM_SERVOS; i++)
     {
         set_servo_angle(i, 0);
@@ -81,7 +81,7 @@ static void run_test()
     delay(500);
 
     /* Max position */
-    Serial.println(F("  Max (180°)"));
+    Serial.println(F("  Max (180deg)"));
     for (uint8_t i = 0; i < NUM_SERVOS; i++)
     {
         set_servo_angle(i, 180);
@@ -157,7 +157,7 @@ static void process_command(char *cmd)
         {
             set_servo_angle(i, 90);
         }
-        Serial.println(F("All servos centered (90°)"));
+        Serial.println(F("All servos centered (90deg)"));
         print_status();
     }
     else if (strncmp(cmd, "set ", 4) == 0)
@@ -224,9 +224,9 @@ static void process_command(char *cmd)
             Serial.print(ch);
             Serial.print(F(": "));
             Serial.print(start);
-            Serial.print(F("° -> "));
+            Serial.print(F("deg -> "));
             Serial.print(end);
-            Serial.print(F("° @ "));
+            Serial.print(F("deg @ "));
             Serial.print(step_ms);
             Serial.println(F("ms/step"));
 

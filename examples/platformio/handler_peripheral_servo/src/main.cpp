@@ -11,7 +11,7 @@
  * - SERVO_CMD_SET_ANGLE: Set single servo angle
  * - SERVO_CMD_SET_BOTH: Set both servos at once
  * - SERVO_CMD_SWEEP: Sweep servo from start to end
- * - SERVO_CMD_CENTER_ALL: Center all servos to 90°
+ * - SERVO_CMD_CENTER_ALL: Center all servos to 90deg
  * - SERVO_CMD_GET_ANGLES: Return current angles via I2C read
  */
 
@@ -102,7 +102,7 @@ static void handle_set_angle(crumbs_context_t *ctx, uint8_t cmd,
         Serial.print(channel);
         Serial.print(F(" = "));
         Serial.print(angle);
-        Serial.println(F("°"));
+        Serial.println(F("deg"));
     }
 }
 
@@ -126,9 +126,9 @@ static void handle_set_both(crumbs_context_t *ctx, uint8_t cmd,
 
         Serial.print(F("SET_BOTH: "));
         Serial.print(angle0);
-        Serial.print(F("°, "));
+        Serial.print(F("deg, "));
         Serial.print(angle1);
-        Serial.println(F("°"));
+        Serial.println(F("deg"));
     }
 }
 
@@ -153,9 +153,9 @@ static void handle_sweep(crumbs_context_t *ctx, uint8_t cmd,
         Serial.print(channel);
         Serial.print(F(" "));
         Serial.print(start);
-        Serial.print(F("° -> "));
+        Serial.print(F("deg -> "));
         Serial.print(end);
-        Serial.print(F("° @ "));
+        Serial.print(F("deg @ "));
         Serial.print(step_ms);
         Serial.println(F("ms/step"));
 
@@ -180,7 +180,7 @@ static void handle_center_all(struct crumbs_context_s *ctx, uint8_t cmd,
         set_servo_angle(i, 90);
     }
 
-    Serial.println(F("CENTER_ALL: all servos to 90°"));
+    Serial.println(F("CENTER_ALL: all servos to 90deg"));
 }
 
 /**
@@ -196,9 +196,9 @@ static void handle_request(struct crumbs_context_s *ctx, crumbs_message_t *reply
 
     Serial.print(F("GET_ANGLES: "));
     Serial.print(servo_angles[0]);
-    Serial.print(F("°, "));
+    Serial.print(F("deg, "));
     Serial.print(servo_angles[1]);
-    Serial.println(F("°"));
+    Serial.println(F("deg"));
 }
 
 /* ============================================================================

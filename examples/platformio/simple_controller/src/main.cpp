@@ -19,7 +19,7 @@ void setup()
   {
     delay(1);
   }
-  Serial.println("CRUMBS PlatformIO example — initializing controller...");
+  Serial.println("CRUMBS PlatformIO example - initializing controller...");
 
   crumbs_arduino_init_controller(&controller_ctx);
   Serial.println("CRUMBS controller initialized");

@@ -7,7 +7,7 @@
  * - Reading payload fields with bounds checking
  *
  * All functions are static inline for zero overhead.
- * No static/global state — pure functions only.
+ * No static/global state - pure functions only.
  *
  * @code
  * // Building a message (controller side)

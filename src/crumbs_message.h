@@ -12,10 +12,10 @@ extern "C"
  * @file
  * @brief CRUMBS message layout and serialization constants.
  *
- * The wire frame is a variable-length sequence (4–31 bytes):
+ * The wire frame is a variable-length sequence (4-31 bytes):
  *   - type_id   : 1 byte
  *   - opcode    : 1 byte
- *   - data_len  : 1 byte (0–27)
+ *   - data_len  : 1 byte (0-27)
  *   - data[]    : data_len bytes (opaque payload)
  *   - crc8      : 1 byte
  *
@@ -39,7 +39,7 @@ extern "C"
         uint8_t address;                  /**< Device address (not serialized) */
         uint8_t type_id;                  /**< Identifier for the module type */
         uint8_t opcode;                   /**< Command or opcode identifier */
-        uint8_t data_len;                 /**< Number of payload bytes (0–27) */
+        uint8_t data_len;                 /**< Number of payload bytes (0-27) */
         uint8_t data[CRUMBS_MAX_PAYLOAD]; /**< Opaque payload bytes */
         uint8_t crc8;                     /**< CRC-8 over serialized payload (filled by encoder) */
     } crumbs_message_t;

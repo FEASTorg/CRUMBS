@@ -173,7 +173,7 @@ static void demo_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     sleep(1);
 
     /* Set individual angles */
-    printf("Setting servo 0 to 45°...\n");
+    printf("Setting servo 0 to 45deg...\n");
     rc = servo_send_angle(ctx, SERVO_ADDR, crumbs_linux_i2c_write, lw, 0, 45);
     if (rc != 0)
     {
@@ -182,7 +182,7 @@ static void demo_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     }
     sleep(1);
 
-    printf("Setting servo 1 to 135°...\n");
+    printf("Setting servo 1 to 135deg...\n");
     rc = servo_send_angle(ctx, SERVO_ADDR, crumbs_linux_i2c_write, lw, 1, 135);
     if (rc != 0)
     {
@@ -192,7 +192,7 @@ static void demo_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     sleep(1);
 
     /* Set both at once */
-    printf("Setting both servos to 60°, 120°...\n");
+    printf("Setting both servos to 60deg, 120deg...\n");
     rc = servo_send_both(ctx, SERVO_ADDR, crumbs_linux_i2c_write, lw, 60, 120);
     if (rc != 0)
     {
@@ -202,7 +202,7 @@ static void demo_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     sleep(1);
 
     /* Sweep servo 0 */
-    printf("Sweeping servo 0 from 0° to 180° (10ms/step)...\n");
+    printf("Sweeping servo 0 from 0deg to 180deg (10ms/step)...\n");
     rc = servo_send_sweep(ctx, SERVO_ADDR, crumbs_linux_i2c_write, lw, 0, 0, 180, 10);
     if (rc != 0)
     {
@@ -229,7 +229,7 @@ static void demo_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
         if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &angle0) == 0 &&
             crumbs_msg_read_u8(reply.data, reply.data_len, 1, &angle1) == 0)
         {
-            printf("  Servo angles: %d°, %d°\n", angle0, angle1);
+            printf("  Servo angles: %ddeg, %ddeg\n", angle0, angle1);
         }
     }
     else

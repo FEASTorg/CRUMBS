@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Linux HAL using linux-wire for CRUMBS (platform native I²C helpers).
+ * @brief Linux HAL using linux-wire for CRUMBS (platform native I2C helpers).
  *
  * This file provides native Linux implementations when compiled on Linux
  * and stubbed fallbacks for other platforms so the whole repo can be
@@ -17,7 +17,7 @@
 
 #include <string.h> /* memset */
 #include <errno.h>
-#include <time.h>   /* clock_gettime, CLOCK_MONOTONIC */
+#include <time.h> /* clock_gettime, CLOCK_MONOTONIC */
 
 #include "crumbs_crc.h" /* for CRUMBS_MESSAGE_MAX_SIZE, etc., via crumbs.h tree */
 
@@ -42,7 +42,7 @@ int crumbs_linux_init_controller(crumbs_context_t *ctx,
     /* Initialize CRUMBS context as controller. Address unused in this role. */
     crumbs_init(ctx, CRUMBS_ROLE_CONTROLLER, 0u);
 
-    /* Open the Linux I²C bus. */
+    /* Open the Linux I2C bus. */
     if (lw_open_bus(&i2c->bus, device_path) != 0)
     {
         /* lw_open_bus already sets errno and bus.fd = -1 on error. */

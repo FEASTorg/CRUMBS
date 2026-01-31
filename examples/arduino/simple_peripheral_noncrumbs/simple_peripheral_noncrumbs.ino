@@ -11,7 +11,7 @@
  *    identify this device as CRUMBS.
  *
  * Usage: Upload to your microcontroller and run the scanner (Arduino serial
- * `scan` or Linux `scan`) — this peripheral intentionally does NOT implement
+ * `scan` or Linux `scan`) - this peripheral intentionally does NOT implement
  * the CRUMBS protocol. Used to test the crumbs device auto-scanner.
  */
 
@@ -58,6 +58,6 @@ void setup()
 
 void loop()
 {
-    // Nothing to do here — interrupts drive I2C callbacks.
+    // Nothing to do here - interrupts drive I2C callbacks.
     delay(1000);
 }

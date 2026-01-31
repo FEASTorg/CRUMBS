@@ -6,7 +6,7 @@
 
 /**
  * @file
- * @brief Lightweight HAL I²C primitive signatures used by CRUMBS adapters.
+ * @brief Lightweight HAL I2C primitive signatures used by CRUMBS adapters.
  */
 
 /* ============================================================================
@@ -53,7 +53,7 @@
     (CRUMBS_ELAPSED_MS((start), (now)) >= (timeout_ms))
 
 /* ============================================================================
- * I²C Function Signatures
+ * I2C Function Signatures
  * ============================================================================ */
 
 #ifdef __cplusplus
@@ -62,12 +62,12 @@ extern "C"
 #endif
 
     /**
-     * @brief I²C write primitive signature used by controller helpers.
+     * @brief I2C write primitive signature used by controller helpers.
      *
      * Implementations should perform a START + address(w) + data + STOP.
      *
      * @param user_ctx Opaque implementation pointer (e.g., TwoWire* or linux handle).
-     * @param addr 7-bit I²C address.
+     * @param addr 7-bit I2C address.
      * @param data Pointer to bytes to send.
      * @param len Number of bytes to send.
      * @return 0 on success, non-zero on error.
@@ -106,7 +106,7 @@ extern "C"
      * Implementations should read up to @p len bytes from the peripheral.
      *
      * @param user_ctx   Opaque implementation pointer.
-     * @param addr       7-bit I²C address of peripheral.
+     * @param addr       7-bit I2C address of peripheral.
      * @param buffer     Output buffer for received bytes.
      * @param len        Maximum bytes to read.
      * @param timeout_us Timeout hint in microseconds (0 = no wait).

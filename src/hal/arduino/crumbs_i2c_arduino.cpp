@@ -9,7 +9,7 @@
 #include "crumbs_arduino.h"
 #include "crumbs_message.h"
 
-/** @brief Default Two-Wire (I²C) bus frequency used by Arduino HAL (100 kHz). */
+/** @brief Default Two-Wire (I2C) bus frequency used by Arduino HAL (100 kHz). */
 #ifndef CRUMBS_DEFAULT_TWI_FREQ
 #define CRUMBS_DEFAULT_TWI_FREQ 100000UL
 #endif
@@ -182,7 +182,7 @@ extern "C" void crumbs_arduino_init_peripheral(crumbs_context_t *ctx, uint8_t ad
     // Initialize CRUMBS context as peripheral.
     crumbs_init(ctx, CRUMBS_ROLE_PERIPHERAL, address);
 
-    // Configure TwoWire as an I²C slave at the given address.
+    // Configure TwoWire as an I2C slave at the given address.
     Wire.begin(address);
 #if defined(TWI_FREQ) || defined(TWBR)
     Wire.setClock(CRUMBS_DEFAULT_TWI_FREQ);

@@ -47,7 +47,7 @@ extern "C"
     /** @file
      * @brief CRUMBS core public API declarations.
      *
-     * CRUMBS is a minimal variable-length I²C message protocol. This header
+     * CRUMBS is a minimal variable-length I2C message protocol. This header
      * declares the public types and functions used by both controller and
      * peripheral roles.
      */
@@ -78,7 +78,7 @@ extern "C"
 #endif
 
     /**
-     * @brief Role of a CRUMBS endpoint on the I²C bus.
+     * @brief Role of a CRUMBS endpoint on the I2C bus.
      */
     typedef enum
     {
@@ -125,7 +125,7 @@ extern "C"
      * @param ctx Pointer to the active CRUMBS context.
      * @param opcode The command type that triggered this handler.
      * @param data Pointer to the payload bytes (may be NULL if data_len==0).
-     * @param data_len Number of payload bytes (0–27).
+     * @param data_len Number of payload bytes (0-27).
      * @param user_data Opaque pointer registered with the handler.
      */
     typedef void (*crumbs_handler_fn)(
@@ -143,7 +143,7 @@ extern "C"
      */
     struct crumbs_context_s
     {
-        uint8_t address;    /**< I²C address for peripheral role; 0 for controller. */
+        uint8_t address;    /**< I2C address for peripheral role; 0 for controller. */
         crumbs_role_t role; /**< Controller or peripheral. */
 
         uint32_t crc_error_count; /**< Number of CRC failures seen during decode. */
@@ -159,9 +159,9 @@ extern "C"
          *  Size controlled by CRUMBS_MAX_HANDLERS (default 16).
          *  Uses linear search for dispatch (O(n) but portable/safe).
          *  @{ */
-        uint8_t handler_count;                             /**< Number of registered handlers. */
-        uint8_t handler_opcode[CRUMBS_MAX_HANDLERS];       /**< Opcode for each handler slot. */
-        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS];   /**< Handler functions. */
+        uint8_t handler_count;                           /**< Number of registered handlers. */
+        uint8_t handler_opcode[CRUMBS_MAX_HANDLERS];     /**< Opcode for each handler slot. */
+        crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS]; /**< Handler functions. */
         void *handler_userdata[CRUMBS_MAX_HANDLERS];     /**< User data for each handler. */
                                                          /** @} */
 #endif                                                   /* CRUMBS_MAX_HANDLERS > 0 */
@@ -174,7 +174,7 @@ extern "C"
      *
      * @param ctx Context to initialize (must not be NULL).
      * @param role Role for this endpoint.
-     * @param address Peripheral I²C address (ignored for controller).
+     * @param address Peripheral I2C address (ignored for controller).
      */
     void crumbs_init(crumbs_context_t *ctx,
                      crumbs_role_t role,
@@ -221,7 +221,7 @@ extern "C"
      * for a opcode that already has one will overwrite the previous.
      *
      * @param ctx Context to register the handler on.
-     * @param opcode The command type to handle (0–255).
+     * @param opcode The command type to handle (0-255).
      * @param fn Handler function to call (NULL to unregister).
      * @param user_data Opaque pointer passed to the handler when invoked.
      * @return 0 on success, -1 if ctx is NULL or handler table is full.
@@ -276,12 +276,12 @@ extern "C"
                               crumbs_context_t *ctx);
 
     /**
-     * @brief Send a CRUMBS message to a 7-bit I²C target (controller helper).
+     * @brief Send a CRUMBS message to a 7-bit I2C target (controller helper).
      *
      * @param ctx Initialized CRUMBS context in controller mode.
-     * @param target_addr 7-bit I²C address of the peripheral.
+     * @param target_addr 7-bit I2C address of the peripheral.
      * @param msg Message to send.
-     * @param write_fn I²C write function (crumbs_i2c_write_fn).
+     * @param write_fn I2C write function (crumbs_i2c_write_fn).
      * @param write_ctx Opaque pointer passed to @p write_fn (Wire*, linux handle, etc.).
      * @return 0 on success, non-zero on error.
      */
@@ -292,7 +292,7 @@ extern "C"
                                void *write_ctx);
 
     /**
-     * @brief Probe an I²C address range for CRUMBS-capable devices.
+     * @brief Probe an I2C address range for CRUMBS-capable devices.
      *
      * The function attempts to read a CRUMBS frame and decode it. In
      * non-strict mode a small probe write may be issued to stimulate a reply.
@@ -336,7 +336,7 @@ extern "C"
                                          size_t len);
 
     /**
-     * @brief Build an encoded reply frame for use inside an I²C request handler.
+     * @brief Build an encoded reply frame for use inside an I2C request handler.
      *
      * If no on_request callback is configured the function returns success with
      * *out_len set to 0.

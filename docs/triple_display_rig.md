@@ -4,20 +4,20 @@ Minimal three-board demo for CRUMBS: `display_controller` issues SEND/REQUEST co
 
 ## Rig at a Glance
 
-- 3× Arduino Nano (ATmega328P)
-- 3× SSD1306 128×64 OLEDs on software I²C pins D7/D8
-- LEDs on D4 (green), D6 (yellow), D5 (red) with 220 Ω resistors
-- Pull-ups present only on the controller; anything in the 2–5 kΩ range works
+- 3x Arduino Nano (ATmega328P)
+- 3x SSD1306 128x64 OLEDs on software I2C pins D7/D8
+- LEDs on D4 (green), D6 (yellow), D5 (red) with 220 Ohm resistors
+- Pull-ups present only on the controller; anything in the 2-5 k-Ohm range works
 - Common SDA/SCL on A4/A5 and a shared ground between all boards
 
 ```text
 Controller Nano                          Peripheral Nano(s)
 --------------                          -------------------
-D7 → OLED SDA                             D7 → OLED SDA
-D8 → OLED SCL                             D8 → OLED SCL
-D4/D6/D5 → LEDs → resistors → GND         D4/D6/D5 → LEDs → resistors → GND
-A4 ↔ bus SDA                              A4 ↔ bus SDA
-A5 ↔ bus SCL                              A5 ↔ bus SCL
+D7 -> OLED SDA                             D7 -> OLED SDA
+D8 -> OLED SCL                             D8 -> OLED SCL
+D4/D6/D5 -> LEDs -> resistors -> GND         D4/D6/D5 -> LEDs -> resistors -> GND
+A4 <-> bus SDA                              A4 <-> bus SDA
+A5 <-> bus SCL                              A5 <-> bus SCL
 Pull-ups only here                        (no extra pull-ups)
 ```
 

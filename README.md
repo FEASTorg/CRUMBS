@@ -10,15 +10,15 @@
 
 ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-E37B0D?logo=platformio&logoColor=white&style=flat)
-![Arduino](https://img.shields.io/badge/​Arduino-00979D?logo=arduino&logoColor=white)
+![Arduino](https://img.shields.io/badge/Arduino-00979D?logo=arduino&logoColor=white)
 
-CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
+CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I2C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
-> *So you've mastered bits and bytes, maybe toiled with nibbles and words—get ready to indulge in some serious crumb crunching!*
+> _So you've mastered bits and bytes, maybe toiled with nibbles and words-get ready to indulge in some serious crumb crunching!_
 
 ## Features
 
-- **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
+- **Variable-Length Message Format**: 4-31 byte frames with opaque byte payloads (0-27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
 - **Per-Command Handler Dispatch**: Register handlers for specific command types
 - **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_message_helpers.h`
@@ -26,7 +26,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 - **CRC-8 Protection**: Integrity check on every message
 - **CRUMBS-aware Discovery**: Core scanner helper to find devices that speak CRUMBS
 
-## Quick Start (Arduino — C API)
+## Quick Start (Arduino - C API)
 
 ```c
 #include <crumbs_arduino.h>
@@ -53,12 +53,12 @@ crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NUL
 2. Place the CRUMBS folder in your Arduino `libraries` directory
 3. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
 
-No external dependencies required — CRC implementations are included under `src/crc`.
+No external dependencies required - CRC implementations are included under `src/crc`.
 
 ## Hardware Requirements
 
 - Arduino or compatible microcontroller
-- I2C bus with 4.7kΩ pull-up resistors on SDA/SCL lines
+- I2C bus with 4.7k-Ohm pull-up resistors on SDA/SCL lines
 - Unique addresses (0x08-0x77) for each peripheral device
 
 ## Documentation
@@ -76,10 +76,10 @@ Documentation is available in the [docs](docs/) directory:
 
 Working examples for Arduino, Linux, and PlatformIO are provided under `examples/`:
 
-- `examples/arduino/` — Arduino sketches (simple, display, and handler-based examples)
-- `examples/linux/` — Native Linux controller examples using the Linux HAL
-- `examples/platformio/` — PlatformIO projects (ready to build with `pio run`)
-- `examples/common/` — Shared command header definitions (LED, servo)
+- `examples/arduino/` - Arduino sketches (simple, display, and handler-based examples)
+- `examples/linux/` - Native Linux controller examples using the Linux HAL
+- `examples/platformio/` - PlatformIO projects (ready to build with `pio run`)
+- `examples/common/` - Shared command header definitions (LED, servo)
 
 ## License
 
