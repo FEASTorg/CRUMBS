@@ -7,7 +7,7 @@
 
 ## Wire Format
 
-```
+```text
 ┌──────────┬──────────┬──────────┬─────────────────┬──────────┐
 │  type_id │  opcode  │ data_len │   data[0..N]    │   crc8   │
 │ (1 byte) │ (1 byte) │ (1 byte) │ (0–27 bytes)    │ (1 byte) │
@@ -87,7 +87,7 @@ Address field is **not serialized** in message (used for routing only).
 
 **Example (Balanced - 0x80 split):**
 
-```
+```text
 // Temperature controller (many readings)
 SET_TEMPERATURE    = 0x01
 SET_PID_PARAMS     = 0x02
@@ -98,7 +98,7 @@ GET_PID_PARAMS     = 0x88
 
 **Example (Sensor-heavy - 0x20 split):**
 
-```
+```text
 // Multi-channel ADC (64 channels)
 SET_SAMPLE_RATE    = 0x01
 GET_CHANNEL_00_07  = 0x20  // 64 channels → 0x20-0x5F

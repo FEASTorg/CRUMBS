@@ -78,6 +78,14 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     target_include_directories(crumbs_multi_handler_controller PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/common
     )
+
+    add_executable(crumbs_interactive_controller
+        examples/linux/interactive_controller/interactive_controller.c
+    )
+    target_link_libraries(crumbs_interactive_controller PRIVATE crumbs)
+    target_include_directories(crumbs_interactive_controller PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/common
+    )
 endif()
 
 # -----------------------------------------------------------------------------

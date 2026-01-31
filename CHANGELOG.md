@@ -20,6 +20,14 @@ All notable changes to CRUMBS are documented in this file.
   - `CRUMBS_ELAPSED_MS(start, now)` - Wraparound-safe elapsed time calculation
   - `CRUMBS_TIMEOUT_EXPIRED(start, now, timeout_ms)` - Wraparound-safe timeout check
 
+- **Interactive Controller Example** (`examples/linux/interactive_controller/`): Command-line interface for testing LED and servo peripherals
+  - Type commands at a `crumbs>` prompt instead of hardcoded demo sequences
+  - LED commands: `set_all`, `set`, `blink`, `state`
+  - Servo commands: `angle`, `both`, `sweep`, `center`, `angles`
+  - Runtime address configuration: `addr led <hex>`, `addr servo <hex>`
+  - Built-in `scan` command for device discovery
+  - See `docs/linux.md` for usage examples
+
 ### Changed
 
 - **BREAKING**: Renamed `crumbs_msg.h` → `crumbs_message_helpers.h` for clarity

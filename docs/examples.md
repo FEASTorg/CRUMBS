@@ -177,6 +177,7 @@ See the handler examples for complete working code:
 - `examples/arduino/handler_peripheral_led/` — LED strip control with RGB values
 - `examples/arduino/handler_peripheral_servo/` — Servo control with pulse widths
 - `examples/linux/multi_handler_controller/` — Linux controller using multiple device command headers
+- `examples/linux/interactive_controller/` — Interactive CLI controller for LED and servo peripherals
 
 See [Message Helpers](message-helpers.md) for complete API documentation.
 

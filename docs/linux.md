@@ -14,7 +14,6 @@ If you need step-by-step install instructions for linux-wire, see the dedicated 
 Quick build & run overview (example uses /dev/i2c-1):
 
 1. Install prerequisites
-
    - C compiler, CMake, make/ninja
    - linux-wire library (provides a CMake config package `linux_wire::linux_wire`) — see the install guide above
    - An account that can access the I2C device (or run the example with root privileges)
@@ -78,6 +77,30 @@ sudo ./crumbs_simple_linux_controller scan strict
 
 Note: the example currently treats the first argument as either a device path (normal run) or a literal `scan` command; to scan using a non-default device path you can run the binary from that working directory or modify the example to accept a path + scan mode.
 
-Wrapper script / udev
+## Interactive Controller
+
+For interactive testing and debugging, use the `crumbs_interactive_controller` example which provides a command-line interface to control LED and servo peripherals:
+
+```bash
+sudo ./crumbs_interactive_controller /dev/i2c-1
+```
+
+This opens an interactive prompt where you can type commands:
+
+```text
+crumbs> help              # Show available commands
+crumbs> scan              # Scan for CRUMBS devices
+crumbs> led set_all 0x0F  # Turn on LEDs 0-3
+crumbs> led set 2 0       # Turn off LED 2
+crumbs> led state         # Get current LED state
+crumbs> servo angle 0 90  # Set servo 0 to 90 degrees
+crumbs> servo sweep 0 0 180 10  # Sweep servo 0
+crumbs> addr led 0x10     # Change LED address
+crumbs> quit              # Exit
+```
+
+See `examples/linux/interactive_controller/` for the full source.
+
+## Wrapper script / udev
 
 If you'd prefer the example to run as a non-root user, add a udev rule to adjust `/dev/i2c-*` permissions or add your account to the `i2c` group. I can add a small wrapper script that discovers the first available `/dev/i2c-*` device and invokes the example with appropriate parameters.
