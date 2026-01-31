@@ -98,10 +98,8 @@ Controllers send messages to specific addresses using opcodes from the module's 
 ```c
 // Send command to servo at address 0x30
 crumbs_message_t msg;
-crumbs_msg_init(&msg);
-msg.type_id = SERVO_TYPE_ID;
-msg.opcode = SERVO_CMD_SET_POS;
-crumbs_msg_add_uint8(&msg, 90);  // Set position to 90°
+crumbs_msg_init(&msg, SERVO_TYPE_ID, SERVO_CMD_SET_POS);
+crumbs_msg_add_u8(&msg, 90);  // Set position to 90°
 crumbs_controller_send(&ctx, 0x30, &msg, write_fn, io_ctx);
 ```
 

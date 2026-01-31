@@ -5,11 +5,9 @@
 1. Download or clone the CRUMBS repository.
 2. Place the folder in your Arduino `libraries` directory (or use the platform's library manager).
 3. Include the headers your target requires:
-
-- Arduino sketches: `#include <crumbs_arduino.h>` (this pulls in `crumbs.h`)
-  -- Linux projects: `#include "crumbs.h"` and `#include "crumbs_linux.h"` as needed
-
-1. No external dependencies required.
+   - Arduino sketches: `#include <crumbs_arduino.h>` (this pulls in `crumbs.h`)
+   - Linux projects: `#include "crumbs.h"` and `#include "crumbs_linux.h"` as needed
+4. No external dependencies required.
 
 ### Native C (CMake) installation
 
@@ -131,11 +129,10 @@ void handle_led(crumbs_context_t *c, uint8_t cmd, const uint8_t *data, uint8_t l
 }
 
 void handle_servo(crumbs_context_t *c, uint8_t cmd, const uint8_t *data, uint8_t len, void *user) {
-    size_t off = 0;
     uint8_t index;
     uint16_t pulse;
-    if (crumbs_msg_read_u8(data, len, &off, &index) == 0 &&
-        crumbs_msg_read_u16(data, len, &off, &pulse) == 0) {
+    if (crumbs_msg_read_u8(data, len, 0, &index) == 0 &&
+        crumbs_msg_read_u16(data, len, 1, &pulse) == 0) {
         // set_servo(index, pulse);
     }
 }

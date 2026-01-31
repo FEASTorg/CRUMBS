@@ -24,27 +24,27 @@ If you plan to use CRUMBS on the same host against a physical I²C device, also 
 
 1. Clone linux-wire
 
-```sh
-git clone https://github.com/FEASTorg/linux-wire.git
-cd linux-wire
-```
+   ```sh
+   git clone https://github.com/FEASTorg/linux-wire.git
+   cd linux-wire
+   ```
 
-1. Configure and build
+2. Configure and build
 
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-```
+   ```sh
+   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+   cmake --build build --parallel
+   ```
 
-1. Install system-wide (default prefix /usr/local)
+3. Install system-wide (default prefix /usr/local)
 
-```sh
-sudo cmake --install build --prefix /usr/local
-```
+   ```sh
+   sudo cmake --install build --prefix /usr/local
+   ```
 
-This will install headers to /usr/local/include/linux_wire, the static library (liblinux_wire.a) in /usr/local/lib, and the CMake package files under /usr/local/lib/cmake/linux_wire. The package files are what allow `find_package(linux_wire CONFIG REQUIRED)` to succeed and expose the target `linux_wire::linux_wire`.
+   - This will install headers to /usr/local/include/linux_wire, the static library (liblinux_wire.a) in /usr/local/lib, and the CMake package files under /usr/local/lib/cmake/linux_wire. The package files are what allow `find_package(linux_wire CONFIG REQUIRED)` to succeed and expose the target `linux_wire::linux_wire`.
 
-1. Verify the installation
+4. Verify the installation
 
 If successful you should see the path to the installed linux_wireConfig.cmake under /usr/local/lib/cmake/linux_wire.
 

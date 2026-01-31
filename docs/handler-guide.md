@@ -76,8 +76,7 @@ void handle_set_all(crumbs_context_t *c, uint8_t cmd,
     (void)c; (void)cmd; (void)user;
 
     uint8_t bitmask;
-    size_t offset = 0;
-    if (crumbs_msg_read_u8(data, len, &offset, &bitmask) == 0) {
+    if (crumbs_msg_read_u8(data, len, 0, &bitmask) == 0) {
         led_state = bitmask;
         // Apply to hardware...
     }
@@ -88,10 +87,9 @@ void handle_set_one(crumbs_context_t *c, uint8_t cmd,
                     const uint8_t *data, uint8_t len, void *user) {
     (void)c; (void)cmd; (void)user;
 
-    size_t offset = 0;
     uint8_t index, state;
-    if (crumbs_msg_read_u8(data, len, &offset, &index) == 0 &&
-        crumbs_msg_read_u8(data, len, &offset, &state) == 0) {
+    if (crumbs_msg_read_u8(data, len, 0, &index) == 0 &&
+        crumbs_msg_read_u8(data, len, 1, &state) == 0) {
         if (state) led_state |= (1 << index);
         else led_state &= ~(1 << index);
         // Apply to hardware...
@@ -100,9 +98,7 @@ void handle_set_one(crumbs_context_t *c, uint8_t cmd,
 
 // Handler: Respond to state query
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
-    reply->type_id = 0x01;
-    reply->opcode = 0x10;  // GET_STATE response
-    crumbs_msg_init(reply);
+    crumbs_msg_init(reply, 0x01, 0x10);  // type=LED, opcode=GET_STATE response
     crumbs_msg_add_u8(reply, led_state);
 }
 
@@ -128,13 +124,12 @@ The `crumbs_message_helpers.h` helpers provide type-safe payload parsing:
 
 ```c
 // Reading values (peripheral handler)
-size_t offset = 0;
 uint8_t channel;
 uint16_t value;
 
-if (crumbs_msg_read_u8(data, len, &offset, &channel) < 0) return;
-if (crumbs_msg_read_u16(data, len, &offset, &value) < 0) return;
-// offset now points past the read bytes
+if (crumbs_msg_read_u8(data, len, 0, &channel) < 0) return;
+if (crumbs_msg_read_u16(data, len, 1, &value) < 0) return;
+// offset 0 = channel (1 byte), offset 1 = value (2 bytes)
 ```
 
 Available read functions:
@@ -205,15 +200,14 @@ Handlers should validate payload length before reading:
 ```c
 void handle_servo(crumbs_context_t *c, uint8_t cmd,
                   const uint8_t *data, uint8_t len, void *user) {
-    size_t offset = 0;
     uint8_t channel, angle;
 
     // These return -1 if there aren't enough bytes
-    if (crumbs_msg_read_u8(data, len, &offset, &channel) < 0) {
+    if (crumbs_msg_read_u8(data, len, 0, &channel) < 0) {
         // Log error, return early
         return;
     }
-    if (crumbs_msg_read_u8(data, len, &offset, &angle) < 0) {
+    if (crumbs_msg_read_u8(data, len, 1, &angle) < 0) {
         return;
     }
 

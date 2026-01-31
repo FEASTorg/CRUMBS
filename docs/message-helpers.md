@@ -19,7 +19,7 @@ Use the message helpers:
 // With helpers (type-safe, bounds-checked)
 #include "crumbs_message_helpers.h"
 
-crumbs_msg_init(&msg);
+crumbs_msg_init(&msg, type_id, opcode);
 crumbs_msg_add_u16(&msg, angle);
 ```
 
@@ -40,14 +40,10 @@ Always initialize a message before adding data:
 
 ```c
 crumbs_message_t msg;
-crumbs_msg_init(&msg);
-
-// Now set type_id and opcode
-msg.type_id = MY_TYPE_ID;
-msg.opcode = MY_COMMAND;
+crumbs_msg_init(&msg, MY_TYPE_ID, MY_COMMAND);
 ```
 
-`crumbs_msg_init()` zeros the message and sets `data_len = 0`.
+`crumbs_msg_init()` zeros the message and sets `type_id`, `opcode`, with `data_len = 0`.
 
 ### Adding Values
 
@@ -75,9 +71,7 @@ crumbs_msg_add_bytes(&msg, ptr, len);
 
 ```c
 crumbs_message_t msg;
-crumbs_msg_init(&msg);
-msg.type_id = 0x02;           // Servo device type
-msg.opcode = 0x02;      // Set both servos
+crumbs_msg_init(&msg, 0x02, 0x02);  // type=Servo, opcode=SetBoth
 
 crumbs_msg_add_u16(&msg, 1500);  // Servo 1: 1500μs
 crumbs_msg_add_u16(&msg, 2000);  // Servo 2: 2000μs
@@ -88,16 +82,15 @@ crumbs_msg_add_u16(&msg, 2000);  // Servo 2: 2000μs
 
 ### Basic Pattern
 
-Use an offset variable to track position while reading:
+Use explicit byte offsets to track position while reading:
 
 ```c
 void my_handler(crumbs_context_t *ctx, uint8_t cmd,
                 const uint8_t *data, uint8_t len, void *user) {
-    size_t off = 0;
     uint16_t servo1, servo2;
 
-    if (crumbs_msg_read_u16(data, len, &off, &servo1) < 0) return;
-    if (crumbs_msg_read_u16(data, len, &off, &servo2) < 0) return;
+    if (crumbs_msg_read_u16(data, len, 0, &servo1) < 0) return;
+    if (crumbs_msg_read_u16(data, len, 2, &servo2) < 0) return;
 
     // Use servo1, servo2...
 }
@@ -109,20 +102,20 @@ All read functions return 0 on success, -1 if reading would exceed the buffer bo
 
 ```c
 // Unsigned integers
-crumbs_msg_read_u8(data, len, &offset, &out);
-crumbs_msg_read_u16(data, len, &offset, &out);
-crumbs_msg_read_u32(data, len, &offset, &out);
+crumbs_msg_read_u8(data, len, offset, &out);
+crumbs_msg_read_u16(data, len, offset, &out);
+crumbs_msg_read_u32(data, len, offset, &out);
 
 // Signed integers
-crumbs_msg_read_i8(data, len, &offset, &out);
-crumbs_msg_read_i16(data, len, &offset, &out);
-crumbs_msg_read_i32(data, len, &offset, &out);
+crumbs_msg_read_i8(data, len, offset, &out);
+crumbs_msg_read_i16(data, len, offset, &out);
+crumbs_msg_read_i32(data, len, offset, &out);
 
 // Floating point
-crumbs_msg_read_float(data, len, &offset, &out);
+crumbs_msg_read_float(data, len, offset, &out);
 
 // Raw bytes
-crumbs_msg_read_bytes(data, len, &offset, dest, count);
+crumbs_msg_read_bytes(data, len, offset, dest, count);
 ```
 
 ### Example: Reading LED Command
@@ -130,13 +123,12 @@ crumbs_msg_read_bytes(data, len, &offset, dest, count);
 ```c
 void handle_led_set_one(crumbs_context_t *ctx, uint8_t cmd,
                         const uint8_t *data, uint8_t len, void *user) {
-    size_t off = 0;
     uint8_t led_index, r, g, b;
 
-    if (crumbs_msg_read_u8(data, len, &off, &led_index) < 0) return;
-    if (crumbs_msg_read_u8(data, len, &off, &r) < 0) return;
-    if (crumbs_msg_read_u8(data, len, &off, &g) < 0) return;
-    if (crumbs_msg_read_u8(data, len, &off, &b) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 0, &led_index) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 1, &r) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 2, &g) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 3, &b) < 0) return;
 
     set_led(led_index, r, g, b);
 }
@@ -167,9 +159,7 @@ static inline int my_send_action_a(crumbs_context_t *ctx, uint8_t addr,
                                    uint16_t param1, uint8_t param2,
                                    crumbs_i2c_write_fn write_fn, void *write_ctx) {
     crumbs_message_t msg;
-    crumbs_msg_init(&msg);
-    msg.type_id = MY_DEVICE_TYPE_ID;
-    msg.opcode = MY_CMD_ACTION_A;
+    crumbs_msg_init(&msg, MY_DEVICE_TYPE_ID, MY_CMD_ACTION_A);
 
     crumbs_msg_add_u16(&msg, param1);
     crumbs_msg_add_u8(&msg, param2);
@@ -221,7 +211,7 @@ crumbs_msg_add_i16(&msg, 255);  // 25.5 × 10
 
 | Function                          | Description                     | Bytes |
 | --------------------------------- | ------------------------------- | ----- |
-| `crumbs_msg_init(msg)`            | Zero message, set data_len=0    | —     |
+| `crumbs_msg_init(msg, type, op)`  | Zero message, set type+opcode   | —     |
 | `crumbs_msg_add_u8(msg, v)`       | Append uint8_t                  | 1     |
 | `crumbs_msg_add_u16(msg, v)`      | Append uint16_t (little-endian) | 2     |
 | `crumbs_msg_add_u32(msg, v)`      | Append uint32_t (little-endian) | 4     |
@@ -233,16 +223,16 @@ crumbs_msg_add_i16(&msg, 255);  // 25.5 × 10
 
 ### Message Reader
 
-| Function                                       | Description                   | Bytes |
-| ---------------------------------------------- | ----------------------------- | ----- |
-| `crumbs_msg_read_u8(d, len, &off, &out)`       | Read uint8_t, advance offset  | 1     |
-| `crumbs_msg_read_u16(d, len, &off, &out)`      | Read uint16_t (little-endian) | 2     |
-| `crumbs_msg_read_u32(d, len, &off, &out)`      | Read uint32_t (little-endian) | 4     |
-| `crumbs_msg_read_i8(d, len, &off, &out)`       | Read int8_t                   | 1     |
-| `crumbs_msg_read_i16(d, len, &off, &out)`      | Read int16_t (little-endian)  | 2     |
-| `crumbs_msg_read_i32(d, len, &off, &out)`      | Read int32_t (little-endian)  | 4     |
-| `crumbs_msg_read_float(d, len, &off, &out)`    | Read float (native order)     | 4     |
-| `crumbs_msg_read_bytes(d, len, &off, dest, n)` | Read n bytes into dest        | n     |
+| Function                                      | Description                   | Bytes |
+| --------------------------------------------- | ----------------------------- | ----- |
+| `crumbs_msg_read_u8(d, len, off, &out)`       | Read uint8_t at offset        | 1     |
+| `crumbs_msg_read_u16(d, len, off, &out)`      | Read uint16_t (little-endian) | 2     |
+| `crumbs_msg_read_u32(d, len, off, &out)`      | Read uint32_t (little-endian) | 4     |
+| `crumbs_msg_read_i8(d, len, off, &out)`       | Read int8_t                   | 1     |
+| `crumbs_msg_read_i16(d, len, off, &out)`      | Read int16_t (little-endian)  | 2     |
+| `crumbs_msg_read_i32(d, len, off, &out)`      | Read int32_t (little-endian)  | 4     |
+| `crumbs_msg_read_float(d, len, off, &out)`    | Read float (native order)     | 4     |
+| `crumbs_msg_read_bytes(d, len, off, dest, n)` | Read n bytes into dest        | n     |
 
 All functions return 0 on success, -1 on bounds error.
 

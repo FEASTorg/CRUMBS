@@ -142,9 +142,7 @@ The `crumbs_message_helpers.h` header provides type-safe payload building and re
 #define SERVO_CMD_ANGLE  0x01
 
 crumbs_message_t msg;
-crumbs_msg_init(&msg);
-msg.type_id = SERVO_TYPE_ID;
-msg.opcode = SERVO_CMD_ANGLE;
+crumbs_msg_init(&msg, SERVO_TYPE_ID, SERVO_CMD_ANGLE);
 crumbs_msg_add_u8(&msg, servo_index);    // Which servo
 crumbs_msg_add_u16(&msg, 1500);          // Pulse width in μs
 
@@ -156,12 +154,11 @@ crumbs_controller_send(&ctx, 0x10, &msg, write_fn, write_ctx);
 ```c
 void handle_servo_angle(crumbs_context_t *ctx, uint8_t cmd,
                         const uint8_t *data, uint8_t len, void *user) {
-    size_t off = 0;
     uint8_t index;
     uint16_t pulse;
 
-    if (crumbs_msg_read_u8(data, len, &off, &index) < 0) return;
-    if (crumbs_msg_read_u16(data, len, &off, &pulse) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 0, &index) < 0) return;
+    if (crumbs_msg_read_u16(data, len, 1, &pulse) < 0) return;
 
     servo_set_pulse(index, pulse);
 }
@@ -202,9 +199,7 @@ led_device_t led = { &ctx, 0x08, crumbs_arduino_wire_write, NULL };
 // Shorter sender wrapper
 static inline int led_set_all(led_device_t *dev, uint8_t bitmask) {
     crumbs_message_t msg;
-    crumbs_msg_init(&msg);
-    msg.type_id = LED_TYPE_ID;
-    msg.opcode = LED_CMD_SET_ALL;
+    crumbs_msg_init(&msg, LED_TYPE_ID, LED_CMD_SET_ALL);
     crumbs_msg_add_u8(&msg, bitmask);
     return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
 }

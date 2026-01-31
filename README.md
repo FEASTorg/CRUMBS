@@ -36,9 +36,7 @@ crumbs_context_t controller_ctx;
 crumbs_arduino_init_controller(&controller_ctx);
 
 crumbs_message_t m;
-crumbs_msg_init(&m);
-m.type_id = 1;
-m.opcode = 1;
+crumbs_msg_init(&m, 0x01, 0x01);  // type_id=1, opcode=1
 
 // Type-safe payload building
 crumbs_msg_add_float(&m, 25.5f);  // e.g. change a temperature value

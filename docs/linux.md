@@ -18,21 +18,21 @@ Quick build & run overview (example uses /dev/i2c-1):
    - linux-wire library (provides a CMake config package `linux_wire::linux_wire`) — see the install guide above
    - An account that can access the I2C device (or run the example with root privileges)
 
-1. Configure & build (from repo root)
+2. Configure & build (from repo root)
 
-```bash
-mkdir -p build && cd build
-cmake .. -DCRUMBS_ENABLE_LINUX_HAL=ON -DCRUMBS_BUILD_EXAMPLES=ON
-cmake --build . --parallel
-```
+   ```bash
+   mkdir -p build && cd build
+   cmake .. -DCRUMBS_ENABLE_LINUX_HAL=ON -DCRUMBS_BUILD_EXAMPLES=ON
+   cmake --build . --parallel
+   ```
 
-1. Run the example (the example uses `/dev/i2c-1` by default)
+3. Run the example (the example uses `/dev/i2c-1` by default)
 
-```bash
-sudo ./crumbs_simple_linux_controller
-```
+   ```bash
+   sudo ./crumbs_simple_linux_controller
+   ```
 
-1. Installing a release to the system (optional)
+4. Installing a release to the system (optional)
 
 If you want to install the built CRUMBS library and headers system-wide:
 

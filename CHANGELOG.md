@@ -45,7 +45,7 @@ All notable changes to CRUMBS are documented in this file.
 ### Added
 
 - **Message Builder/Reader API** (`src/crumbs_message_helpers.h`): Zero-overhead inline helpers for structured payload construction and reading
-  - `crumbs_msg_init(msg)`: Initialize a message builder
+  - `crumbs_msg_init(msg, type_id, opcode)`: Initialize a message with header fields
   - `crumbs_msg_add_u8/u16/u32()`: Append unsigned integers (little-endian)
   - `crumbs_msg_add_i8/i16/i32()`: Append signed integers (little-endian)
   - `crumbs_msg_add_float()`: Append 32-bit float (native byte order)

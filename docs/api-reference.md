@@ -155,7 +155,7 @@ Include: `#include "crumbs_message_helpers.h"` (Linux) or `#include <crumbs_mess
 
 ```c
 /* Initialize a message for building */
-static inline void crumbs_msg_init(crumbs_message_t *msg);
+static inline void crumbs_msg_init(crumbs_message_t *msg, uint8_t type_id, uint8_t opcode);
 
 /* Add values to message payload (little-endian for integers) */
 static inline int crumbs_msg_add_u8(crumbs_message_t *msg, uint8_t value);
@@ -165,17 +165,17 @@ static inline int crumbs_msg_add_i8(crumbs_message_t *msg, int8_t value);
 static inline int crumbs_msg_add_i16(crumbs_message_t *msg, int16_t value);
 static inline int crumbs_msg_add_i32(crumbs_message_t *msg, int32_t value);
 static inline int crumbs_msg_add_float(crumbs_message_t *msg, float value);  /* native byte order */
-static inline int crumbs_msg_add_bytes(crumbs_message_t *msg, const uint8_t *data, size_t len);
+static inline int crumbs_msg_add_bytes(crumbs_message_t *msg, const void *data, uint8_t len);
 
 /* Read values from payload buffer (used in handlers) */
-static inline int crumbs_msg_read_u8(const uint8_t *data, size_t len, size_t *offset, uint8_t *out);
-static inline int crumbs_msg_read_u16(const uint8_t *data, size_t len, size_t *offset, uint16_t *out);
-static inline int crumbs_msg_read_u32(const uint8_t *data, size_t len, size_t *offset, uint32_t *out);
-static inline int crumbs_msg_read_i8(const uint8_t *data, size_t len, size_t *offset, int8_t *out);
-static inline int crumbs_msg_read_i16(const uint8_t *data, size_t len, size_t *offset, int16_t *out);
-static inline int crumbs_msg_read_i32(const uint8_t *data, size_t len, size_t *offset, int32_t *out);
-static inline int crumbs_msg_read_float(const uint8_t *data, size_t len, size_t *offset, float *out);
-static inline int crumbs_msg_read_bytes(const uint8_t *data, size_t len, size_t *offset, uint8_t *dest, size_t count);
+static inline int crumbs_msg_read_u8(const uint8_t *data, uint8_t len, uint8_t offset, uint8_t *out);
+static inline int crumbs_msg_read_u16(const uint8_t *data, uint8_t len, uint8_t offset, uint16_t *out);
+static inline int crumbs_msg_read_u32(const uint8_t *data, uint8_t len, uint8_t offset, uint32_t *out);
+static inline int crumbs_msg_read_i8(const uint8_t *data, uint8_t len, uint8_t offset, int8_t *out);
+static inline int crumbs_msg_read_i16(const uint8_t *data, uint8_t len, uint8_t offset, int16_t *out);
+static inline int crumbs_msg_read_i32(const uint8_t *data, uint8_t len, uint8_t offset, int32_t *out);
+static inline int crumbs_msg_read_float(const uint8_t *data, uint8_t len, uint8_t offset, float *out);
+static inline int crumbs_msg_read_bytes(const uint8_t *data, uint8_t len, uint8_t offset, void *out, uint8_t count);
 ```
 
 Usage example (controller side):
@@ -184,9 +184,7 @@ Usage example (controller side):
 #include "crumbs_message_helpers.h"
 
 crumbs_message_t msg;
-crumbs_msg_init(&msg);
-msg.type_id = 0x02;
-msg.opcode = 0x01;
+crumbs_msg_init(&msg, 0x02, 0x01);  // type=servo, opcode=set_angle
 crumbs_msg_add_u8(&msg, servo_index);
 crumbs_msg_add_u16(&msg, pulse_us);
 crumbs_controller_send(&ctx, addr, &msg, write_fn, write_ctx);
@@ -197,11 +195,10 @@ Usage example (peripheral handler):
 ```c
 void handle_servo(crumbs_context_t *ctx, uint8_t cmd,
                   const uint8_t *data, uint8_t len, void *user) {
-    size_t off = 0;
     uint8_t index;
     uint16_t pulse;
-    if (crumbs_msg_read_u8(data, len, &off, &index) < 0) return;
-    if (crumbs_msg_read_u16(data, len, &off, &pulse) < 0) return;
+    if (crumbs_msg_read_u8(data, len, 0, &index) < 0) return;
+    if (crumbs_msg_read_u16(data, len, 1, &pulse) < 0) return;
     set_servo(index, pulse);
 }
 ```
