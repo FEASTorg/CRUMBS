@@ -238,5 +238,5 @@ void handle_servo(crumbs_context_t *c, uint8_t cmd,
 - [API Reference — Handler Dispatch](api-reference.md#command-handler-dispatch)
 - [Message Helpers](message-helpers.md)
 - [Getting Started](getting-started.md)
-- Example: `examples/arduino/handler_peripheral_led/`
-- Example: `examples/arduino/handler_peripheral_servo/`
+- Example: `examples/handlers_usage/arduino/mock_peripheral/`
+- Example: `examples/handlers_usage/arduino/mock_controller/`

@@ -42,10 +42,13 @@
 
 # Distribution directory
 dist/
-_reference/
 build*/
 
 # Need to hide certain files for publication & thesis integrity reasons
 roadmaps/
 planning/
 working/
+
+# Old files
+_reference/
+_archive/

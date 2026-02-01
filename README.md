@@ -72,12 +72,13 @@ Documentation is available in the [docs](docs/) directory:
 
 ## Examples
 
-Working examples for Arduino, Linux, and PlatformIO are provided under `examples/`:
+Examples are organized into three progressive tiers:
 
-- `examples/arduino/` - Arduino sketches (simple, display, and handler-based examples)
-- `examples/linux/` - Native Linux controller examples using the Linux HAL
-- `examples/platformio/` - PlatformIO projects (ready to build with `pio run`)
-- `examples/common/` - Shared command header definitions (LED, servo)
+- **Tier 1** (`examples/core_usage/`) - Basic protocol learning for beginners
+- **Tier 2** (`examples/handlers_usage/`) - Handler patterns with mock device
+- **Tier 3** (`examples/usage_families/`) - Production patterns (Roadmap-03)
+
+See [examples/README.md](examples/README.md) for complete platform coverage and [docs/examples.md](docs/examples.md) for detailed documentation.
 
 ## License
 

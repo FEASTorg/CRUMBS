@@ -1,6 +1,6 @@
 # PlatformIO Publishing
 
-This project includes a PlatformIO library manifest (`library.json`) and PlatformIO examples. Follow the quick steps below to publish and maintain the package on the PlatformIO Registry so the `examples/platformio/*` builds work in CI and for downstream users.
+This project includes a PlatformIO library manifest (`library.json`) and PlatformIO examples in `examples/core_usage/platformio/` and `examples/handlers_usage/platformio/`. Follow the quick steps below to publish and maintain the package on the PlatformIO Registry.
 
 ## Minimum checklist before publishing
 

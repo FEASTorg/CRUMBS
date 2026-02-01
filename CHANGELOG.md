@@ -34,7 +34,24 @@ All notable changes to CRUMBS are documented in this file.
   - `docs/protocol.md`: Added Reserved Opcodes section
   - `docs/developer-guide.md`: Added SET_REPLY Pattern section
   - `docs/handler-guide.md`: Updated `on_request` example with case 0x00
-  - `docs/examples.md`: Added SET_REPLY Query Pattern section
+  - `docs/examples.md`: Reorganized to reflect three-tier learning path
+
+### Examples
+
+- **Three-Tier Reorganization**: Examples restructured into progressive learning path
+  - `examples/core_usage/`: Basic protocol learning (Tier 1)
+  - `examples/handlers_usage/`: Production callback patterns (Tier 2)
+  - `examples/usage_families/`: Real device families (Tier 3, planned)
+
+- **Mock Handler Examples** (Type ID 0x10): Demonstrating handler registration and SET_REPLY
+  - PlatformIO: `mock_peripheral/`, `mock_controller/` (Nano + ESP32)
+  - Linux: `mock_controller/`
+  - Shared `mock_ops.h` header with SET operations (ECHO, SET_HEARTBEAT, TOGGLE) and GET operations (GET_ECHO, GET_STATUS, GET_INFO)
+
+- **Moved Examples**: Simple examples relocated to `core_usage/`
+  - Arduino: `simple_peripheral/`, `simple_controller/`, `display_peripheral/`, `display_controller/`
+  - PlatformIO: `simple_peripheral/`, `simple_controller/`
+  - Linux: `simple_controller/`
 
 ### Memory Impact
 

@@ -1,139 +1,166 @@
 # Examples
 
-## Controller Example
+CRUMBS examples are organized into a **three-tier learning path** from basics to production patterns to real-world applications.
 
-Send commands via serial interface and request data from peripherals. The examples in `examples/arduino/` and `examples/platformio/` show both controller and peripheral sketches using the C core API (see `crumbs_arduino.h`).
+## Three-Tier Structure
 
-### Usage
+### Tier 1: Core Usage (`examples/core_usage/`)
+
+**Audience:** New users learning CRUMBS fundamentals  
+**Purpose:** Understand protocol, encoding, I2C communication
+
+| Platform   | Examples                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| Arduino    | [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/)                          |
+|            | [simple_controller](../examples/core_usage/arduino/simple_controller/)                          |
+|            | [simple_peripheral_noncrumbs](../examples/core_usage/arduino/simple_peripheral_noncrumbs/)      |
+|            | [display_peripheral](../examples/core_usage/arduino/display_peripheral/)                        |
+|            | [display_controller](../examples/core_usage/arduino/display_controller/)                        |
+| PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                       |
+|            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                       |
+| Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                            |
+
+**Start here:** Learn message structure, encoding/decoding, basic request-reply patterns.
+
+### Tier 2: Handler Usage (`examples/handlers_usage/`)
+
+**Audience:** Users ready for production callback patterns  
+**Purpose:** Learn handler registration and SET_REPLY query mechanism
+
+| Platform   | Examples                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| PlatformIO | [mock_peripheral](../examples/handlers_usage/platformio/mock_peripheral/)                   |
+|            | [mock_controller](../examples/handlers_usage/platformio/mock_controller/)                   |
+| Linux      | [mock_controller](../examples/handlers_usage/linux/mock_controller/)                        |
+
+**Key concepts:**
+
+- Handler registration with `crumbs_register_handler()`
+- SET_REPLY pattern for querying data
+- `on_request` callback for GET operations
+
+See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detailed handler pattern documentation.
+
+### Tier 3: Usage Families (`examples/usage_families/`)
+
+**Audience:** Users building real device families  
+**Purpose:** Complete device family implementations (Coming in Roadmap-03)
+
+**Planned families:** LED strips, servo controllers, sensor modules, displays
+
+---
+
+## Learning Path
+
+1. **Start with Tier 1:** Understand protocol basics
+   - Flash [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/) and [simple_controller](../examples/core_usage/arduino/simple_controller/)
+   - Study encoding/decoding, observe serial output
+   
+2. **Move to Tier 2:** Learn production patterns
+   - Study [mock_peripheral](../examples/handlers_usage/arduino/mock_peripheral/) handler registration
+   - Test [mock_controller](../examples/handlers_usage/arduino/mock_controller/) SET_REPLY queries
+   - Adapt pattern for your device type
+
+3. **Apply in Tier 3:** Use complete device families *(Coming Soon)*
+
+---
+
+## Platform Coverage
+
+| Platform   | Peripheral Examples        | Controller Examples        |
+| ---------- | -------------------------- | -------------------------- |
+| Arduino    | 3 Core                     | 2 Core                     |
+| PlatformIO | 1 Core + 1 Handler         | 1 Core + 1 Handler         |
+| Linux      | —                          | 1 Core + 1 Handler         |
+
+---
+
+## Core Patterns
+
+### Controller Example (Simple Pattern)
+
+Send commands via serial interface and request data from peripherals:
+
+#### Usage
 
 1. Upload to Arduino
 2. Open Serial Monitor (115200 baud)
 3. Send: `address,type_id,opcode,byte0,byte1,...` (comma-separated bytes)
 4. Request: `request=address`
 
-### Example Commands
+#### Example Commands
 
 ```cpp
 8,1,1,0,0,128,63,0,0,0,0     // Send to address 8 (first 4 bytes = 1.0f in little-endian)
 request=8                    // Request data from address 8
 ```
 
-## Peripheral Example
+See [simple_controller](../examples/core_usage/arduino/simple_controller/) and [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/) for complete examples.
 
-Respond to controller commands and data requests. The C core uses callbacks with signatures `on_message(ctx, const crumbs_message_t*)` and `on_request(ctx, crumbs_message_t*)`.
+---
 
-### Key Code Patterns (C API — Arduino HAL)
+### Handler-Based Peripheral (Production Pattern)
 
-```cpp
-// Message callback from the core
-void on_message(crumbs_context_t *ctx, const crumbs_message_t *m) {
-    switch (m->opcode) {
-        case 0: // Data request (handled in on_request instead)
-            break;
-        case 1: // Set parameters
-            // read bytes from m->data[0..m->data_len-1] and apply
-            // example: decode a float from bytes
-            if (m->data_len >= sizeof(float)) {
-                float val;
-                memcpy(&val, m->data, sizeof(float));
-            }
-            break;
-    }
-}
+Instead of using a switch statement inside `on_message`, register individual handler functions for each command type. This pattern is cleaner when you have many commands.
 
-// Build reply for onRequest — the framework will encode and Wire.write the result
-void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
-    reply->type_id = 1;
-    reply->opcode = 0;
-    float val = 42.0f;
-    reply->data_len = sizeof(float);
-    memcpy(reply->data, &val, sizeof(float));
-}
-
-void setup() {
-    crumbs_arduino_init_peripheral(&ctx, 0x08);
-    crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
-}
-```
-
-## Handler-Based Peripheral (Alternative Pattern)
-
-Instead of using a switch statement inside `on_message`, you can register individual handler functions for each command type. This pattern is cleaner when you have many commands.
-
-### Arduino Peripheral with Handlers
+#### Arduino Peripheral with Handlers
 
 ```cpp
 #include <crumbs.h>
 #include <crumbs_arduino.h>
 
-#define CMD_LED_ON  0x01
-#define CMD_LED_OFF 0x02
-#define CMD_BLINK   0x03
+#define CMD_ECHO   0x01
+#define CMD_PRINT  0x02
+#define CMD_TOGGLE 0x03
 
 static crumbs_context_t ctx;
 
-void handleLedOn(crumbs_context_t *ctx, uint8_t cmd,
-                 const uint8_t *data, uint8_t len, void *user) {
-    digitalWrite(LED_BUILTIN, HIGH);
-}
-
-void handleLedOff(crumbs_context_t *ctx, uint8_t cmd,
+void handler_echo(crumbs_context_t *ctx, uint8_t cmd,
                   const uint8_t *data, uint8_t len, void *user) {
-    digitalWrite(LED_BUILTIN, LOW);
+    // Store received data for later retrieval
+    memcpy(g_echo_buffer, data, len);
+    g_echo_len = len;
 }
 
-void handleBlink(crumbs_context_t *ctx, uint8_t cmd,
-                 const uint8_t *data, uint8_t len, void *user) {
-    if (len < 2) return;
-    uint8_t count = data[0];
-    uint8_t delayMs = data[1] * 10;
-    for (uint8_t i = 0; i < count; i++) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(delayMs);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(delayMs);
+void handler_print(crumbs_context_t *ctx, uint8_t cmd,
+                   const uint8_t *data, uint8_t len, void *user) {
+    // Print message to serial
+    for (uint8_t i = 0; i < len; i++) {
+        Serial.write(data[i]);
     }
+    Serial.println();
+}
+
+void handler_toggle(crumbs_context_t *ctx, uint8_t cmd,
+                    const uint8_t *data, uint8_t len, void *user) {
+    // Toggle state
+    g_state = !g_state;
 }
 
 void setup() {
-    pinMode(LED_BUILTIN, OUTPUT);
     crumbs_arduino_init_peripheral(&ctx, 0x08);
 
     // Register per-command handlers
-    crumbs_register_handler(&ctx, CMD_LED_ON,  handleLedOn,  NULL);
-    crumbs_register_handler(&ctx, CMD_LED_OFF, handleLedOff, NULL);
-    crumbs_register_handler(&ctx, CMD_BLINK,   handleBlink,  NULL);
+    crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);
+    crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);
+    crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);
+    
+    // Set on_request callback for GET operations
+    crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
 }
 
 void loop() { }
 ```
 
-### Linux Controller for Handler Peripheral
+See [handlers_usage](../examples/handlers_usage/) for complete working examples.
 
-```c
-// Send LED ON command
-crumbs_message_t msg = {0};
-msg.type_id = 1;
-msg.opcode = 0x01;  // CMD_LED_ON
-msg.data_len = 0;
-crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
+---
 
-// Send BLINK command: 5 blinks, 200ms delay
-msg.opcode = 0x03;  // CMD_BLINK
-msg.data_len = 2;
-msg.data[0] = 5;   // count
-msg.data[1] = 20;  // delay = 20 * 10ms = 200ms
-crumbs_controller_send(&ctx, 0x08, &msg, crumbs_linux_i2c_write, &lw);
-```
+### SET_REPLY Query Pattern (v0.10.0)
 
-See `examples/arduino/handler_peripheral_led/` and `examples/linux/multi_handler_controller/` for complete working examples.
+The SET_REPLY mechanism allows controllers to request specific data from peripherals. The library handles `0xFE` automatically and stores the target opcode in `ctx->requested_opcode`.
 
-## SET_REPLY Query Pattern
-
-The SET_REPLY mechanism allows controllers to request specific data from peripherals.
-The library handles `0xFE` automatically and stores the target opcode.
-
-### Peripheral with SET_REPLY
+#### Peripheral with SET_REPLY
 
 ```cpp
 #include <crumbs.h>
@@ -182,7 +209,7 @@ void loop() {
 }
 ```
 
-### Controller Querying Sensor Data
+#### Controller Querying Sensor Data
 
 ```c
 #include <crumbs.h>
@@ -208,6 +235,10 @@ if (n >= 4)
     }
 }
 ```
+
+See [handlers_usage](../examples/handlers_usage/) for complete SET_REPLY examples with mock device.
+
+---
 
 ## Message Helpers Pattern
 
@@ -250,14 +281,9 @@ void setup() {
 }
 ```
 
-See the handler examples for complete working code:
-
-- `examples/arduino/handler_peripheral_led/` — LED strip control with RGB values
-- `examples/arduino/handler_peripheral_servo/` — Servo control with pulse widths
-- `examples/linux/multi_handler_controller/` — Linux controller using multiple device command headers
-- `examples/linux/interactive_controller/` — Interactive CLI controller for LED and servo peripherals
-
 See [Message Helpers](message-helpers.md) for complete API documentation.
+
+---
 
 ## Common Patterns
 
@@ -325,43 +351,31 @@ for (uint8_t addr = 8; addr < 120; addr++) {
 
 For protocol-aware discovery (find devices that actually speak CRUMBS) use the core helper `crumbs_controller_scan_for_crumbs()` which performs a read-and-decode probe. See the Getting Started guide for short Arduino and Linux examples.
 
-## Native C example (CMake + static link)
+---
 
-There is a minimal native C example that demonstrates using CRUMBS as a compiled library and linking a small program against the `crumbs` static target. The example is located at `examples/linux/simple_native_controller`.
+## Build Examples
 
-Build the example in-tree (recommended for local development):
+### CMake (Linux)
 
-```bash
-cmake -S examples/linux/simple_native_controller -B examples/linux/simple_native_controller/build -DCRUMBS_BUILD_IN_TREE=ON
-cmake --build examples/linux/simple_native_controller/build --config Release
-./examples/linux/simple_native_controller/build/crumbs_native_example
-```
-
-If you have installed CRUMBS (and supplied CMake config files to your install prefix) you can instead build the example against an installed package by turning off `CRUMBS_BUILD_IN_TREE` and setting `CMAKE_PREFIX_PATH` accordingly.
-
-When CRUMBS is installed and its CMake package files are available, out-of-tree builds can use `find_package`:
-
-```cmake
-find_package(crumbs CONFIG REQUIRED)
-add_executable(myprog main.c)
-target_link_libraries(myprog PRIVATE crumbs::crumbs)
-```
-
-## PlatformIO examples (Arduino Nano)
-
-There are several PlatformIO examples that target the Arduino Nano:
-
-- `examples/platformio/simple_controller/` — controller sketch that reads serial CSV commands and sends them to a peripheral.
-- `examples/platformio/simple_peripheral/` — peripheral sketch (address 0x08) that prints received commands and returns sample replies.
-- `examples/platformio/handler_peripheral_led/` — LED peripheral using handler dispatch pattern.
-- `examples/platformio/handler_peripheral_servo/` — servo peripheral using handler dispatch pattern.
-
-Build with PlatformIO CLI inside the example directories:
+Linux examples use CMake for building. Example structure:
 
 ```bash
-cd examples/platformio/simple_controller
-pio run -e nanoatmega328new
-
-cd ../simple_peripheral
-pio run -e nanoatmega328new
+mkdir build && cd build
+cmake .. -DCRUMBS_BUILD_IN_TREE=ON
+make
 ```
+
+See [simple_controller](../examples/core_usage/linux/simple_controller/) for a complete CMake example.
+
+### PlatformIO
+
+PlatformIO examples support multiple boards (Nano, ESP32):
+
+```bash
+cd examples/core_usage/platformio/simple_controller
+pio run -e nanoatmega328new
+pio run -e esp32dev
+```
+
+See [PlatformIO examples](../examples/core_usage/platformio/) for complete projects.
+

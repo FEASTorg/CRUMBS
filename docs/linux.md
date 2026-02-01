@@ -99,7 +99,7 @@ crumbs> addr led 0x10     # Change LED address
 crumbs> quit              # Exit
 ```
 
-See `examples/linux/interactive_controller/` for the full source.
+See `examples/handlers_usage/linux/mock_controller/` and `examples/core_usage/linux/simple_controller/` for Linux controller examples.
 
 ## Wrapper script / udev
 

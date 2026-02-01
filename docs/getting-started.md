@@ -31,7 +31,7 @@ target_link_libraries(myprog PRIVATE crumbs::crumbs)
 
 Tips
 
-- For local development prefer the in-tree example usage (`examples/linux/simple_native_controller/`) which will link the in-repo `crumbs` target via `add_subdirectory`.
+- For local development prefer the in-tree example usage (`examples/core_usage/linux/simple_controller/`) which will link the in-repo `crumbs` target via `add_subdirectory`.
 - When packaging for distribution ensure you install the exported cmake files (the top-level CMake provided export/install rules place crumbs targets under lib/cmake/crumbs) so `find_package(crumbs CONFIG)` can locate them via CMAKE_PREFIX_PATH or an installed system prefix.
 
 Linux HAL dependency note
@@ -146,7 +146,7 @@ void setup() {
 void loop() {} // Wire callbacks handle everything
 ```
 
-For complete examples, see `examples/arduino/handler_peripheral_led/` and `examples/arduino/handler_peripheral_servo/`.
+For complete examples, see the handler pattern demonstrations in `examples/handlers_usage/arduino/` including `mock_peripheral/` and `mock_controller/`.
 
 ## Memory Optimization
 
