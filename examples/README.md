@@ -43,11 +43,11 @@ Examples are organized into three tiers based on complexity:
 
 ## Platform Coverage
 
-| Platform   | Tier 1         | Tier 2         | Tier 3                  |
-| ---------- | -------------- | -------------- | ----------------------- |
-| Arduino    | ✓ 5 examples   | —              | (Roadmap-03)            |
-| PlatformIO | ✓ 2 examples   | ✓ 2 examples   | (Roadmap-03)            |
-| Linux      | ✓ 1 controller | ✓ 1 controller | (Roadmap-03)            |
+| Platform   | Tier 1         | Tier 2         | Tier 3                              |
+| ---------- | -------------- | -------------- | ----------------------------------- |
+| Arduino    | ✓ 5 examples   | —              | —                                   |
+| PlatformIO | ✓ 2 examples   | ✓ 2 examples   | ✓ 3 peripherals (LHWIT family)      |
+| Linux      | ✓ 1 controller | ✓ 1 controller | ✓ 2 controllers (discovery, manual) |
 
 ---
 

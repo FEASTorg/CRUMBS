@@ -92,48 +92,22 @@ if (read_from_peripheral(addr, &reply) == 0 && reply.data_len >= 5)
 }
 ```
 
-## Why No Library Helpers?
+## Helper Functions
 
-CRUMBS does not provide library functions for version checking because:
+**Core library:** CRUMBS core intentionally does not include version helpers to remain protocol-agnostic and minimal.
 
-1. **Protocol-agnostic**: The payload format is a convention, not a requirement.
-   Users may need different version schemes or additional fields.
+**Family headers:** Module families (like LHWIT) may provide convenience functions. See `lhwit_ops.h` for examples:
+- `lhwit_parse_version()` - Parse 5-byte payload
+- `lhwit_check_crumbs_compat()` - Verify CRUMBS version
+- `lhwit_check_module_compat()` - Check major/minor compatibility
 
-2. **Minimal footprint**: Helper functions would add code size for a simple
-   task that users can easily implement.
+## Compatibility Rules
 
-3. **Flexibility**: Some devices may not fit the standard format (e.g., devices
-   with no firmware version, or with additional identification fields).
+Follow [Semantic Versioning](https://semver.org/) for module firmware:
 
-## Semantic Versioning
-
-We recommend using [Semantic Versioning](https://semver.org/) for module firmware:
-
-- **MAJOR**: Increment when making incompatible protocol changes
-- **MINOR**: Increment when adding functionality in a backward-compatible manner
-- **PATCH**: Increment when making backward-compatible bug fixes
-
-## Extended Version Info
-
-If 5 bytes is insufficient, you can use additional opcodes:
-
-```c
-case 0x00:  // Basic version info (5 bytes)
-    // ... standard format ...
-    break;
-
-case 0x01:  // Extended device info (up to 27 bytes)
-    crumbs_msg_init(reply, MY_TYPE_ID, 0x01);
-    crumbs_msg_add_u16(reply, CRUMBS_VERSION);
-    crumbs_msg_add_u8(reply, MODULE_VER_MAJ);
-    crumbs_msg_add_u8(reply, MODULE_VER_MIN);
-    crumbs_msg_add_u8(reply, MODULE_VER_PAT);
-    // Additional fields:
-    crumbs_msg_add_u32(reply, BUILD_TIMESTAMP);
-    crumbs_msg_add_u16(reply, HARDWARE_REV);
-    // ... etc ...
-    break;
-```
+- **MAJOR**: Incompatible protocol changes (must match)
+- **MINOR**: New commands added (peripheral >= controller required)
+- **PATCH**: Bug fixes (no compatibility impact)
 
 ## See Also
 

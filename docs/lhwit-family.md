@@ -205,7 +205,7 @@ Verify with: `i2cdetect -y 1`
 cd examples/families_usage/controller_discovery
 mkdir -p build && cd build && cmake .. && make
 
-cd ../../manual_controller
+cd ../../controller_manual
 mkdir -p build && cd build && cmake .. && make
 ```
 

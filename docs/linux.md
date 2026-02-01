@@ -86,10 +86,11 @@ sudo ./crumbs_mock_controller /dev/i2c-1
 ```
 
 This provides a command-line interface for testing mock peripherals. Type `help` at the prompt to see available commands.
-crumbs> servo angle 0 90  # Set servo 0 to 90 degrees
-crumbs> servo sweep 0 0 180 10  # Sweep servo 0
-crumbs> addr led 0x10     # Change LED address
-crumbs> quit              # Exit
+crumbs> servo angle 0 90 # Set servo 0 to 90 degrees
+crumbs> servo sweep 0 0 180 10 # Sweep servo 0
+crumbs> addr led 0x10 # Change LED address
+crumbs> quit # Exit
+
 ```
 
 See `examples/handlers_usage/linux/mock_controller/` and `examples/core_usage/linux/simple_controller/` for Linux controller examples.
@@ -97,3 +98,4 @@ See `examples/handlers_usage/linux/mock_controller/` and `examples/core_usage/li
 ## Wrapper script / udev
 
 If you'd prefer the example to run as a non-root user, add a udev rule to adjust `/dev/i2c-*` permissions or add your account to the `i2c` group. I can add a small wrapper script that discovers the first available `/dev/i2c-*` device and invokes the example with appropriate parameters.
+```

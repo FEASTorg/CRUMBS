@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "crumbs.h"
 #include "crumbs_linux.h"
@@ -41,6 +42,21 @@
 static uint8_t g_calc_addr = 0;
 static uint8_t g_led_addr = 0;
 static uint8_t g_servo_addr = 0;
+
+/* Device info with version compatibility status */
+typedef struct
+{
+    uint8_t addr;
+    uint8_t type_id;
+    uint16_t crumbs_ver;
+    uint8_t mod_major;
+    uint8_t mod_minor;
+    uint8_t mod_patch;
+    int compat; /* 0=OK, <0=error */
+} device_info_t;
+
+static device_info_t g_devices[16];
+static int g_device_count = 0;
 
 #define MAX_CMD_LEN 256
 
@@ -119,59 +135,193 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
 {
     uint8_t addrs[16];
     uint8_t types[16];
-    
+
     printf("Scanning I2C bus for CRUMBS devices...\n");
-    
+
     /* CRUMBS Pattern: Type-aware scanning
      * crumbs_controller_scan_for_crumbs_with_types() probes addresses and
-     * queries type IDs via opcode 0x00. Returns both addresses and types.
+     * queries type IDs via message header. Returns both addresses and types.
      * - Addresses 0x08-0x77 (valid I2C range)
-     * - strict=0: Accept any CRUMBS device (would be 1 to require type match)
+     * - strict=0: Accept any CRUMBS device
      * - Platform-specific write/read functions
      * - 100ms timeout per device
      */
     int count = crumbs_controller_scan_for_crumbs_with_types(
         ctx, 0x08, 0x77, 0,
-        crumbs_linux_i2c_write, crumbs_linux_read, (void*)lw,
+        crumbs_linux_i2c_write, crumbs_linux_read, (void *)lw,
         addrs, types, 16, 100000);
-    
+
     if (count < 0)
     {
         fprintf(stderr, "ERROR: Scan failed (%d)\n", count);
+        g_calc_addr = g_led_addr = g_servo_addr = 0;
+        g_device_count = 0;
         return count;
     }
-    
-    printf("Found %d CRUMBS device(s):\n", count);
-    
-    g_calc_addr = 0;
-    g_led_addr = 0;
-    g_servo_addr = 0;
-    
+
+    if (count == 0)
+    {
+        printf("No devices found.\n");
+        g_calc_addr = g_led_addr = g_servo_addr = 0;
+        g_device_count = 0;
+        return 0;
+    }
+
+    printf("\nFound %d device(s):\n", count);
+    printf("--------------------------------------------\n");
+
+    g_device_count = count;
+    int usable = 0;
+
     for (int i = 0; i < count; i++)
     {
-        printf("  [%d] Address 0x%02X, Type 0x%02X", i, addrs[i], types[i]);
-        
+        device_info_t *dev = &g_devices[i];
+        dev->addr = addrs[i];
+        dev->type_id = types[i];
+        dev->compat = -99; /* Unknown until we query */
+
+        /* Get type name and expected version */
+        const char *name = "Unknown";
+        uint8_t exp_major = 0, exp_minor = 0;
+
         if (types[i] == CALC_TYPE_ID)
         {
-            printf(" (Calculator)\n");
-            g_calc_addr = addrs[i];
+            name = "Calculator";
+            exp_major = CALC_MODULE_VER_MAJOR;
+            exp_minor = CALC_MODULE_VER_MINOR;
         }
         else if (types[i] == LED_TYPE_ID)
         {
-            printf(" (LED)\n");
-            g_led_addr = addrs[i];
+            name = "LED";
+            exp_major = LED_MODULE_VER_MAJOR;
+            exp_minor = LED_MODULE_VER_MINOR;
         }
         else if (types[i] == SERVO_TYPE_ID)
         {
-            printf(" (Servo)\n");
-            g_servo_addr = addrs[i];
+            name = "Servo";
+            exp_major = SERVO_MODULE_VER_MAJOR;
+            exp_minor = SERVO_MODULE_VER_MINOR;
+        }
+
+        printf("[0x%02X] %s\n", addrs[i], name);
+
+        /* Query version (opcode 0x00) via SET_REPLY */
+        crumbs_message_t query, reply;
+        crumbs_msg_init(&query, 0, CRUMBS_CMD_SET_REPLY);
+        crumbs_msg_add_u8(&query, 0x00);
+
+        uint8_t buf[8];
+        size_t len = crumbs_encode_message(&query, buf, sizeof(buf));
+        crumbs_linux_i2c_write(lw, addrs[i], buf, len);
+        usleep(10000); /* Give peripheral time to prepare reply */
+
+        int rc = crumbs_linux_read_message(lw, addrs[i], ctx, &reply);
+        if (rc != 0)
+        {
+            printf("       ! Version query failed\n");
+            dev->compat = -99;
+            continue;
+        }
+
+        /* Parse version */
+        if (lhwit_parse_version(reply.data, reply.data_len,
+                                &dev->crumbs_ver, &dev->mod_major,
+                                &dev->mod_minor, &dev->mod_patch) != 0)
+        {
+            printf("       ! Invalid version format\n");
+            dev->compat = -99;
+            continue;
+        }
+
+        /* Display version info */
+        char ver_str[12], ctrl_ver_str[12];
+        lhwit_format_version(dev->crumbs_ver, ver_str);
+        lhwit_format_version(CRUMBS_VERSION, ctrl_ver_str);
+
+        printf("       CRUMBS: v%s (controller: v%s)\n", ver_str, ctrl_ver_str);
+        printf("       Module: v%d.%d.%d (expected: v%d.%d.x)\n",
+               dev->mod_major, dev->mod_minor, dev->mod_patch,
+               exp_major, exp_minor);
+
+        /* Check compatibility */
+        int crumbs_ok = lhwit_check_crumbs_compat(dev->crumbs_ver);
+        int module_ok = lhwit_check_module_compat(dev->mod_major, dev->mod_minor,
+                                                  exp_major, exp_minor);
+
+        if (crumbs_ok < 0)
+        {
+            printf("       X CRUMBS version too old\n");
+            printf("         -> Update peripheral firmware\n");
+            dev->compat = -1;
+        }
+        else if (module_ok == -1)
+        {
+            printf("       X Module major version mismatch\n");
+            if (dev->mod_major > exp_major)
+                printf("         -> Recompile controller with new header\n");
+            else
+                printf("         -> Update peripheral firmware\n");
+            dev->compat = -2;
+        }
+        else if (module_ok == -2)
+        {
+            printf("       X Module minor version too old\n");
+            printf("         -> Update peripheral firmware\n");
+            dev->compat = -3;
         }
         else
         {
-            printf(" (Unknown)\n");
+            printf("       OK Compatible\n");
+            dev->compat = 0;
+            usable++;
         }
     }
-    
+
+    printf("--------------------------------------------\n");
+    printf("Usable: %d/%d devices\n\n", usable, count);
+
+    /* Store addresses only for compatible devices */
+    g_calc_addr = g_led_addr = g_servo_addr = 0;
+    for (int i = 0; i < g_device_count; i++)
+    {
+        if (g_devices[i].compat == 0)
+        {
+            if (g_devices[i].type_id == CALC_TYPE_ID)
+                g_calc_addr = g_devices[i].addr;
+            if (g_devices[i].type_id == LED_TYPE_ID)
+                g_led_addr = g_devices[i].addr;
+            if (g_devices[i].type_id == SERVO_TYPE_ID)
+                g_servo_addr = g_devices[i].addr;
+        }
+    }
+
+    return usable;
+}
+
+/* ============================================================================
+ * Device Compatibility Check
+ * ============================================================================ */
+
+/**
+ * @brief Check if device is compatible before sending commands.
+ * @return 0 if OK, -1 if not found or incompatible (prints error message).
+ */
+static int check_device_compat(uint8_t addr, const char *name)
+{
+    if (addr == 0)
+    {
+        printf("%s not found. Run 'scan' first.\n", name);
+        return -1;
+    }
+    for (int i = 0; i < g_device_count; i++)
+    {
+        if (g_devices[i].addr == addr && g_devices[i].compat < 0)
+        {
+            printf("%s at 0x%02X is incompatible.\n", name, addr);
+            printf("Update firmware/headers and run 'scan' again.\n");
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -181,11 +331,8 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
 
 static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
 {
-    if (g_calc_addr == 0)
-    {
-        printf("ERROR: Calculator not found. Run 'scan' first.\n");
+    if (check_device_compat(g_calc_addr, "Calculator") != 0)
         return -1;
-    }
     
     char subcmd[32];
     if (sscanf(args, "%31s", subcmd) != 1)
@@ -311,11 +458,8 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
 
 static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
 {
-    if (g_led_addr == 0)
-    {
-        printf("ERROR: LED not found. Run 'scan' first.\n");
+    if (check_device_compat(g_led_addr, "LED") != 0)
         return -1;
-    }
     
     char subcmd[32];
     if (sscanf(args, "%31s", subcmd) != 1)
@@ -403,11 +547,8 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
 
 static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
 {
-    if (g_servo_addr == 0)
-    {
-        printf("ERROR: Servo not found. Run 'scan' first.\n");
+    if (check_device_compat(g_servo_addr, "Servo") != 0)
         return -1;
-    }
     
     char subcmd[32];
     if (sscanf(args, "%31s", subcmd) != 1)

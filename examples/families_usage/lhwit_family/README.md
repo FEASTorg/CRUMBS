@@ -100,7 +100,6 @@ lhwit> servo set_pos 0 90
 
 ```bash
 ./controller_manual /dev/i2c-1
-./lhwit_manual_controller /dev/i2c-1
 lhwit> calculator add 5 3
 lhwit> led get_state
 lhwit> servo get_pos

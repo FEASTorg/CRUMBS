@@ -340,16 +340,13 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
     switch (ctx->requested_opcode)
     {
-    case 0: /* Default reply - device info */
-    {
-        const char *info = "Servo v1.0";
+    case 0: /* Version info per versioning.md convention */
         crumbs_msg_init(reply, SERVO_TYPE_ID, 0);
-        for (const char *p = info; *p; p++)
-        {
-            crumbs_msg_add_u8(reply, (uint8_t)*p);
-        }
+        crumbs_msg_add_u16(reply, CRUMBS_VERSION);
+        crumbs_msg_add_u8(reply, SERVO_MODULE_VER_MAJOR);
+        crumbs_msg_add_u8(reply, SERVO_MODULE_VER_MINOR);
+        crumbs_msg_add_u8(reply, SERVO_MODULE_VER_PATCH);
         break;
-    }
 
     case SERVO_OP_GET_POS:
     {

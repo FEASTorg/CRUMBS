@@ -119,7 +119,7 @@ Additionally, module developers may use common conventions:
 
 ### Versioning & Compatibility
 
-Module families should implement version reporting (see [Versioning Guide](../roadmaps/archive/versioning.md)) to detect mismatches between controller headers and peripheral firmware. Controllers can query version during discovery to ensure compatibility:
+Module families should implement version reporting (see [Versioning Guide](versioning.md)) to detect mismatches between controller headers and peripheral firmware. Controllers can query version during discovery to ensure compatibility:
 
 - **PATCH updates** (x.y.N): Bugfixes, no command changes
 - **MINOR updates** (x.N.0): New commands added (backward compatible)

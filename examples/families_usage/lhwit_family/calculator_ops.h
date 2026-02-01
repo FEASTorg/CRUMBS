@@ -38,6 +38,11 @@ extern "C"
 /** @brief Type ID for calculator device. */
 #define CALC_TYPE_ID 0x03
 
+/* Module protocol version (per versioning.md convention) */
+#define CALC_MODULE_VER_MAJOR 1
+#define CALC_MODULE_VER_MINOR 0
+#define CALC_MODULE_VER_PATCH 0
+
 /* ============================================================================
  * Command Definitions: SET Operations (Execute Commands)
  * ============================================================================ */
