@@ -358,15 +358,14 @@ int main(int argc, char **argv)
     printf("I2C device: %s\n", i2c_device);
     printf("Target peripheral: 0x%02X\n\n", PERIPHERAL_ADDR);
 
-    /* Initialize CRUMBS context */
+    /* Initialize CRUMBS context and open I2C device */
     crumbs_context_t ctx;
-    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
-
-    /* Open I2C device */
     crumbs_linux_i2c_t lw;
-    if (crumbs_linux_i2c_open(&lw, i2c_device) != 0)
+    
+    int rc = crumbs_linux_init_controller(&ctx, &lw, i2c_device, 25000);
+    if (rc != 0)
     {
-        fprintf(stderr, "Error: Failed to open I2C device '%s'\n", i2c_device);
+        fprintf(stderr, "Error: Failed to initialize controller (rc=%d)\n", rc);
         fprintf(stderr, "Try: sudo chmod 666 %s\n", i2c_device);
         return 1;
     }
@@ -445,6 +444,6 @@ int main(int argc, char **argv)
     }
 
     printf("\nExiting...\n");
-    crumbs_linux_i2c_close(&lw);
+    crumbs_linux_close(&lw);
     return 0;
 }
