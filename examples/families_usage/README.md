@@ -35,8 +35,8 @@ Three-device reference system demonstrating different handler patterns:
 
 **Controllers:**
 
-- **discovery_controller** - Auto-discovers devices by type, interactive commands
-- **manual_controller** - Uses hardcoded addresses from config, faster startup
+- **controller_discovery** - Auto-discovers devices by type, interactive commands
+- **controller_manual** - Uses hardcoded addresses from config, faster startup
 
 **Documentation:** [lhwit_family/README.md](lhwit_family/README.md) | [Comprehensive Guide](../../docs/lhwit-family.md)
 
@@ -69,8 +69,8 @@ family_name/
 ├── device2/
 ├── device3/
 ├── README.md                # Family overview
-discovery_controller/        # Auto-discovery interactive tool
-manual_controller/           # Config-based interactive tool
+controller_discovery/        # Auto-discovery interactive tool
+controller_manual/           # Config-based interactive tool
 ```
 
 ## Next Steps

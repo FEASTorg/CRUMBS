@@ -263,20 +263,16 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
             return -1;
         }
 
-        /* Determine opcode */
-        uint8_t opcode;
-        if (strcmp(subcmd, "add") == 0)
-            opcode = CALC_OP_ADD;
-        else if (strcmp(subcmd, "sub") == 0)
-            opcode = CALC_OP_SUB;
-        else if (strcmp(subcmd, "mul") == 0)
-            opcode = CALC_OP_MUL;
-        else
-            opcode = CALC_OP_DIV;
-
         /* Build and send command */
-        rc = calc_send_operation(ctx, g_calc_addr, crumbs_linux_i2c_write, lw,
-                                 opcode, a, b);
+        if (strcmp(subcmd, "add") == 0)
+            rc = calc_send_add(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw, a, b);
+        else if (strcmp(subcmd, "sub") == 0)
+            rc = calc_send_sub(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw, a, b);
+        else if (strcmp(subcmd, "mul") == 0)
+            rc = calc_send_mul(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw, a, b);
+        else
+            rc = calc_send_div(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw, a, b);
+
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: Failed to send operation (%d)\n", rc);
@@ -290,7 +286,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
     else if (strcmp(subcmd, "result") == 0)
     {
         /* Send GET_RESULT request */
-        rc = calc_send_get_result(ctx, g_calc_addr, crumbs_linux_i2c_write, lw);
+        rc = calc_query_result(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw);
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: Failed to request result (%d)\n", rc);
@@ -320,7 +316,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
     else if (strcmp(subcmd, "history") == 0)
     {
         /* First, get history metadata */
-        rc = calc_send_get_hist_meta(ctx, g_calc_addr, crumbs_linux_i2c_write, lw);
+        rc = calc_query_hist_meta(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw);
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: Failed to request history metadata (%d)\n", rc);
@@ -353,7 +349,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         /* Retrieve each history entry */
         for (uint8_t i = 0; i < count; i++)
         {
-            rc = calc_send_get_hist_entry(ctx, g_calc_addr, crumbs_linux_i2c_write, lw, i);
+            rc = calc_query_hist_entry(ctx, g_calc_addr, crumbs_linux_i2c_write, (void*)lw, i);
             if (rc != 0)
             {
                 fprintf(stderr, "ERROR: Failed to request entry %u (%d)\n", i, rc);
@@ -426,7 +422,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
             return -1;
         }
 
-        rc = led_send_set_all(ctx, g_led_addr, crumbs_linux_i2c_write, lw, (uint8_t)mask);
+        rc = led_send_set_all(ctx, g_led_addr, crumbs_linux_i2c_write, (void*)lw, (uint8_t)mask);
         if (rc == 0)
             printf("OK: All LEDs set to 0x%02X\n", (uint8_t)mask);
         else
@@ -442,7 +438,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
             return -1;
         }
 
-        rc = led_send_set_one(ctx, g_led_addr, crumbs_linux_i2c_write, lw,
+        rc = led_send_set_one(ctx, g_led_addr, crumbs_linux_i2c_write, (void*)lw, 
                               (uint8_t)idx, (uint8_t)state);
         if (rc == 0)
             printf("OK: LED %u set to %s\n", idx, state ? "ON" : "OFF");
@@ -460,7 +456,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
             return -1;
         }
 
-        rc = led_send_blink(ctx, g_led_addr, crumbs_linux_i2c_write, lw,
+        rc = led_send_blink(ctx, g_led_addr, crumbs_linux_i2c_write, (void*)lw,
                             (uint8_t)idx, (uint8_t)enable, (uint16_t)period_ms);
         if (rc == 0)
         {
@@ -475,7 +471,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
     }
     else if (strcmp(subcmd, "get_state") == 0)
     {
-        rc = led_send_get_state(ctx, g_led_addr, crumbs_linux_i2c_write, lw);
+        rc = led_query_state(ctx, g_led_addr, crumbs_linux_i2c_write, (void*)lw);
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: led_send_get_state failed (%d)\n", rc);
@@ -555,7 +551,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
             return -1;
         }
 
-        rc = servo_send_set_pos(ctx, g_servo_addr, crumbs_linux_i2c_write, lw,
+        rc = servo_send_set_pos(ctx, g_servo_addr, crumbs_linux_i2c_write, (void*)lw,
                                 (uint8_t)idx, (uint8_t)position);
         if (rc == 0)
             printf("OK: Servo %u set to %u degrees\n", idx, position);
@@ -572,7 +568,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
             return -1;
         }
 
-        rc = servo_send_set_speed(ctx, g_servo_addr, crumbs_linux_i2c_write, lw,
+        rc = servo_send_set_speed(ctx, g_servo_addr, crumbs_linux_i2c_write, (void*)lw,
                                   (uint8_t)idx, (uint8_t)speed);
         if (rc == 0)
             printf("OK: Servo %u speed set to %u (0=instant, higher=slower)\n", idx, speed);
@@ -591,7 +587,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
             return -1;
         }
 
-        rc = servo_send_sweep(ctx, g_servo_addr, crumbs_linux_i2c_write, lw,
+        rc = servo_send_sweep(ctx, g_servo_addr, crumbs_linux_i2c_write, (void*)lw,
                               (uint8_t)idx, (uint8_t)enable, (uint8_t)min_pos,
                               (uint8_t)max_pos, (uint8_t)step);
         if (rc == 0)
@@ -608,7 +604,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
     }
     else if (strcmp(subcmd, "get_pos") == 0)
     {
-        rc = servo_send_get_pos(ctx, g_servo_addr, crumbs_linux_i2c_write, lw);
+        rc = servo_query_pos(ctx, g_servo_addr, crumbs_linux_i2c_write, (void*)lw);
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: servo_send_get_pos failed (%d)\n", rc);

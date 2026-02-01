@@ -18,10 +18,18 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "crumbs.h"
-#include "crumbs_linux.h"
-#include "lhwit_ops.h"
+/* Include canonical operation headers */
+#include "lhwit_family/lhwit_ops.h"
 #include "config.h"
+
+/* ============================================================================
+ * Configuration
+ * ============================================================================ */
+
+/* Configured device addresses from config.h */
+static uint8_t g_calc_addr = CALCULATOR_ADDR;
+static uint8_t g_led_addr = LED_ADDR;
+static uint8_t g_servo_addr = SERVO_ADDR;
 
 /* ============================================================================
  * Global State
@@ -29,10 +37,6 @@
 
 static crumbs_context_t g_ctx;
 static crumbs_linux_i2c_t g_lw;
-
-static uint8_t g_calc_addr = CALCULATOR_ADDR;
-static uint8_t g_led_addr = LED_ADDR;
-static uint8_t g_servo_addr = SERVO_ADDR;
 
 /* ============================================================================
  * Utility Functions
@@ -118,134 +122,84 @@ static void print_help(void)
  * Calculator Commands
  * ============================================================================ */
 
-static void cmd_calculator(const char *args)
+static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
 {
     char subcmd[32];
-    int32_t a, b;
+    uint32_t a, b;
+    int rc;
+    crumbs_message_t reply;
 
     if (sscanf(args, "%31s", subcmd) != 1)
     {
         printf("Error: Missing calculator subcommand\n");
         printf("Usage: calculator <add|sub|mul|div|result|history> [args...]\n");
-        return;
+        return -1;
     }
 
-    // Arithmetic operations
-    if (strcmp(subcmd, "add") == 0)
+    /* Arithmetic operations */
+    if (strcmp(subcmd, "add") == 0 || strcmp(subcmd, "sub") == 0 ||
+        strcmp(subcmd, "mul") == 0 || strcmp(subcmd, "div") == 0)
     {
-        if (sscanf(args, "%*s %d %d", &a, &b) != 2)
+        const char *rest = args + strlen(subcmd);
+        while (*rest && isspace((unsigned char)*rest))
+            rest++;
+
+        if (sscanf(rest, "%u %u", &a, &b) != 2)
         {
-            printf("Error: add requires two integers\n");
-            printf("Usage: calculator add <a> <b>\n");
-            return;
+            printf("Usage: calculator %s <a> <b>\n", subcmd);
+            return -1;
         }
 
-        uint8_t msg_buf[32];
-        int msg_len = calculator_send_add(&g_ctx, g_calc_addr, a, b, msg_buf);
+        /* Build and send command */
+        if (strcmp(subcmd, "add") == 0)
+            rc = calc_send_add(ctx, g_calc_addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+        else if (strcmp(subcmd, "sub") == 0)
+            rc = calc_send_sub(ctx, g_calc_addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+        else if (strcmp(subcmd, "mul") == 0)
+            rc = calc_send_mul(ctx, g_calc_addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+        else
+            rc = calc_send_div(ctx, g_calc_addr, crumbs_linux_i2c_write, (void *)lw, a, b);
 
-        if (crumbs_linux_i2c_write(&g_lw, g_calc_addr, msg_buf, msg_len) < 0)
+        if (rc != 0)
         {
-            printf("Error: Failed to send add command\n");
-            return;
+            fprintf(stderr, "ERROR: Failed to send operation (%d)\n", rc);
+            return rc;
         }
 
-        printf("OK: add(%d, %d) command sent\n", a, b);
+        printf("OK: %s(%u, %u) command sent\n", subcmd, a, b);
         printf("    Use 'calculator result' to get the answer\n");
+        return 0;
     }
-    else if (strcmp(subcmd, "sub") == 0)
-    {
-        if (sscanf(args, "%*s %d %d", &a, &b) != 2)
-        {
-            printf("Error: sub requires two integers\n");
-            printf("Usage: calculator sub <a> <b>\n");
-            return;
-        }
-
-        uint8_t msg_buf[32];
-        int msg_len = calculator_send_sub(&g_ctx, g_calc_addr, a, b, msg_buf);
-
-        if (crumbs_linux_i2c_write(&g_lw, g_calc_addr, msg_buf, msg_len) < 0)
-        {
-            printf("Error: Failed to send sub command\n");
-            return;
-        }
-
-        printf("OK: sub(%d, %d) command sent\n", a, b);
-        printf("    Use 'calculator result' to get the answer\n");
-    }
-    else if (strcmp(subcmd, "mul") == 0)
-    {
-        if (sscanf(args, "%*s %d %d", &a, &b) != 2)
-        {
-            printf("Error: mul requires two integers\n");
-            printf("Usage: calculator mul <a> <b>\n");
-            return;
-        }
-
-        uint8_t msg_buf[32];
-        int msg_len = calculator_send_mul(&g_ctx, g_calc_addr, a, b, msg_buf);
-
-        if (crumbs_linux_i2c_write(&g_lw, g_calc_addr, msg_buf, msg_len) < 0)
-        {
-            printf("Error: Failed to send mul command\n");
-            return;
-        }
-
-        printf("OK: mul(%d, %d) command sent\n", a, b);
-        printf("    Use 'calculator result' to get the answer\n");
-    }
-    else if (strcmp(subcmd, "div") == 0)
-    {
-        if (sscanf(args, "%*s %d %d", &a, &b) != 2)
-        {
-            printf("Error: div requires two integers\n");
-            printf("Usage: calculator div <a> <b>\n");
-            return;
-        }
-
-        uint8_t msg_buf[32];
-        int msg_len = calculator_send_div(&g_ctx, g_calc_addr, a, b, msg_buf);
-
-        if (crumbs_linux_i2c_write(&g_lw, g_calc_addr, msg_buf, msg_len) < 0)
-        {
-            printf("Error: Failed to send div command\n");
-            return;
-        }
-
-        printf("OK: div(%d, %d) command sent\n", a, b);
-        printf("    Use 'calculator result' to get the answer\n");
-    }
-    // Get result
     else if (strcmp(subcmd, "result") == 0)
     {
-        uint8_t msg_buf[32];
-        int msg_len = calculator_send_get_result(&g_ctx, g_calc_addr, msg_buf);
-
-        if (crumbs_linux_i2c_write(&g_lw, g_calc_addr, msg_buf, msg_len) < 0)
+        /* Send GET_RESULT request */
+        rc = calc_query_result(ctx, g_calc_addr, crumbs_linux_i2c_write, (void *)lw);
+        if (rc != 0)
         {
-            printf("Error: Failed to send get result command\n");
-            return;
+            fprintf(stderr, "ERROR: Failed to request result (%d)\n", rc);
+            return rc;
         }
 
-        uint8_t reply_buf[32];
-        int reply_len = crumbs_linux_read_message(&g_ctx, &g_lw, g_calc_addr, reply_buf, sizeof(reply_buf), 100);
-
-        if (reply_len < 0)
+        /* Read reply */
+        rc = crumbs_linux_read_message(lw, g_calc_addr, ctx, &reply);
+        if (rc != 0)
         {
-            printf("Error: Failed to read result\n");
-            return;
+            fprintf(stderr, "ERROR: Failed to read result (%d)\n", rc);
+            return rc;
         }
 
-        int32_t result;
-        if (calculator_parse_result_reply(reply_buf, reply_len, &result) < 0)
+        uint32_t result;
+        if (crumbs_msg_read_u32(reply.data, reply.data_len, 0, &result) == 0)
         {
-            printf("Error: Failed to parse result reply\n");
-            return;
+            printf("Last result: %u\n", result);
         }
-
-        printf("Last result: %d\n", result);
+        else
+        {
+            fprintf(stderr, "ERROR: Invalid response format\n");
+            return -1;
+        }
+        return 0;
     }
-    // Get history
     else if (strcmp(subcmd, "history") == 0)
     {
         // First, get metadata
