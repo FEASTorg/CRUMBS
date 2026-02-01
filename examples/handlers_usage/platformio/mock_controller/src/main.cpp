@@ -29,7 +29,7 @@
 #include <crumbs_message_helpers.h>
 
 /* Include contract header (from parent directory) */
-#include "../../mock_ops.h"
+#include "mock_ops.h"
 
 /* ============================================================================
  * Configuration
