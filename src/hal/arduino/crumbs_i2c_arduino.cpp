@@ -292,9 +292,9 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
     /* Choose the int,int overload unambiguously on cores that provide
        multiple overloads by casting both args to int. */
 #if ARDUINO >= 100
-    size_t available = wire->requestFrom((int)static_cast<uint8_t>(addr), (int)requested);
+    (void)wire->requestFrom((int)static_cast<uint8_t>(addr), (int)requested);
 #else
-    size_t available = wire->requestFrom((int)addr, (int)requested);
+    (void)wire->requestFrom((int)addr, (int)requested);
 #endif
 
     unsigned long start = micros();

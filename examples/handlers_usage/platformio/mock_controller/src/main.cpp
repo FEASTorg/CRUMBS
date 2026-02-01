@@ -277,6 +277,7 @@ static void cmd_heartbeat(const char *args)
     else
     {
         Serial.println(F("Error: Failed to send heartbeat command"));
+    }
 }
 
 /**

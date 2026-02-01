@@ -44,6 +44,10 @@
 dist/
 build*/
 
+# plaformio build files
+.pio/
+.venv/
+
 # Need to hide certain files for publication & thesis integrity reasons
 roadmaps/
 planning/
