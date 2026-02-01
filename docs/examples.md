@@ -9,16 +9,16 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 **Audience:** New users learning CRUMBS fundamentals  
 **Purpose:** Understand protocol, encoding, I2C communication
 
-| Platform   | Examples                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------- |
-| Arduino    | [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/)                          |
-|            | [simple_controller](../examples/core_usage/arduino/simple_controller/)                          |
-|            | [simple_peripheral_noncrumbs](../examples/core_usage/arduino/simple_peripheral_noncrumbs/)      |
-|            | [display_peripheral](../examples/core_usage/arduino/display_peripheral/)                        |
-|            | [display_controller](../examples/core_usage/arduino/display_controller/)                        |
-| PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                       |
-|            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                       |
-| Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                            |
+| Platform   | Examples                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------ |
+| Arduino    | [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/)                     |
+|            | [simple_controller](../examples/core_usage/arduino/simple_controller/)                     |
+|            | [simple_peripheral_noncrumbs](../examples/core_usage/arduino/simple_peripheral_noncrumbs/) |
+|            | [display_peripheral](../examples/core_usage/arduino/display_peripheral/)                   |
+|            | [display_controller](../examples/core_usage/arduino/display_controller/)                   |
+| PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                  |
+|            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                  |
+| Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                       |
 
 **Start here:** Learn message structure, encoding/decoding, basic request-reply patterns.
 
@@ -27,11 +27,11 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 **Audience:** Users ready for production callback patterns  
 **Purpose:** Learn handler registration and SET_REPLY query mechanism
 
-| Platform   | Examples                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------- |
-| PlatformIO | [mock_peripheral](../examples/handlers_usage/platformio/mock_peripheral/)                   |
-|            | [mock_controller](../examples/handlers_usage/platformio/mock_controller/)                   |
-| Linux      | [mock_controller](../examples/handlers_usage/linux/mock_controller/)                        |
+| Platform   | Examples                                                                  |
+| ---------- | ------------------------------------------------------------------------- |
+| PlatformIO | [mock_peripheral](../examples/handlers_usage/platformio/mock_peripheral/) |
+|            | [mock_controller](../examples/handlers_usage/platformio/mock_controller/) |
+| Linux      | [mock_controller](../examples/handlers_usage/linux/mock_controller/)      |
 
 **Key concepts:**
 
@@ -43,10 +43,21 @@ See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detaile
 
 ### Tier 3: Usage Families (`examples/families_usage/`)
 
-**Audience:** Users building real device families  
-**Purpose:** Complete device family implementations (Coming in Roadmap-03)
+**Audience:** Users building multi-device I²C systems  
+**Purpose:** Complete device family implementations with canonical operation headers
 
-**Planned families:** LED strips, servo controllers, sensor modules, displays
+| Family    | Devices                                               | Controllers                               | Purpose                                                                                                    |
+| --------- | ----------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **LHWIT** | Calculator (0x03)<br>LED Array (0x01)<br>Servo (0x02) | Discovery Controller<br>Manual Controller | Low Hardware Implementation Test - demonstrates function-style, state-query, and position-control patterns |
+
+**Key concepts:**
+
+- Canonical operation headers shared between peripherals and controllers
+- Multi-device coordination on single I²C bus
+- Discovery vs manual addressing patterns
+- Three interaction patterns: function-style (Calculator), state-query (LED), position-control (Servo)
+
+See [families_usage/README.md](../examples/families_usage/README.md) for overview and [lhwit-family.md](lhwit-family.md) for comprehensive guide.
 
 ---
 
@@ -55,23 +66,26 @@ See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detaile
 1. **Start with Tier 1:** Understand protocol basics
    - Flash [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/) and [simple_controller](../examples/core_usage/arduino/simple_controller/)
    - Study encoding/decoding, observe serial output
-   
 2. **Move to Tier 2:** Learn production patterns
-   - Study [mock_peripheral](../examples/handlers_usage/arduino/mock_peripheral/) handler registration
-   - Test [mock_controller](../examples/handlers_usage/arduino/mock_controller/) SET_REPLY queries
+   - Study [mock_peripheral](../examples/handlers_usage/platformio/mock_peripheral/) handler registration
+   - Test [mock_controller](../examples/handlers_usage/platformio/mock_controller/) SET_REPLY queries
    - Adapt pattern for your device type
 
-3. **Apply in Tier 3:** Use complete device families *(Coming Soon)*
+3. **Apply in Tier 3:** Build multi-device systems
+   - Study [LHWIT family](../examples/families_usage/lhwit_family/) canonical headers
+   - Test [discovery_controller](../examples/families_usage/discovery_controller/) for flexible addressing
+   - Test [manual_controller](../examples/families_usage/manual_controller/) for production systems
+   - Use as template for your device families
 
 ---
 
 ## Platform Coverage
 
-| Platform   | Peripheral Examples        | Controller Examples        |
-| ---------- | -------------------------- | -------------------------- |
-| Arduino    | 3 Core                     | 2 Core                     |
-| PlatformIO | 1 Core + 1 Handler         | 1 Core + 1 Handler         |
-| Linux      | —                          | 1 Core + 1 Handler         |
+| Platform   | Peripheral Examples           | Controller Examples           |
+| ---------- | ----------------------------- | ----------------------------- |
+| Arduino    | 3 Core                        | 2 Core                        |
+| PlatformIO | 1 Core + 1 Handler + 3 Family | 1 Core + 1 Handler            |
+| Linux      | —                             | 1 Core + 1 Handler + 2 Family |
 
 ---
 
@@ -144,7 +158,7 @@ void setup() {
     crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);
     crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);
     crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);
-    
+
     // Set on_request callback for GET operations
     crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
 }
@@ -378,4 +392,3 @@ pio run -e esp32dev
 ```
 
 See [PlatformIO examples](../examples/core_usage/platformio/) for complete projects.
-

@@ -48,6 +48,11 @@ build*/
 .pio/
 .venv/
 
+# Python cache files
+.mypy_cache/
+__pycache__/
+*.pyc
+
 # Need to hide certain files for publication & thesis integrity reasons
 roadmaps/
 planning/

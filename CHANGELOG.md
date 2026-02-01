@@ -48,6 +48,13 @@ All notable changes to CRUMBS are documented in this file.
   - Linux: `mock_controller/`
   - Shared `mock_ops.h` header with SET operations (ECHO, SET_HEARTBEAT, TOGGLE) and GET operations (GET_ECHO, GET_STATUS, GET_INFO)
 
+- **LHWIT Family** (Low Hardware Implementation Test): Three-device reference family demonstrating interaction patterns
+  - Peripherals (PlatformIO, Arduino Nano): Calculator (Type 0x03), LED Array (Type 0x01), Servo Controller (Type 0x02)
+  - Controllers (Linux): Discovery Controller (scan-based), Manual Controller (config-based)
+  - Canonical operation headers: `calculator_ops.h`, `led_ops.h`, `servo_ops.h`, `lhwit_ops.h`
+  - Comprehensive guide: `docs/lhwit-family.md` (hardware setup, wiring, testing procedures)
+  - Demonstrates function-style (Calculator), state-query (LED), and position-control (Servo) patterns
+
 - **Moved Examples**: Simple examples relocated to `core_usage/`
   - Arduino: `simple_peripheral/`, `simple_controller/`, `display_peripheral/`, `display_controller/`
   - PlatformIO: `simple_peripheral/`, `simple_controller/`

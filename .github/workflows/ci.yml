@@ -96,6 +96,26 @@ jobs:
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
           cmake --build build-mock-controller --parallel
 
+      - name: Build Linux discovery_controller (families_usage)
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
+        run: |
+          cmake -S examples/families_usage/discovery_controller -B build-discovery-controller \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+          cmake --build build-discovery-controller --parallel
+
+      - name: Build Linux manual_controller (families_usage)
+        env:
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
+        run: |
+          cmake -S examples/families_usage/manual_controller -B build-manual-controller \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+          cmake --build build-manual-controller --parallel
+
   # ---------------------------------------------------------------------------
   # PlatformIO Builds
   # ---------------------------------------------------------------------------
@@ -137,3 +157,12 @@ jobs:
 
       - name: Build mock_peripheral (handlers_usage)
         run: pio run -d examples/handlers_usage/platformio/mock_peripheral -e nanoatmega328new
+
+      - name: Build calculator peripheral (families_usage)
+        run: pio run -d examples/families_usage/lhwit_family/calculator -e nanoatmega328new
+
+      - name: Build LED peripheral (families_usage)
+        run: pio run -d examples/families_usage/lhwit_family/led -e nanoatmega328new
+
+      - name: Build servo peripheral (families_usage)
+        run: pio run -d examples/families_usage/lhwit_family/servo -e nanoatmega328new
