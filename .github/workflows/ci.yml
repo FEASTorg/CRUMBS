@@ -76,36 +76,25 @@ jobs:
       - name: Install CRUMBS locally
         run: cmake --install build --prefix ${{ github.workspace }}/install
 
-      - name: Build Linux simple_native_controller (out-of-tree)
+      - name: Build Linux simple_controller (core_usage)
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake -S examples/linux/simple_native_controller -B build-native \
-            -DCRUMBS_BUILD_IN_TREE=OFF \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
-          cmake --build build-native --parallel
-          ./build-native/crumbs_native_example
-
-      - name: Build Linux simple_controller
-        env:
-          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
-        run: |
-          cmake -S examples/linux/simple_controller -B build-simple-controller \
+          cmake -S examples/core_usage/linux/simple_controller -B build-simple-controller \
             -DCRUMBS_BUILD_IN_TREE=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
           cmake --build build-simple-controller --parallel
 
-      - name: Build Linux multi_handler_controller
+      - name: Build Linux mock_controller (handlers_usage)
         env:
-          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install
+          CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake -S examples/linux/multi_handler_controller -B build-multi-handler \
-            -DCRUMBS_BUILD_IN_TREE=ON \
+          cmake -S examples/handlers_usage/linux/mock_controller -B build-mock-controller \
+            -DCRUMBS_BUILD_IN_TREE=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
-          cmake --build build-multi-handler --parallel
+          cmake --build build-mock-controller --parallel
 
   # ---------------------------------------------------------------------------
   # PlatformIO Builds
@@ -128,7 +117,7 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('examples/platformio/**/platformio.ini') }}
+          key: pio-${{ runner.os }}-${{ hashFiles('examples/**/platformio.ini') }}
           restore-keys: |
             pio-${{ runner.os }}-
 
@@ -137,14 +126,14 @@ jobs:
           python -m pip install -U pip
           python -m pip install -U platformio
 
-      - name: Build simple_controller
-        run: pio run -d examples/platformio/simple_controller -e nanoatmega328new
+      - name: Build simple_controller (core_usage)
+        run: pio run -d examples/core_usage/platformio/simple_controller -e nanoatmega328new
 
-      - name: Build simple_peripheral
-        run: pio run -d examples/platformio/simple_peripheral -e nanoatmega328new
+      - name: Build simple_peripheral (core_usage)
+        run: pio run -d examples/core_usage/platformio/simple_peripheral -e nanoatmega328new
 
-      - name: Build handler_peripheral_led
-        run: pio run -d examples/platformio/handler_peripheral_led -e nanoatmega328new
+      - name: Build mock_controller (handlers_usage)
+        run: pio run -d examples/handlers_usage/platformio/mock_controller -e nanoatmega328new
 
-      - name: Build handler_peripheral_servo
-        run: pio run -d examples/platformio/handler_peripheral_servo -e nanoatmega328new
+      - name: Build mock_peripheral (handlers_usage)
+        run: pio run -d examples/handlers_usage/platformio/mock_peripheral -e nanoatmega328new
