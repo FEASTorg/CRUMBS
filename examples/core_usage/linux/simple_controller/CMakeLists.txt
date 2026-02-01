@@ -3,15 +3,15 @@ project(crumbs_simple_linux_controller C)
 
 # Build this example in one of two ways:
 # 1) in-tree: build inside the CRUMBS repo and link to the `crumbs` target
-#    cmake -S examples/linux/simple_controller -B build \
+#    cmake -S examples/core_usage/linux/simple_controller -B build \
 #          -DCRUMBS_BUILD_IN_TREE=ON
 # 2) out-of-tree (installed library): set CMAKE_PREFIX_PATH to an installed
 #    path that contains crumbsConfig.cmake / crumbsTargets.cmake
 
 option(CRUMBS_BUILD_IN_TREE "Add CRUMBS as a subdirectory and link the in-repo crumbs target" ON)
 if(NOT DEFINED CRUMBS_PATH)
-    # Default repository path is three levels up from the example dir
-    set(CRUMBS_PATH ${CMAKE_SOURCE_DIR}/../../..)
+    # Default repository path is four levels up from the example dir
+    set(CRUMBS_PATH ${CMAKE_SOURCE_DIR}/../../../..)
 endif()
 
 if(CRUMBS_BUILD_IN_TREE)

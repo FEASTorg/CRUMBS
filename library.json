@@ -20,10 +20,13 @@
   ],
   "platforms": "*",
   "examples": [
-    "examples/arduino/simple_controller",
-    "examples/arduino/simple_peripheral",
-    "examples/arduino/handler_peripheral_led",
-    "examples/arduino/handler_peripheral_servo",
-    "examples/platformio/simple_controller"
+    "examples/core_usage/arduino/simple_controller",
+    "examples/core_usage/arduino/simple_peripheral",
+    "examples/core_usage/arduino/display_controller",
+    "examples/core_usage/arduino/display_peripheral",
+    "examples/core_usage/platformio/simple_controller",
+    "examples/core_usage/platformio/simple_peripheral",
+    "examples/handlers_usage/platformio/mock_controller",
+    "examples/handlers_usage/platformio/mock_peripheral"
   ]
 }

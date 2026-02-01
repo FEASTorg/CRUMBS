@@ -67,24 +67,16 @@ endif()
 
 if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     add_executable(crumbs_simple_linux_controller
-        examples/linux/simple_controller/simple_linux_controller.c
+        examples/core_usage/linux/simple_controller/simple_linux_controller.c
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
 
-    add_executable(crumbs_multi_handler_controller
-        examples/linux/multi_handler_controller/multi_handler_controller.c
+    add_executable(crumbs_mock_controller
+        examples/handlers_usage/linux/mock_controller/mock_controller.c
     )
-    target_link_libraries(crumbs_multi_handler_controller PRIVATE crumbs)
-    target_include_directories(crumbs_multi_handler_controller PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/common
-    )
-
-    add_executable(crumbs_interactive_controller
-        examples/linux/interactive_controller/interactive_controller.c
-    )
-    target_link_libraries(crumbs_interactive_controller PRIVATE crumbs)
-    target_include_directories(crumbs_interactive_controller PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/examples/common
+    target_link_libraries(crumbs_mock_controller PRIVATE crumbs)
+    target_include_directories(crumbs_mock_controller PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/handlers_usage
     )
 endif()
 

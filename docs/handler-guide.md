@@ -169,17 +169,17 @@ All functions return `0` on success, `-1` on bounds overflow.
 For reusable command definitions, create a shared header:
 
 ```c
-// led_commands.h — shared by controller and peripheral
+// mock_ops.h — shared by controller and peripheral
 
-#define LED_TYPE_ID       0x01
+#define MOCK_TYPE_ID       0x10
 
-#define LED_CMD_SET_ALL   0x01  // Payload: [bitmask:u8]
-#define LED_CMD_SET_ONE   0x02  // Payload: [index:u8, state:u8]
-#define LED_CMD_BLINK     0x03  // Payload: [count:u8, delay_10ms:u8]
-#define LED_CMD_GET_STATE 0x10  // Payload: none (reply has state)
+#define MOCK_OP_ECHO          0x01  // Payload: [data...]
+#define MOCK_OP_SET_HEARTBEAT 0x02  // Payload: [period_ms:u16]
+#define MOCK_OP_TOGGLE        0x03  // Payload: none
+#define MOCK_OP_GET_STATUS    0x10  // Payload: none (reply has state + period)
 ```
 
-See `examples/common/led_commands.h` and `examples/common/servo_commands.h` for complete examples with controller-side sender functions.
+See `examples/handlers_usage/mock_ops.h` for a complete example with controller-side helper functions.
 
 ## Memory Optimization
 

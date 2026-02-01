@@ -249,7 +249,7 @@ The `crumbs_message_helpers.h` header provides type-safe payload building and re
 ```c
 #include <crumbs_message_helpers.h>
 
-// Define command header (see examples/common/ for full pattern)
+// Define command header (see examples/handlers_usage/mock_ops.h for full pattern)
 #define SERVO_TYPE_ID    0x02
 #define SERVO_CMD_ANGLE  0x01
 

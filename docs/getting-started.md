@@ -111,7 +111,7 @@ Once basic communication is working:
 
 1. **Handler dispatch**: Register per-command handlers instead of switch statements — see [API Reference](api-reference.md#command-handler-dispatch)
 2. **Message helpers**: Use `crumbs_message_helpers.h` for type-safe payload building — see [Message Helpers](message-helpers.md)
-3. **Command headers**: Create reusable command definitions — see `examples/common/`
+3. **Command headers**: Create reusable command definitions — see `examples/handlers_usage/mock_ops.h`
 4. **Memory optimization**: Reduce handler table size with `CRUMBS_MAX_HANDLERS` — see below
 
 ### Quick Handler Dispatch Example

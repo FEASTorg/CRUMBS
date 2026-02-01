@@ -77,22 +77,15 @@ sudo ./crumbs_simple_linux_controller scan strict
 
 Note: the example currently treats the first argument as either a device path (normal run) or a literal `scan` command; to scan using a non-default device path you can run the binary from that working directory or modify the example to accept a path + scan mode.
 
-## Interactive Controller
+## Testing with Mock Controller
 
-For interactive testing and debugging, use the `crumbs_interactive_controller` example which provides a command-line interface to control LED and servo peripherals:
+For interactive testing, use the mock_controller example which demonstrates the handler pattern:
 
 ```bash
-sudo ./crumbs_interactive_controller /dev/i2c-1
+sudo ./crumbs_mock_controller /dev/i2c-1
 ```
 
-This opens an interactive prompt where you can type commands:
-
-```text
-crumbs> help              # Show available commands
-crumbs> scan              # Scan for CRUMBS devices
-crumbs> led set_all 0x0F  # Turn on LEDs 0-3
-crumbs> led set 2 0       # Turn off LED 2
-crumbs> led state         # Get current LED state
+This provides a command-line interface for testing mock peripherals. Type `help` at the prompt to see available commands.
 crumbs> servo angle 0 90  # Set servo 0 to 90 degrees
 crumbs> servo sweep 0 0 180 10  # Sweep servo 0
 crumbs> addr led 0x10     # Change LED address

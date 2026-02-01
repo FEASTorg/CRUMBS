@@ -4,8 +4,8 @@ project(crumbs_mock_linux_controller C)
 # Build in-tree (inside CRUMBS repo)
 option(CRUMBS_BUILD_IN_TREE "Add CRUMBS as a subdirectory" ON)
 if(NOT DEFINED CRUMBS_PATH)
-    # Repository path is three levels up from this example
-    set(CRUMBS_PATH ${CMAKE_SOURCE_DIR}/../../..)
+    # Repository path is four levels up from this example
+    set(CRUMBS_PATH ${CMAKE_SOURCE_DIR}/../../../..)
 endif()
 
 if(CRUMBS_BUILD_IN_TREE)

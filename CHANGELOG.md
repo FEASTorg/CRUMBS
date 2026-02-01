@@ -75,13 +75,7 @@ All notable changes to CRUMBS are documented in this file.
   - `CRUMBS_ELAPSED_MS(start, now)` - Wraparound-safe elapsed time calculation
   - `CRUMBS_TIMEOUT_EXPIRED(start, now, timeout_ms)` - Wraparound-safe timeout check
 
-- **Interactive Controller Example** (`examples/linux/interactive_controller/`): Command-line interface for testing LED and servo peripherals
-  - Type commands at a `crumbs>` prompt instead of hardcoded demo sequences
-  - LED commands: `set_all`, `set`, `blink`, `state`
-  - Servo commands: `angle`, `both`, `sweep`, `center`, `angles`
-  - Runtime address configuration: `addr led <hex>`, `addr servo <hex>`
-  - Built-in `scan` command for device discovery
-  - See `docs/linux.md` for usage examples
+- **Platform Timing Documentation**: See `docs/developer-guide.md` for usage examples
 
 ### Changed
 
@@ -112,16 +106,10 @@ All notable changes to CRUMBS are documented in this file.
   - All functions return 0 on success, -1 on bounds overflow
   - Header-only design: `static inline` functions for zero call overhead
 
-- **Example Command Headers** (`examples/common/`):
-  - `led_commands.h`: LED device command definitions and sender functions
-  - `servo_commands.h`: Servo device command definitions and sender functions
-  - Demonstrates the "copy and customize" pattern for user commands
-
-- **Example Applications**:
-  - `examples/arduino/handler_peripheral_led/`: LED control peripheral using handler dispatch
-  - `examples/arduino/handler_peripheral_servo/`: Servo peripheral with message reading
-  - `examples/linux/multi_handler_controller/`: Linux controller using multiple command headers
-  - `examples/platformio/`: PlatformIO projects ready to build with `pio run`
+- **Contract Header Pattern**: Demonstrated in `examples/handlers_usage/mock_ops.h`
+  - Shared header defining TYPE_ID, opcodes, and helper functions
+  - Controller and peripheral both include the same contract
+  - Demonstrates the "copy and customize" pattern for device families
 
 - **Configurable Handler Table Size** (`CRUMBS_MAX_HANDLERS`):
   - Compile-time option to control handler dispatch table size
@@ -147,14 +135,12 @@ All notable changes to CRUMBS are documented in this file.
 ### Added
 
 - **Command Handler Dispatch System**: Per-command-type handler registration for structured message processing
-  - `crumbs_handler_fn` typedef: `void (*)(crumbs_context_t*, uint8_t opcode, const uint8_t* data, uint8_t data_len, void* user_data)`
+  - `crumbs_handler_fn` typedef: `void (*)(crumbs_context_t*, const crumbs_message_t* message, void* user_data)`
   - `crumbs_register_handler(ctx, opcode, fn, user_data)`: Register handler for a command type
   - `crumbs_unregister_handler(ctx, opcode)`: Clear handler for a command type
   - Handlers are invoked after `on_message` callback (if both are set)
-  - O(1) dispatch via 256-entry lookup table per context
-- **Handler Examples**:
-  - `examples/arduino/handler_peripheral_led/` - Arduino peripheral using per-command handlers (LED control)
-  - `examples/linux/multi_handler_controller/` - Linux controller CLI for handler peripherals
+  - O(n) dispatch via configurable handler table (default 16 entries)
+- **Handler Examples**: See `examples/handlers_usage/` for mock device examples
 
 ## [0.7.x] - Variable-Length Payload
 
