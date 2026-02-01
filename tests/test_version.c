@@ -47,9 +47,9 @@ int main(void)
         return 1;
     }
 
-    if (CRUMBS_VERSION_PATCH != 0)
+    if (CRUMBS_VERSION_PATCH != 1)
     {
-        fprintf(stderr, "FAIL: Expected PATCH=0, got %d\n", CRUMBS_VERSION_PATCH);
+        fprintf(stderr, "FAIL: Expected PATCH=1, got %d\n", CRUMBS_VERSION_PATCH);
         return 1;
     }
 
