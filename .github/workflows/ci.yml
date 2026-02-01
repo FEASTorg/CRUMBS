@@ -96,25 +96,25 @@ jobs:
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
           cmake --build build-mock-controller --parallel
 
-      - name: Build Linux discovery_controller (families_usage)
+      - name: Build Linux controller_discovery (families_usage)
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake -S examples/families_usage/discovery_controller -B build-discovery-controller \
+          cmake -S examples/families_usage/controller_discovery -B build-controller-discovery \
             -DCRUMBS_BUILD_IN_TREE=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
-          cmake --build build-discovery-controller --parallel
+          cmake --build build-controller-discovery --parallel
 
-      - name: Build Linux manual_controller (families_usage)
+      - name: Build Linux controller_manual (families_usage)
         env:
           CMAKE_PREFIX_PATH: ${{ github.workspace }}/third_party/linux-wire/install:${{ github.workspace }}/install
         run: |
-          cmake -S examples/families_usage/manual_controller -B build-manual-controller \
+          cmake -S examples/families_usage/controller_manual -B build-controller-manual \
             -DCRUMBS_BUILD_IN_TREE=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
-          cmake --build build-manual-controller --parallel
+          cmake --build build-controller-manual --parallel
 
   # ---------------------------------------------------------------------------
   # PlatformIO Builds
