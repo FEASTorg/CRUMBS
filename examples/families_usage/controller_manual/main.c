@@ -187,7 +187,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
     /* Parse device selector: either index or @address */
     uint8_t addr = 0;
     const char *cmd_start = args;
-    
+
     if (*args == '@')
     {
         /* Address selector: @0x10 */
@@ -228,7 +228,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         }
         cmd_start++;
     }
-    
+
     while (*cmd_start && isspace((unsigned char)*cmd_start))
         cmd_start++;
 
@@ -276,7 +276,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
             return rc;
         }
 
-        printf("OK: %s(%u, %u) sent to 0x%02X. Use 'calculator result' to get answer.\n", 
+        printf("OK: %s(%u, %u) sent to 0x%02X. Use 'calculator result' to get answer.\n",
                subcmd, a, b, addr);
         return 0;
     }
@@ -365,7 +365,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
     /* Parse device selector */
     uint8_t addr = 0;
     const char *cmd_start = args;
-    
+
     if (*args == '@')
     {
         unsigned int addr_val;
@@ -376,7 +376,11 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
         }
         addr = (uint8_t)addr_val;
         cmd_start = strchr(args, ' ');
-        if (!cmd_start) { printf("Missing command\n"); return -1; }
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
         cmd_start++;
     }
     else
@@ -393,10 +397,14 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
             return -1;
         }
         cmd_start = strchr(args, ' ');
-        if (!cmd_start) { printf("Missing command\n"); return -1; }
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
         cmd_start++;
     }
-    
+
     while (*cmd_start && isspace((unsigned char)*cmd_start))
         cmd_start++;
 
@@ -493,7 +501,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
     /* Parse device selector */
     uint8_t addr = 0;
     const char *cmd_start = args;
-    
+
     if (*args == '@')
     {
         unsigned int addr_val;
@@ -504,7 +512,11 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
         }
         addr = (uint8_t)addr_val;
         cmd_start = strchr(args, ' ');
-        if (!cmd_start) { printf("Missing command\n"); return -1; }
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
         cmd_start++;
     }
     else
@@ -521,10 +533,14 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
             return -1;
         }
         cmd_start = strchr(args, ' ');
-        if (!cmd_start) { printf("Missing command\n"); return -1; }
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
         cmd_start++;
     }
-    
+
     while (*cmd_start && isspace((unsigned char)*cmd_start))
         cmd_start++;
 
@@ -618,13 +634,11 @@ int main(int argc, char *argv[])
     const char *i2c_device = (argc > 1) ? argv[1] : "/dev/i2c-1";
 
     /* CRUMBS Pattern: Initialize controller
-     * 1. crumbs_init() - Initialize core context (role=CONTROLLER, no I2C addr)
-     * 2. crumbs_linux_init_controller() - Initialize platform HAL (Linux/i2c-dev)
-     *    Returns platform handle used for all I2C operations
+     * crumbs_linux_init_controller() - Initialize platform HAL (Linux/i2c-dev)
+     * This internally calls crumbs_init() with CONTROLLER role
+     * Returns platform handle used for all I2C operations
      */
     crumbs_context_t ctx;
-    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
-
     crumbs_linux_i2c_t lw;
     int rc = crumbs_linux_init_controller(&ctx, &lw, i2c_device, 100000);
     if (rc != 0)
@@ -643,7 +657,7 @@ int main(int argc, char *argv[])
         dev->type_id = DEVICE_CONFIG[i].type_id;
         dev->addr = DEVICE_CONFIG[i].addr;
         dev->index = type_counts[dev->type_id]++;
-        
+
         if (dev->type_id == CALC_TYPE_ID)
             dev->name = "Calculator";
         else if (dev->type_id == LED_TYPE_ID)
@@ -652,7 +666,7 @@ int main(int argc, char *argv[])
             dev->name = "Servo";
         else
             dev->name = "Unknown";
-        
+
         g_device_count++;
     }
 

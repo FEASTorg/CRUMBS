@@ -400,17 +400,16 @@ void setup()
     init_servos();
     Serial.println(F("Servos initialized to 90 degrees"));
 
-    /* Initialize CRUMBS context */
-    crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, PERIPHERAL_ADDR);
+    /* Initialize CRUMBS peripheral */
+    crumbs_arduino_init_peripheral(&ctx, PERIPHERAL_ADDR);
 
     /* Register SET operation handlers */
     crumbs_register_handler(&ctx, SERVO_OP_SET_POS, handler_set_pos, NULL);
     crumbs_register_handler(&ctx, SERVO_OP_SET_SPEED, handler_set_speed, NULL);
     crumbs_register_handler(&ctx, SERVO_OP_SWEEP, handler_sweep, NULL);
 
-    /* Initialize Arduino I2C peripheral with request callback */
-    ctx.on_request = on_request;
-    crumbs_arduino_init_peripheral(&ctx, PERIPHERAL_ADDR);
+    /* Register GET operation callback */
+    crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
 
     Serial.println(F("Servo controller peripheral ready!"));
     Serial.println(F("Waiting for I2C commands...\n"));
