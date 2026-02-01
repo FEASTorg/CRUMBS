@@ -17,11 +17,13 @@ if(CRUMBS_BUILD_IN_TREE)
     target_link_libraries(crumbs_mock_linux_controller PRIVATE crumbs)
     target_include_directories(crumbs_mock_linux_controller PRIVATE 
         ${CRUMBS_PATH}/src
-        ${CMAKE_SOURCE_DIR}/..  # Parent directory for mock_ops.h
+        ${CRUMBS_PATH}/examples/handlers_usage
     )
 else()
     find_package(crumbs CONFIG REQUIRED)
     add_executable(crumbs_mock_linux_controller mock_controller.c)
     target_link_libraries(crumbs_mock_linux_controller PRIVATE crumbs::crumbs)
-    target_include_directories(crumbs_mock_linux_controller PRIVATE ${CMAKE_SOURCE_DIR}/..)
+    target_include_directories(crumbs_mock_linux_controller PRIVATE 
+        ${CRUMBS_PATH}/examples/handlers_usage
+    )
 endif()
