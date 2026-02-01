@@ -73,8 +73,8 @@ See [families_usage/README.md](../examples/families_usage/README.md) for overvie
 
 3. **Apply in Tier 3:** Build multi-device systems
    - Study [LHWIT family](../examples/families_usage/lhwit_family/) canonical headers
-   - Test [discovery_controller](../examples/families_usage/discovery_controller/) for flexible addressing
-   - Test [manual_controller](../examples/families_usage/manual_controller/) for production systems
+   - Test [controller_discovery](../examples/families_usage/controller_discovery/) for flexible addressing
+   - Test [controller_manual](../examples/families_usage/controller_manual/) for production systems
    - Use as template for your device families
 
 ---

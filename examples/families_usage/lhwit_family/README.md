@@ -71,13 +71,13 @@ cd ../servo && pio run -t upload
 
 ```bash
 # Discovery controller (auto-finds devices)
-cd ../../discovery_controller
+cd ../../controller_discovery
 mkdir -p build && cd build
 cmake ..
 make
 
 # Manual controller (uses config.h addresses)
-cd ../../manual_controller
+cd ../../controller_manual
 mkdir -p build && cd build
 cmake ..
 make
@@ -88,7 +88,7 @@ make
 **With discovery controller:**
 
 ```bash
-./lhwit_discovery_controller /dev/i2c-1
+./controller_discovery /dev/i2c-1
 lhwit> scan
 lhwit> calculator add 10 20
 lhwit> calculator result
@@ -99,7 +99,7 @@ lhwit> servo set_pos 0 90
 **With manual controller:**
 
 ```bash
-# Edit config.h first if addresses differ
+./controller_manual /dev/i2c-1
 ./lhwit_manual_controller /dev/i2c-1
 lhwit> calculator add 5 3
 lhwit> led get_state
@@ -264,7 +264,7 @@ All operation definitions live in shared headers:
 
 1. **Power on all three Arduino Nano boards**
 2. **Verify connections:** Check I²C wiring, LED resistors, servo power
-3. **Test discovery:** Run discovery_controller and execute `scan`
+3. **Test discovery:** Run controller_discovery and execute `scan`
 4. **Test each device:**
    - Calculator: `add 5 10`, then `result`
    - LED: `set_all 0x0F`, then `get_state`
@@ -305,8 +305,8 @@ All operation definitions live in shared headers:
 ## Further Documentation
 
 - **Comprehensive Guide:** [../../docs/lhwit-family.md](../../docs/lhwit-family.md)
-- **Discovery Controller:** [../discovery_controller/README.md](../discovery_controller/README.md)
-- **Manual Controller:** [../manual_controller/README.md](../manual_controller/README.md)
+- **Discovery Controller:** [../controller_discovery/README.md](../controller_discovery/README.md)
+- **Manual Controller:** [../controller_manual/README.md](../controller_manual/README.md)
 - **Calculator Peripheral:** [calculator/README.md](calculator/README.md)
 - **LED Peripheral:** [led/README.md](led/README.md)
 - **Servo Peripheral:** [servo/README.md](servo/README.md)

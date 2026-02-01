@@ -202,7 +202,7 @@ Verify with: `i2cdetect -y 1`
 ### Building Controllers
 
 ```bash
-cd examples/families_usage/discovery_controller
+cd examples/families_usage/controller_discovery
 mkdir -p build && cd build && cmake .. && make
 
 cd ../../manual_controller
@@ -223,7 +223,7 @@ sudo usermod -a -G i2c $USER  # Log out and back in
 
 1. Power on all 3 Arduino Nanos via USB
 2. Verify: `i2cdetect -y 1` shows 0x10, 0x20, 0x30
-3. Run controller: `./lhwit_discovery_controller /dev/i2c-1`
+3. Run controller: `./controller_discovery /dev/i2c-1`
 
 ### Command Reference
 
@@ -446,8 +446,8 @@ servo get_pos → verify positions
 - [Calculator README](../examples/families_usage/lhwit_family/calculator/README.md)
 - [LED README](../examples/families_usage/lhwit_family/led/README.md)
 - [Servo README](../examples/families_usage/lhwit_family/servo/README.md)
-- [Discovery Controller README](../examples/families_usage/discovery_controller/README.md)
-- [Manual Controller README](../examples/families_usage/manual_controller/README.md)
+- [Discovery Controller README](../examples/families_usage/controller_discovery/README.md)
+- [Manual Controller README](../examples/families_usage/controller_manual/README.md)
 - [Protocol Specification](protocol.md)
 - [Handler Guide](handler-guide.md)
 
