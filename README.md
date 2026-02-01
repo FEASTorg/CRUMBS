@@ -76,7 +76,7 @@ Examples are organized into three progressive tiers:
 
 - **Tier 1** (`examples/core_usage/`) - Basic protocol learning for beginners
 - **Tier 2** (`examples/handlers_usage/`) - Handler patterns with mock device
-- **Tier 3** (`examples/usage_families/`) - Production patterns (Roadmap-03)
+- **Tier 3** (`examples/families_usage/`) - Production patterns (Roadmap-03)
 
 See [examples/README.md](examples/README.md) for complete platform coverage and [docs/examples.md](docs/examples.md) for detailed documentation.
 

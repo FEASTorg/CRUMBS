@@ -41,7 +41,7 @@ All notable changes to CRUMBS are documented in this file.
 - **Three-Tier Reorganization**: Examples restructured into progressive learning path
   - `examples/core_usage/`: Basic protocol learning (Tier 1)
   - `examples/handlers_usage/`: Production callback patterns (Tier 2)
-  - `examples/usage_families/`: Real device families (Tier 3, planned)
+  - `examples/families_usage/`: Real device families (Tier 3, planned)
 
 - **Mock Handler Examples** (Type ID 0x10): Demonstrating handler registration and SET_REPLY
   - PlatformIO: `mock_peripheral/`, `mock_controller/` (Nano + ESP32)

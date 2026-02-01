@@ -30,7 +30,7 @@ Examples are organized into three tiers based on complexity:
 
 ## Tier 3: Production Patterns (Advanced)
 
-**[usage_families/](usage_families/)** — Real-world multi-module coordination
+**[families_usage/](families_usage/)** — Real-world multi-module coordination
 
 - Canonical operation headers
 - Multiple device types coordinated

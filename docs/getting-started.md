@@ -188,7 +188,7 @@ Arduino example (Serial):
 // Use crumbs_controller_scan_for_crumbs from the core
 // flags=0 for non-strict, flags=CRUMBS_SCAN_STRICT for strict mode
 uint8_t found[32];
-int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, &Wire, found, sizeof(found), 50000);
+int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, NULL, found, sizeof(found), 50000);
 ```
 
 Linux example (CLI):

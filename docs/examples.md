@@ -41,7 +41,7 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 
 See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detailed handler pattern documentation.
 
-### Tier 3: Usage Families (`examples/usage_families/`)
+### Tier 3: Usage Families (`examples/families_usage/`)
 
 **Audience:** Users building real device families  
 **Purpose:** Complete device family implementations (Coming in Roadmap-03)

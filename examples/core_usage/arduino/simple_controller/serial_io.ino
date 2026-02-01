@@ -129,7 +129,7 @@ void handleSerialInput()
                 strictMode ? 1 : 0,
                 crumbs_arduino_wire_write,
                 crumbs_arduino_read,
-                &Wire,
+                NULL,
                 found,
                 sizeof(found),
                 50000 /* timeout_us */
@@ -175,7 +175,7 @@ void handleSerialInput()
                 targetAddress,
                 &message,
                 crumbs_arduino_wire_write,
-                &Wire);
+                NULL);
             Serial.println(F("Controller: Message sent based on serial input."));
             reportCrcStatus(F("send"));
         }

@@ -219,7 +219,7 @@ m.opcode = 1;
 float val = 1.0f;
 m.data_len = sizeof(float);
 memcpy(m.data, &val, sizeof(float));
-crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, &Wire);
+crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```
 
 - Peripheral setup (Arduino):
@@ -235,7 +235,7 @@ crumbs_arduino_init_peripheral(&ctx, 0x08);
 
 ```c
 uint8_t found[32];
-int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, &Wire, found, sizeof(found), 50000);
+int n = crumbs_controller_scan_for_crumbs(&ctx, 0x03, 0x77, 0, crumbs_arduino_wire_write, crumbs_arduino_read, NULL, found, sizeof(found), 50000);
 ```
 
 Testing and CI

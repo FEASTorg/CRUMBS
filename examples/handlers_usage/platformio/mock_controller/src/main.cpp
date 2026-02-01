@@ -24,6 +24,7 @@
  */
 
 #include <Arduino.h>
+#include <Wire.h>
 #include <crumbs.h>
 #include <crumbs_arduino.h>
 #include <crumbs_message_helpers.h>
@@ -77,15 +78,15 @@ static int query_and_print(uint8_t query_op, const char *label)
     /* Send query using helper function */
     if (query_op == MOCK_OP_GET_ECHO)
     {
-        rc = mock_query_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire);
+        rc = mock_query_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
     }
     else if (query_op == MOCK_OP_GET_STATUS)
     {
-        rc = mock_query_status(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire);
+        rc = mock_query_status(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
     }
     else if (query_op == MOCK_OP_GET_INFO)
     {
-        rc = mock_query_info(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire);
+        rc = mock_query_info(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
     }
     else
     {
@@ -106,7 +107,7 @@ static int query_and_print(uint8_t query_op, const char *label)
 
     /* Read reply */
     uint8_t raw[32];
-    int n = crumbs_arduino_read(&ctx, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
+    int n = crumbs_arduino_read(NULL, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
     if (n < 0)
     {
         Serial.println(F("Error: No response from peripheral"));
@@ -231,7 +232,7 @@ static void cmd_echo(const char *args)
     }
 
     /* Send using helper function */
-    int rc = mock_send_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire, data, len);
+    int rc = mock_send_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL, data, len);
     if (rc == 0)
     {
         Serial.print(F("Sent echo data ("));
@@ -265,7 +266,7 @@ static void cmd_heartbeat(const char *args)
     }
 
     /* Send using helper function */
-    int rc = mock_send_heartbeat(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire,
+    int rc = mock_send_heartbeat(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL,
                                   (uint16_t)period);
     if (rc == 0)
     {
@@ -283,7 +284,7 @@ static void cmd_heartbeat(const char *args)
  */
 static void cmd_toggle()
 {
-    int rc = mock_send_toggle(&ctx, PERIPHERAL_ADDR, crumbs_arduino_write, &Wire);
+    int rc = mock_send_toggle(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
     if (rc == 0)
     {
         Serial.println(F("Sent toggle command"));

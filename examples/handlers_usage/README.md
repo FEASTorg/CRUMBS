@@ -90,15 +90,15 @@ void handler_echo(crumbs_context_t *ctx, uint8_t opcode,
 ```c
 // Set heartbeat period using helper function
 int rc = mock_send_heartbeat(&ctx, PERIPHERAL_ADDR,
-                              crumbs_arduino_write, &Wire, 1000);
+                              crumbs_arduino_wire_write, NULL, 1000);
 
 // Query status using helper function
 int rc = mock_query_status(&ctx, PERIPHERAL_ADDR,
-                           crumbs_arduino_write, &Wire);
+                           crumbs_arduino_wire_write, NULL);
 
 // Now read and decode the reply
 uint8_t raw[32];
-int bytes = crumbs_arduino_read(&ctx, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
+int bytes = crumbs_arduino_read(NULL, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
 crumbs_message_t reply;
 crumbs_decode_message(raw, bytes, &reply, &ctx);
 // reply.data contains: [state:u8, period_ms:u16]
@@ -214,4 +214,4 @@ static inline int mock_send_echo(crumbs_context_t *ctx,
 2. **Understand SET_REPLY:** See how `on_request` handles different `requested_opcode` values
 3. **Flash and test:** Upload peripheral + controller, try interactive commands
 4. **Explore the contract:** Read `mock_ops.h` to see the helper function pattern
-5. **Next step:** Move to [usage_families/](../usage_families/) (Tier 3) for real hardware examples
+5. **Next step:** Move to [families_usage/](../families_usage/) (Tier 3) for real hardware examples
