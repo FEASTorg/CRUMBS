@@ -65,9 +65,9 @@ int main(void)
     }
 
     /* Test 4: Version string matches expected format */
-    if (strcmp(CRUMBS_VERSION_STRING, "0.10.0") != 0)
+    if (strcmp(CRUMBS_VERSION_STRING, "0.10.1") != 0)
     {
-        fprintf(stderr, "FAIL: Expected version string '0.10.0', got '%s'\n",
+        fprintf(stderr, "FAIL: Expected version string '0.10.1', got '%s'\n",
                 CRUMBS_VERSION_STRING);
         return 1;
     }

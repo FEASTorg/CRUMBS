@@ -66,7 +66,7 @@ Modules connect to the I²C bus, each at a unique 7-bit address (0x08-0x77). Add
 3. The decoded message contains `type_id` - the controller looks this up in its compiled headers to know what type of module it is (LED, servo, calculator, etc.)
 4. No special IDENTIFY command needed - any valid response reveals the type
 
-**Enhanced Discovery** (v0.10.0+): Use `crumbs_controller_scan_for_crumbs_with_types()` to get both addresses and type_ids in one call:
+**Enhanced Discovery** (v0.10.1+): Use `crumbs_controller_scan_for_crumbs_with_types()` to get both addresses and type_ids in one call:
 
 ```c
 uint8_t addrs[16];

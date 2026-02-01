@@ -263,6 +263,51 @@ uint32_t crumbs_linux_millis(void)
     return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
+int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,
+                                            crumbs_linux_i2c_t *i2c,
+                                            uint8_t start_addr,
+                                            uint8_t end_addr,
+                                            int strict,
+                                            uint8_t *found,
+                                            uint8_t *types,
+                                            size_t max_found,
+                                            uint32_t timeout_us)
+{
+    if (!ctx || !i2c || !found)
+    {
+        return -1;
+    }
+
+    /* Suppress expected I/O errors during scan.
+     * Scanning probes all addresses; most have no device and return
+     * I/O errors. These are expected and handled by the scan function. */
+    lw_set_error_logging(&i2c->bus, 0);
+
+    int count = crumbs_controller_scan_for_crumbs_with_types(
+        ctx, start_addr, end_addr, strict,
+        crumbs_linux_i2c_write, crumbs_linux_read, (void *)i2c,
+        found, types, max_found, timeout_us);
+
+    /* Re-enable error logging for normal operations */
+    lw_set_error_logging(&i2c->bus, 1);
+
+    return count;
+}
+
+int crumbs_linux_scan_for_crumbs(crumbs_context_t *ctx,
+                                 crumbs_linux_i2c_t *i2c,
+                                 uint8_t start_addr,
+                                 uint8_t end_addr,
+                                 int strict,
+                                 uint8_t *found,
+                                 size_t max_found,
+                                 uint32_t timeout_us)
+{
+    return crumbs_linux_scan_for_crumbs_with_types(
+        ctx, i2c, start_addr, end_addr, strict,
+        found, NULL, max_found, timeout_us);
+}
+
 #else /* non-Linux builds */
 
 /* Stubs for non-Linux builds (Arduino/embedded). They return errors so
@@ -346,6 +391,48 @@ uint32_t crumbs_linux_millis(void)
 {
     /* No-op stub for non-Linux platforms */
     return 0;
+}
+
+int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,
+                                            crumbs_linux_i2c_t *i2c,
+                                            uint8_t start_addr,
+                                            uint8_t end_addr,
+                                            int strict,
+                                            uint8_t *found,
+                                            uint8_t *types,
+                                            size_t max_found,
+                                            uint32_t timeout_us)
+{
+    (void)ctx;
+    (void)i2c;
+    (void)start_addr;
+    (void)end_addr;
+    (void)strict;
+    (void)found;
+    (void)types;
+    (void)max_found;
+    (void)timeout_us;
+    return -1; /* not supported on this platform */
+}
+
+int crumbs_linux_scan_for_crumbs(crumbs_context_t *ctx,
+                                 crumbs_linux_i2c_t *i2c,
+                                 uint8_t start_addr,
+                                 uint8_t end_addr,
+                                 int strict,
+                                 uint8_t *found,
+                                 size_t max_found,
+                                 uint32_t timeout_us)
+{
+    (void)ctx;
+    (void)i2c;
+    (void)start_addr;
+    (void)end_addr;
+    (void)strict;
+    (void)found;
+    (void)max_found;
+    (void)timeout_us;
+    return -1; /* not supported on this platform */
 }
 
 #endif /* defined(__linux__) */

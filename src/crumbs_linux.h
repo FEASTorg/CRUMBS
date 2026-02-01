@@ -150,6 +150,60 @@ typedef struct crumbs_linux_i2c_s
                           size_t max_found);
 
     /**
+     * @brief Scan for CRUMBS devices and return their addresses and type IDs.
+     *
+     * This is a convenience wrapper around crumbs_controller_scan_for_crumbs_with_types()
+     * that automatically suppresses expected I/O error messages during the scan.
+     * Scanning probes many addresses without devices; this function silences
+     * the noise from those expected failures.
+     *
+     * @param ctx         CRUMBS context (initialized as controller).
+     * @param i2c         Linux I2C handle (initialized).
+     * @param start_addr  Start of address range (inclusive), typically 0x08.
+     * @param end_addr    End of address range (inclusive), typically 0x77.
+     * @param strict      0 = non-strict (probe writes), non-zero = strict (read only).
+     * @param found       Buffer to receive discovered addresses.
+     * @param types       Buffer to receive type IDs (parallel to found), may be NULL.
+     * @param max_found   Maximum number of entries the buffers can hold.
+     * @param timeout_us  Timeout per device in microseconds.
+     * @return Number of devices found (>=0), or negative on error.
+     */
+    int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,
+                                                crumbs_linux_i2c_t *i2c,
+                                                uint8_t start_addr,
+                                                uint8_t end_addr,
+                                                int strict,
+                                                uint8_t *found,
+                                                uint8_t *types,
+                                                size_t max_found,
+                                                uint32_t timeout_us);
+
+    /**
+     * @brief Scan for CRUMBS devices (addresses only, no type IDs).
+     *
+     * Convenience wrapper that calls crumbs_linux_scan_for_crumbs_with_types()
+     * with types=NULL.
+     *
+     * @param ctx         CRUMBS context (initialized as controller).
+     * @param i2c         Linux I2C handle (initialized).
+     * @param start_addr  Start of address range (inclusive).
+     * @param end_addr    End of address range (inclusive).
+     * @param strict      0 = non-strict, non-zero = strict.
+     * @param found       Buffer to receive discovered addresses.
+     * @param max_found   Maximum number of entries the buffer can hold.
+     * @param timeout_us  Timeout per device in microseconds.
+     * @return Number of devices found (>=0), or negative on error.
+     */
+    int crumbs_linux_scan_for_crumbs(crumbs_context_t *ctx,
+                                     crumbs_linux_i2c_t *i2c,
+                                     uint8_t start_addr,
+                                     uint8_t end_addr,
+                                     int strict,
+                                     uint8_t *found,
+                                     size_t max_found,
+                                     uint32_t timeout_us);
+
+    /**
      * @brief Linux platform millisecond timer.
      * @return Milliseconds since boot.
      */

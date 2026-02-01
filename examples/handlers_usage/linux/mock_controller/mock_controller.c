@@ -207,9 +207,8 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     printf("Scanning for CRUMBS devices (0x03-0x77)...\n");
 
     uint8_t found[128];
-    int n = crumbs_controller_scan_for_crumbs(
-        ctx, 0x03, 0x77, 0, /* non-strict */
-        crumbs_linux_i2c_write, crumbs_linux_read, lw,
+    int n = crumbs_linux_scan_for_crumbs(
+        ctx, lw, 0x03, 0x77, 0, /* non-strict */
         found, sizeof(found), 25000);
 
     if (n < 0)

@@ -40,4 +40,4 @@ crumbs_arduino_init_peripheral(&pctx, 0x08);
 | [Developer Notes](developer-notes.md) | Historical design decisions & trade-offs |
 | [Linux HAL](linux.md)                 | Linux build & example notes              |
 
-**Version**: 0.10.0 | **Author**: Cameron K. Brooks | **Dependencies**: Wire library (Arduino); linux-wire for Linux HAL
+**Version**: 0.10.1 | **Author**: Cameron K. Brooks | **Dependencies**: Wire library (Arduino); linux-wire for Linux HAL

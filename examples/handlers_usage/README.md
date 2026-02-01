@@ -83,7 +83,7 @@ void handler_echo(crumbs_context_t *ctx, uint8_t opcode,
 
 ### 2. SET_REPLY Pattern (GET Operations)
 
-**This is the key v0.10.0 feature!** The SET_REPLY mechanism lets controllers query specific data:
+**This is the key v0.10.x feature!** The SET_REPLY mechanism lets controllers query specific data:
 
 **Controller sends (using helper functions from mock_ops.h):**
 

@@ -8,7 +8,7 @@ This controller demonstrates proper CRUMBS usage with auto-discovery:
 
 **CRUMBS Patterns Demonstrated:**
 
-- `crumbs_controller_scan_for_crumbs_with_types()` - Type-aware bus scanning
+- `crumbs_linux_scan_for_crumbs_with_types()` - Type-aware bus scanning (auto-suppresses scan noise)
 - Canonical `*_ops.h` helper functions - Protocol-defined command builders
 - SET_REPLY query pattern - Two-step query/read for GET operations
 - Platform-specific `crumbs_linux_read_message()` - Linux I2C read wrapper
@@ -72,9 +72,9 @@ make
 ```
 lhwit> scan
 Scanning for CRUMBS devices...
-Found Calculator at 0x10 (CRUMBS 0.10.0, Module 1.0.0) - Compatible
-Found LED Array at 0x20 (CRUMBS 0.10.0, Module 1.0.0) - Compatible
-Found Servo Controller at 0x30 (CRUMBS 0.10.0, Module 1.0.0) - Compatible
+Found Calculator at 0x10 (CRUMBS 0.10.1, Module 1.0.0) - Compatible
+Found LED Array at 0x20 (CRUMBS 0.10.1, Module 1.0.0) - Compatible
+Found Servo Controller at 0x30 (CRUMBS 0.10.1, Module 1.0.0) - Compatible
 
 Found 3 CRUMBS device(s):
   [0] Address 0x10, Type 0x03 (Calculator)

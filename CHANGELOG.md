@@ -4,6 +4,59 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
+## [0.10.1] - Linux Scan Improvements & Multi-Device Support
+
+### Added
+
+- **Linux Scan Wrappers with Error Suppression**
+  - `crumbs_linux_scan_for_crumbs_with_types()`: Platform wrapper that suppresses expected I/O errors during scan
+  - `crumbs_linux_scan_for_crumbs()`: Convenience wrapper (addresses only, no types)
+  - Wrappers automatically call `lw_set_error_logging()` to eliminate scan noise
+  - Clean abstraction: users no longer need to include `linux_wire.h` directly
+  - Documentation in `crumbs_linux.h` explains automatic error suppression
+
+### Changed
+
+- **Multi-Device Architecture in LHWIT Controllers**
+  - Both Manual and Discovery controllers now support multiple devices of the same type
+  - Device selection pattern: `<type> <idx|@addr> <cmd> [args]`
+    - Index-based: `led 0 set 255 128 0` (first LED found)
+    - Address-based: `led @0x20 set 255 128 0` (LED at specific address)
+  - Config format updated: `device_config_t[] = {{type_id, addr}, ...}`
+  - Controllers maintain device arrays indexed by order discovered or configured
+
+- **Peripheral Initialization Order Fix**
+  - Fixed servo peripheral: `crumbs_arduino_init_peripheral()` now called BEFORE `crumbs_set_callbacks()`
+  - Root cause: `crumbs_arduino_init_peripheral()` internally calls `crumbs_init()`, which was wiping callbacks
+  - Pattern documented: always initialize peripheral context first, then set callbacks
+
+- **Redundant Initialization Cleanup**
+  - Removed redundant `crumbs_init()` calls in controllers
+  - `crumbs_linux_init_controller()` already calls `crumbs_init()` internally
+  - Applied to Manual Controller, Discovery Controller, and all Linux examples
+
+### Examples
+
+- **LHWIT Controllers Updated**
+  - `controller_manual/`: Multi-device config with device selection by index or address
+  - `controller_discovery/`: Uses new Linux scan wrapper, supports multiple devices
+  - Both demonstrate robust device interaction with improved error handling
+
+- **All Linux Examples Updated**
+  - `core_usage/linux/simple_controller/`: Uses `crumbs_linux_scan_for_crumbs_with_types()`
+  - `handlers_usage/linux/mock_controller/`: Uses `crumbs_linux_scan_for_crumbs_with_types()`
+  - No longer include `linux_wire.h` directly
+
+- **LHWIT Peripherals Fixed**
+  - `servo/`: Fixed initialization order bug that prevented detection during scan
+  - Verified: Both LED and Servo now detected correctly in hardware testing
+
+### Documentation
+
+- **controller_discovery/README.md**: Updated to reflect new Linux wrapper usage and multi-device support
+
+---
+
 ## [0.10.0] - SET_REPLY Mechanism
 
 ### Added

@@ -3,13 +3,13 @@
  * @brief Discovery-based controller for lhwit_family peripherals.
  *
  * This is a complete interactive application demonstrating proper CRUMBS usage:
- * - Auto-discovery via crumbs_controller_scan_for_crumbs_with_types()
+ * - Auto-discovery via crumbs_linux_scan_for_crumbs_with_types()
  * - Command sending via canonical *_ops.h helper functions
  * - SET_REPLY query pattern (write query opcode, then read response)
  * - Platform-specific reading via crumbs_linux_read_message()
  *
  * Structure:
- * - Scan: Uses core scanner to find devices by type ID
+ * - Scan: Uses Linux HAL scanner (suppresses noise from empty addresses)
  * - Commands: Use canonical helper functions from *_ops.h
  * - Queries: Use SET_REPLY pattern (2-step: query write + response read)
  * - UI: Interactive shell (application layer, not library code)
@@ -200,19 +200,17 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
     uint8_t addrs[16];
     uint8_t types[16];
 
-    printf("Scanning I2C bus for CRUMBS devices...\n");
+    printf("Scanning I2C bus for CRUMBS devices (0x08-0x77)...\n");
 
-    /* CRUMBS Pattern: Type-aware scanning
-     * crumbs_controller_scan_for_crumbs_with_types() probes addresses and
-     * queries type IDs via message header. Returns both addresses and types.
+    /* CRUMBS Pattern: Linux scan wrapper
+     * crumbs_linux_scan_for_crumbs_with_types() wraps the core scanner and
+     * automatically suppresses expected I/O errors from empty addresses.
      * - Addresses 0x08-0x77 (valid I2C range)
      * - strict=0: Accept any CRUMBS device
-     * - Platform-specific write/read functions
      * - 100ms timeout per device
      */
-    int count = crumbs_controller_scan_for_crumbs_with_types(
-        ctx, 0x08, 0x77, 0,
-        crumbs_linux_i2c_write, crumbs_linux_read, (void *)lw,
+    int count = crumbs_linux_scan_for_crumbs_with_types(
+        ctx, lw, 0x08, 0x77, 0,
         addrs, types, 16, 100000);
 
     if (count < 0)

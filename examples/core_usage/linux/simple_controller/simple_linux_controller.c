@@ -52,8 +52,8 @@ int main(int argc, char **argv)
 
         printf("Running CRUMBS-specific scan (strict=%d)...\n", strict);
         uint8_t found[128];
-        int n = crumbs_controller_scan_for_crumbs(
-            &ctx, 0x03, 0x77, strict, crumbs_linux_i2c_write, crumbs_linux_read, &lw, found, sizeof(found), 25000);
+        int n = crumbs_linux_scan_for_crumbs(
+            &ctx, &lw, 0x03, 0x77, strict, found, sizeof(found), 25000);
 
         if (n < 0)
         {
