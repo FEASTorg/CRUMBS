@@ -61,7 +61,7 @@ Three-device reference system demonstrating different handler patterns:
 
 Each family includes:
 
-```
+```sh
 family_name/
 ├── device_name_ops.h        # Canonical operation definitions (shared)
 ├── family_ops.h             # Convenience header (includes all ops)

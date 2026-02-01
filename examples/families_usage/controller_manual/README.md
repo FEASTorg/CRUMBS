@@ -7,12 +7,14 @@ Preconfigured controller for CRUMBS lhwit_family peripherals on Linux I2C.
 This controller demonstrates proper CRUMBS usage with preconfigured addresses:
 
 **CRUMBS Patterns Demonstrated:**
+
 - Canonical `*_ops.h` helper functions - Protocol-defined command builders
 - SET_REPLY query pattern - Two-step query/read for GET operations
 - Platform-specific `crumbs_linux_read_message()` - Linux I2C read wrapper
 - Configuration pattern - Fixed addresses defined in header
 
 **Application Features:**
+
 - Uses fixed I2C addresses configured in [config.h](config.h)
 - Interactive shell for controlling Calculator, LED, and Servo peripherals
 - No device discovery required - faster startup
@@ -49,6 +51,7 @@ make
 ## Commands
 
 ### Calculator
+
 - `calculator add <a> <b>` - Add two numbers
 - `calculator sub <a> <b>` - Subtract
 - `calculator mul <a> <b>` - Multiply
@@ -57,12 +60,14 @@ make
 - `calculator history` - Show operation history
 
 ### LED
+
 - `led set_all <mask>` - Set all LEDs (e.g., 0x0F for all on)
 - `led set_one <idx> <state>` - Set single LED
 - `led blink <idx> <enable> <period_ms>` - Configure blink
 - `led get_state` - Get current LED state
 
 ### Servo
+
 - `servo set_pos <idx> <angle>` - Set position (0-180°)
 - `servo set_speed <idx> <speed>` - Set speed (0-20)
 - `servo sweep <idx> <enable> <min> <max> <step>` - Configure sweep
@@ -87,6 +92,7 @@ OK: Servo 0 position set to 90°
 ## When to Use This Controller
 
 **Use manual controller when:**
+
 - Device addresses are fixed and known (most common case)
 - Production deployments with stable hardware
 - Faster startup - no scan delay
@@ -94,6 +100,7 @@ OK: Servo 0 position set to 90°
 - Following standard patterns from other CRUMBS examples
 
 **Use discovery controller when:**
+
 - Testing with unknown device addresses
 - Working with dynamic bus configurations
 - Prototyping with multiple device setups
