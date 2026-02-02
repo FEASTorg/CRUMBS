@@ -76,7 +76,7 @@ controller_manual/           # Config-based interactive tool
 ## Next Steps
 
 1. **Explore lhwit_family** - Read [lhwit_family/README.md](lhwit_family/README.md) for hardware requirements
-2. **Build peripherals** - Flash calculator, LED, servo to Arduino Nano boards
+2. **Build peripherals** - Flash calculator, LED, servo, and display to Arduino Nano boards
 3. **Test controllers** - Use discovery or manual controller to interact with devices
 4. **Read comprehensive guide** - See [docs/lhwit-family.md](../../docs/lhwit-family.md) for full details
 
@@ -84,7 +84,7 @@ controller_manual/           # Config-based interactive tool
 
 **Canonical Headers:** Operation definitions live in shared headers (e.g., `calculator_ops.h`). Both peripherals and controllers include the same header, ensuring protocol consistency.
 
-**Multiple Patterns:** Different devices demonstrate different handler approaches - function-style (calculator), state-query (LED), position-control (servo). Choose the pattern that fits your use case.
+**Multiple Patterns:** Different devices demonstrate different handler approaches - function-style (calculator), state-query (LED), position-control (servo), display-control (display). Choose the pattern that fits your use case.
 
 **Interactive Testing:** Controllers provide command-line interfaces for manual testing. This is more flexible than automated sequences and better for debugging hardware issues.
 

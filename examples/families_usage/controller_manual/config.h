@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include "../lhwit_family/calculator_ops.h"
+#include "../lhwit_family/display_ops.h"
 #include "../lhwit_family/led_ops.h"
 #include "../lhwit_family/servo_ops.h"
 
@@ -27,9 +28,10 @@ typedef struct
 
 /* Configured device list - edit as needed */
 static const device_config_t DEVICE_CONFIG[] = {
-    {CALC_TYPE_ID, 0x10},  /* Calculator at 0x10 */
-    {LED_TYPE_ID, 0x20},   /* LED at 0x20 */
-    {SERVO_TYPE_ID, 0x30}, /* Servo at 0x30 */
+    {CALC_TYPE_ID, 0x10},    /* Calculator at 0x10 */
+    {LED_TYPE_ID, 0x20},     /* LED at 0x20 */
+    {SERVO_TYPE_ID, 0x30},   /* Servo at 0x30 */
+    {DISPLAY_TYPE_ID, 0x40}, /* Display at 0x40 */
 
     /* Examples of additional devices:
     { LED_TYPE_ID,   0x21 },  // Second LED at 0x21

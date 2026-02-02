@@ -7,6 +7,7 @@
  * - LED Controller (Type 0x01)
  * - Servo Controller (Type 0x02)
  * - Calculator (Type 0x03)
+ * - Display (Type 0x04)
  *
  * Include this single header in your controller applications to access
  * all operations for the LHWIT family.
@@ -21,6 +22,7 @@
 #include "led_ops.h"
 #include "servo_ops.h"
 #include "calculator_ops.h"
+#include "display_ops.h"
 #include "crumbs_version.h"
 
 #include <stdio.h> /* for sprintf */

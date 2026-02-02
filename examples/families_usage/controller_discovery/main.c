@@ -67,6 +67,7 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw);
 static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
 static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
 static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
+static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
 
 /* ============================================================================
  * Help
@@ -105,6 +106,12 @@ static void print_help(void)
     printf("  servo 0 set_speed <idx> <speed>   - Set speed (0-20)\n");
     printf("  servo 0 sweep <i> <en> <min> <max> <step> - Configure sweep\n");
     printf("  servo 0 get_pos                   - Get positions\n\n");
+
+    printf("Display:\n");
+    printf("  display 0 set_number <num> <dec>  - Display number (dec=0-4)\n");
+    printf("  display 0 set_brightness <level>  - Set brightness (0-10)\n");
+    printf("  display 0 clear                   - Clear display\n");
+    printf("  display 0 get_value               - Get current value\n\n");
 }
 
 static void trim_whitespace(char *str)
@@ -152,6 +159,8 @@ static void cmd_list(void)
             name = "LED";
         else if (g_devices[i].type_id == SERVO_TYPE_ID)
             name = "Servo";
+        else if (g_devices[i].type_id == DISPLAY_TYPE_ID)
+            name = "Display";
 
         int idx = type_counts[g_devices[i].type_id]++;
         const char *compat_str = g_devices[i].compat == 0 ? "OK" : "INCOMPATIBLE";
@@ -824,6 +833,153 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
 }
 
 /* ============================================================================
+ * Display Command
+ * ============================================================================ */
+
+static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+{
+    uint8_t addr;
+    const char *cmd_start;
+
+    /* Parse device selector: @addr or index */
+    if (*args == '@')
+    {
+        unsigned int addr_val;
+        if (sscanf(args, "@%i", &addr_val) != 1)
+        {
+            printf("Usage: display @<addr> <cmd> or display <idx> <cmd>\n");
+            return -1;
+        }
+        addr = (uint8_t)addr_val;
+        cmd_start = strchr(args, ' ');
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
+        cmd_start++;
+    }
+    else
+    {
+        int idx;
+        if (sscanf(args, "%d", &idx) != 1)
+        {
+            printf("Usage: display <idx> <cmd>\n");
+            return -1;
+        }
+        if (find_device(DISPLAY_TYPE_ID, idx, &addr) != 0)
+        {
+            printf("Display #%d not found\n", idx);
+            return -1;
+        }
+        cmd_start = strchr(args, ' ');
+        if (!cmd_start)
+        {
+            printf("Missing command\n");
+            return -1;
+        }
+        cmd_start++;
+    }
+
+    if (check_device_compat(addr) != 0)
+        return -1;
+
+    while (*cmd_start && isspace((unsigned char)*cmd_start))
+        cmd_start++;
+
+    char subcmd[32];
+    if (sscanf(cmd_start, "%31s", subcmd) != 1)
+    {
+        printf("Usage: display <idx|@addr> <set_number|set_brightness|clear|get_value> [args...]\n");
+        return -1;
+    }
+
+    const char *rest = cmd_start + strlen(subcmd);
+    while (*rest && isspace((unsigned char)*rest))
+        rest++;
+
+    int rc;
+    crumbs_message_t msg, reply;
+
+    if (strcmp(subcmd, "set_number") == 0)
+    {
+        unsigned int number, decimal_pos;
+        if (sscanf(rest, "%u %u", &number, &decimal_pos) != 2)
+        {
+            printf("Usage: display set_number <number> <decimal_pos>\n");
+            printf("  number: 0-9999\n");
+            printf("  decimal_pos: 0=none, 1=digit1 (left), 2=digit2, 3=digit3, 4=digit4 (right)\n");
+            return -1;
+        }
+
+        rc = display_build_set_number(&msg, (uint16_t)number, (uint8_t)decimal_pos);
+        if (rc != 0)
+            return rc;
+
+        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        if (rc == 0)
+            printf("OK: Display showing %u (decimal pos %u)\n", number, decimal_pos);
+        return rc;
+    }
+    else if (strcmp(subcmd, "set_brightness") == 0)
+    {
+        unsigned int level;
+        if (sscanf(rest, "%u", &level) != 1)
+        {
+            printf("Usage: display set_brightness <level>\n");
+            printf("  level: 0-10 (0=off, 10=brightest)\n");
+            return -1;
+        }
+
+        rc = display_build_set_brightness(&msg, (uint8_t)level);
+        if (rc != 0)
+            return rc;
+
+        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        if (rc == 0)
+            printf("OK: Brightness set to %u\n", level);
+        return rc;
+    }
+    else if (strcmp(subcmd, "clear") == 0)
+    {
+        rc = display_build_clear(&msg);
+        if (rc != 0)
+            return rc;
+
+        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        if (rc == 0)
+            printf("OK: Display cleared\n");
+        return rc;
+    }
+    else if (strcmp(subcmd, "get_value") == 0)
+    {
+        rc = display_build_get_value(&msg);
+        if (rc != 0)
+            return rc;
+
+        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        if (rc != 0)
+            return rc;
+
+        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
+        if (rc != 0)
+            return rc;
+
+        uint16_t number;
+        uint8_t decimal_pos, brightness;
+        rc = display_parse_get_value(reply.data, reply.data_len, &number, &decimal_pos, &brightness);
+        if (rc == 0)
+        {
+            printf("Display: number=%u, decimal=%u, brightness=%u\n", number, decimal_pos, brightness);
+        }
+        return rc;
+    }
+
+    printf("Unknown display command: %s\n", subcmd);
+    return -1;
+}
+
+/* ============================================================================
  * Main
  * ============================================================================ */
 
@@ -889,6 +1045,8 @@ int main(int argc, char *argv[])
             cmd_led(&ctx, &lw, args);
         else if (strcmp(cmd, "servo") == 0)
             cmd_servo(&ctx, &lw, args);
+        else if (strcmp(cmd, "display") == 0)
+            cmd_display(&ctx, &lw, args);
         else
             printf("Unknown command: %s (type 'help')\n", cmd);
     }

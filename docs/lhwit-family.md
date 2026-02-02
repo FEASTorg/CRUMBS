@@ -128,7 +128,7 @@ Uses hardcoded addresses from `config.h`. Same command interface, no scan needed
 **Advantages:** Fast startup, predictable, production-ready.  
 **Limitations:** Requires known addresses, rebuild for changes.
 
-**Configuration:** Edit `config.h` with `CALCULATOR_ADDR`, `LED_ADDR`, `SERVO_ADDR`.
+**Configuration:** Edit `config.h` with `CALCULATOR_ADDR`, `LED_ADDR`, `SERVO_ADDR`, `DISPLAY_ADDR`.
 
 ---
 
@@ -137,9 +137,10 @@ Uses hardcoded addresses from `config.h`. Same command interface, no scan needed
 ### Bill of Materials
 
 - 1x Linux SBC (Raspberry Pi, Orange Pi)
-- 3x Arduino Nano (ATmega328P)
+- 4x Arduino Nano (ATmega328P)
 - 4x LEDs + 4x 220Ω resistors
 - 2x Servos (SG90 or similar)
+- 1x 5641AS Quad 7-segment display
 - 1x External 5V supply (2-3A for servos)
 - Breadboard + jumper wires
 
@@ -147,7 +148,7 @@ Uses hardcoded addresses from `config.h`. Same command interface, no scan needed
 
 All Arduino Nanos share I²C bus:
 
-- SDA: Linux SBC → A4 (all 3 Arduinos)
+- SDA: Linux SBC → A4 (all 4 Arduinos)
 - SCL: Linux SBC → A5 (all 3 Arduinos)
 - GND: Common ground
 
@@ -274,7 +275,7 @@ quit / exit                 Exit program
 
 ```bash
 lhwit> scan
-Found Calculator at 0x10, LED Array at 0x20, Servo Controller at 0x30
+Found Calculator at 0x10, LED Array at 0x20, Servo Controller at 0x30, Display at 0x40
 
 lhwit> calculator add 10 20
 lhwit> calculator result
@@ -285,6 +286,9 @@ All LEDs on
 
 lhwit> servo set_pos 0 90
 Servo 0 to center
+
+lhwit> display set_number 1234 2
+Display shows: 12.34
 ```
 
 ---

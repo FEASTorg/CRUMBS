@@ -16,7 +16,7 @@ This controller demonstrates proper CRUMBS usage with preconfigured addresses:
 **Application Features:**
 
 - Uses fixed I2C addresses configured in [config.h](config.h)
-- Interactive shell for controlling Calculator, LED, and Servo peripherals
+- Interactive shell for controlling Calculator, LED, Servo, and Display peripherals
 - No device discovery required - faster startup
 - Standard/default pattern for production use
 

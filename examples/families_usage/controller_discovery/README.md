@@ -16,7 +16,7 @@ This controller demonstrates proper CRUMBS usage with auto-discovery:
 
 **Application Features:**
 
-- Automatically finds Calculator (0x03), LED (0x01), and Servo (0x02) devices
+- Automatically finds Calculator (0x03), LED (0x01), Servo (0x02), and Display (0x04) devices
 - Queries and verifies version compatibility during scan
 - Blocks incompatible devices with clear guidance
 - Interactive shell for controlling discovered peripherals

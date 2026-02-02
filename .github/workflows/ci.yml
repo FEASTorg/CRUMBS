@@ -166,3 +166,6 @@ jobs:
 
       - name: Build servo peripheral (families_usage)
         run: pio run -d examples/families_usage/lhwit_family/servo -e nanoatmega328new
+
+      - name: Build display peripheral (families_usage)
+        run: pio run -d examples/families_usage/lhwit_family/display -e nanoatmega328new

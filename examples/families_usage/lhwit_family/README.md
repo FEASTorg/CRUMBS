@@ -1,39 +1,42 @@
 # LHWIT Family - Low Hardware Implementation Test
 
-Three-device reference family demonstrating different handler patterns with minimal hardware requirements.
+Four-device reference family demonstrating different handler patterns with minimal hardware requirements.
 
 ## Overview
 
-The LHWIT family consists of three devices showcasing different interaction patterns:
+The LHWIT family consists of four devices showcasing different interaction patterns:
 
 | Device         | Type ID | Pattern          | Description                                                       |
 | -------------- | ------- | ---------------- | ----------------------------------------------------------------- |
 | **Calculator** | 0x03    | Function-style   | Executes operations (ADD/SUB/MUL/DIV), returns results on request |
 | **LED Array**  | 0x01    | State-query      | Controls 4 LEDs, reports current state on request                 |
 | **Servo**      | 0x02    | Position-control | Moves 2 servos, reports positions on request                      |
+| **Display**    | 0x04    | Display-control  | 4-digit 7-segment display, shows numbers and custom patterns      |
 
-**Why three patterns?** Each represents a common device interaction model:
+**Why four patterns?** Each represents a common device interaction model:
 
 - **Function-style:** Device performs computation, stores result (like sensors with processing)
 - **State-query:** Device manages output state, reports on demand (like GPIO expanders)
 - **Position-control:** Device controls physical actuators with feedback (like motor controllers)
+- **Display-control:** Device manages visual output with multiplexing (like displays and indicators)
 
 ## Hardware Requirements
 
 ### Components
 
 - **1x Linux SBC** - Raspberry Pi, Orange Pi, etc. (for controllers)
-- **3x Arduino Nano** - ATmega328P boards (for peripherals)
+- **4x Arduino Nano** - ATmega328P boards (for peripherals)
 - **4x LEDs** - Standard 5mm LEDs (any color)
 - **4x 220Ω resistors** - For LED current limiting
 - **2x Servo motors** - SG90 or similar (180° range)
+- **1x 5641AS display** - Quad 7-segment display (common cathode)
 - **1x External 5V power supply** - At least 2A capacity (for servos)
 - **1x Breadboard** - For connections
 - **Jumper wires** - Male-to-male and male-to-female
 
 ### Wiring Overview
 
-All three Arduino Nano boards connect to the same I²C bus:
+All four Arduino Nano boards connect to the same I²C bus:
 
 - **SDA** → A4 (Arduino Nano)
 - **SCL** → A5 (Arduino Nano)
@@ -49,6 +52,11 @@ All three Arduino Nano boards connect to the same I²C bus:
 - D10 → Servo 1 signal
 - Servo power: **EXTERNAL 5V supply** (NOT from Arduino!)
 
+**Display connections** (Display peripheral only):
+
+- D2-D9 → 5641AS segments (a, b, c, d, e, f, g, dp)
+- D10-D13 → 5641AS digit select (D1, D2, D3, D4)
+
 ⚠️ **Critical:** Servos draw significant current. Never power servos from Arduino's 5V pin. Use external 5V power supply with common ground.
 
 ## Quick Start
@@ -59,6 +67,7 @@ All three Arduino Nano boards connect to the same I²C bus:
 cd calculator && pio run -t upload
 cd ../led && pio run -t upload
 cd ../servo && pio run -t upload
+cd ../display && pio run -t upload
 ```
 
 **Addresses:**
@@ -66,6 +75,7 @@ cd ../servo && pio run -t upload
 - Calculator: 0x10
 - LED: 0x20
 - Servo: 0x30
+- Display: 0x40
 
 ### 2. Build Controllers
 
@@ -90,19 +100,21 @@ make
 ```bash
 ./controller_discovery /dev/i2c-1
 lhwit> scan
-lhwit> calculator add 10 20
-lhwit> calculator result
-lhwit> led set_all 0x0F
-lhwit> servo set_pos 0 90
+lhwit> calculator 0 add 10 20
+lhwit> calculator 0 result
+lhwit> led 0 set_all 0x0F
+lhwit> servo 0 set_pos 0 90
+lhwit> display 0 set_number 1234 0
 ```
 
 **With manual controller:**
 
 ```bash
 ./controller_manual /dev/i2c-1
-lhwit> calculator add 5 3
-lhwit> led get_state
-lhwit> servo get_pos
+lhwit> calculator 0 add 5 3
+lhwit> led 0 get_state
+lhwit> servo 0 get_pos
+lhwit> display 0 set_number 42 0
 ```
 
 ## Module Details
@@ -208,6 +220,53 @@ Controls 2 hobby servos (D9-D10) with speed and sweep.
 - Common ground between Arduino and servo power supply
 
 ⚠️ **Servo Power Warning:** Each servo can draw 500mA+ under load. Arduino's 5V regulator cannot supply this. Use dedicated 5V supply (2A minimum for 2 servos). Connect grounds together.
+
+### Display (Type 0x04)
+
+Controls 4-digit 7-segment display (5641AS or compatible) with multiplexing.
+
+**Operations:**
+
+- `SET_NUMBER` (0x01) - Display number (0-9999) with optional decimal point
+- `SET_SEGMENTS` (0x02) - Set custom segment patterns for all 4 digits
+- `SET_BRIGHTNESS` (0x03) - Set brightness level (0-10)
+- `CLEAR` (0x04) - Clear display
+
+**Queries:**
+
+- `GET_VALUE` (0x80) - Current displayed number, decimal position, and brightness
+
+**State:**
+
+- Current number (uint16_t, 0-9999)
+- Decimal position (uint8_t, 0=none, 1-4)
+- Brightness level (uint8_t, 0-10)
+- Display active flag
+
+**Hardware:**
+
+- D2-D9 → 5641AS segments (a, b, c, d, e, f, g, dp)
+- D10-D13 → 5641AS digit select (D1, D2, D3, D4)
+- Multiplexing: Continuously cycles through digits at ~2ms intervals
+
+**Example usage:**
+
+```c
+#include "display_ops.h"
+
+// Display "123.4" (decimal on digit 3)
+crumbs_message_t msg;
+display_build_set_number(&msg, 1234, 3);
+crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+
+// Display "12.34" (decimal on digit 2)
+display_build_set_number(&msg, 1234, 2);
+crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+
+// Clear display
+display_build_clear(&msg);
+crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+```
 
 ## Controllers
 

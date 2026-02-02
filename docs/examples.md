@@ -46,16 +46,16 @@ See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detaile
 **Audience:** Users building multi-device I²C systems  
 **Purpose:** Complete device family implementations with canonical operation headers
 
-| Family    | Devices                                               | Controllers                               | Purpose                                                                                                    |
-| --------- | ----------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **LHWIT** | Calculator (0x03)<br>LED Array (0x01)<br>Servo (0x02) | Discovery Controller<br>Manual Controller | Low Hardware Implementation Test - demonstrates function-style, state-query, and position-control patterns |
+| Family    | Devices                                                                             | Controllers                               | Purpose                                                                                                               |
+| --------- | ----------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **LHWIT** | Calculator (0x03)<br>LED Array (0x01)<br>Servo (0x02)<br>Display (0x04) | Discovery Controller<br>Manual Controller | Low Hardware Implementation Test - demonstrates function-style, state-query, position-control, and display patterns |
 
 **Key concepts:**
 
 - Canonical operation headers shared between peripherals and controllers
 - Multi-device coordination on single I²C bus
 - Discovery vs manual addressing patterns
-- Three interaction patterns: function-style (Calculator), state-query (LED), position-control (Servo)
+- Four interaction patterns: function-style (Calculator), state-query (LED), position-control (Servo), display-control (Display)
 
 See [families_usage/README.md](../examples/families_usage/README.md) for overview and [lhwit-family.md](lhwit-family.md) for comprehensive guide.
 
