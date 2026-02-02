@@ -260,10 +260,9 @@ static void handler_clear(crumbs_context_t *ctx, uint8_t opcode,
  * on_request Callback: Handles GET Operations via SET_REPLY
  * ============================================================================ */
 
-static void on_request(crumbs_context_t *ctx)
+static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
     uint8_t requested_op = ctx->requested_opcode;
-    crumbs_message_t reply;
     
     Serial.print(F("on_request: opcode=0x"));
     Serial.println(requested_op, HEX);
@@ -272,12 +271,11 @@ static void on_request(crumbs_context_t *ctx)
     {
     case 0x00: /* Version query (standard convention) */
     {
-        crumbs_msg_init(&reply, DISPLAY_TYPE_ID, 0x00);
-        crumbs_msg_add_u16(&reply, CRUMBS_VERSION);
-        crumbs_msg_add_u8(&reply, DISPLAY_MODULE_VER_MAJOR);
-        crumbs_msg_add_u8(&reply, DISPLAY_MODULE_VER_MINOR);
-        crumbs_msg_add_u8(&reply, DISPLAY_MODULE_VER_PATCH);
-        crumbs_arduino_set_response(&ctx, &reply);
+        crumbs_msg_init(reply, DISPLAY_TYPE_ID, 0x00);
+        crumbs_msg_add_u16(reply, CRUMBS_VERSION);
+        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_MAJOR);
+        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_MINOR);
+        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_PATCH);
         
         Serial.print(F("Version: CRUMBS="));
         Serial.print(CRUMBS_VERSION);
@@ -292,11 +290,10 @@ static void on_request(crumbs_context_t *ctx)
     
     case DISPLAY_OP_GET_VALUE: /* Get current value */
     {
-        crumbs_msg_init(&reply, DISPLAY_TYPE_ID, DISPLAY_OP_GET_VALUE);
-        crumbs_msg_add_u16(&reply, g_current_number);
-        crumbs_msg_add_u8(&reply, g_decimal_pos);
-        crumbs_msg_add_u8(&reply, g_brightness);
-        crumbs_arduino_set_response(&ctx, &reply);
+        crumbs_msg_init(reply, DISPLAY_TYPE_ID, DISPLAY_OP_GET_VALUE);
+        crumbs_msg_add_u16(reply, g_current_number);
+        crumbs_msg_add_u8(reply, g_decimal_pos);
+        crumbs_msg_add_u8(reply, g_brightness);
         
         Serial.print(F("GET_VALUE: number="));
         Serial.print(g_current_number);
