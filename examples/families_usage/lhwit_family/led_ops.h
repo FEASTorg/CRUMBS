@@ -84,7 +84,7 @@ extern "C"
  * @brief Request blink configuration for all LEDs.
  * Payload: none
  * Reply: [led0_enable:u8][led0_period:u16]...[led3_enable:u8][led3_period:u16]
- *        Total: 12 bytes (3 bytes per LED × 4 LEDs)
+ *        Total: 12 bytes (3 bytes per LED x 4 LEDs)
  */
 #define LED_OP_GET_BLINK 0x81
 

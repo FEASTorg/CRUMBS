@@ -46,7 +46,7 @@ Examples are organized into three tiers based on complexity:
 | Platform   | Tier 1         | Tier 2         | Tier 3                              |
 | ---------- | -------------- | -------------- | ----------------------------------- |
 | Arduino    | ✓ 5 examples   | —              | —                                   |
-| PlatformIO | ✓ 2 examples   | ✓ 2 examples   | ✓ 3 peripherals (LHWIT family)      |
+| PlatformIO | ✓ 2 examples   | ✓ 2 examples   | ✓ 4 peripherals (LHWIT family)      |
 | Linux      | ✓ 1 controller | ✓ 1 controller | ✓ 2 controllers (discovery, manual) |
 
 ---
@@ -56,7 +56,7 @@ Examples are organized into three tiers based on complexity:
 ### Arduino Users
 
 1. Install CRUMBS via Library Manager
-2. Open `examples/core_usage/arduino/simple_peripheral/`
+2. Open `examples/core_usage/arduino/hello_peripheral/`
 3. Upload and open Serial Monitor
 
 ### PlatformIO Users

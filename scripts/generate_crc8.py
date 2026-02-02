@@ -9,7 +9,7 @@ staging script) into a single, repeatable script. The generator will:
   builds against a specific generated algorithm variant.
 
 Defaults: The common project uses the nibble (table-driven, 4-bit index)
-variant — staging defaults to ['nibble'] to match current project usage.
+variant - staging defaults to ['nibble'] to match current project usage.
 
 Usage examples:
   # generate c99 variants (default set) and stage the nibble variant
@@ -103,7 +103,7 @@ def generate_c99_variants(algos: Iterable[str]) -> None:
 
 
 def stage_variants(algos: Iterable[str]) -> int:
-    """Copy the generated c99 outputs from dist/crc/c99 → src/crc.
+    """Copy the generated c99 outputs from dist/crc/c99 -> src/crc.
 
     Default behavior is to stage header + source matching each fileroot.
     Returns 0 on success, non-zero on failure.

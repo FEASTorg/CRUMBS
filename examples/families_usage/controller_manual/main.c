@@ -103,7 +103,7 @@ static void print_help(void)
     printf("  led 0 get_state                   - Get LED state\n\n");
 
     printf("Servo:\n");
-    printf("  servo 0 set_pos <idx> <angle>     - Set position (0-180°)\n");
+    printf("  servo 0 set_pos <idx> <angle>     - Set position (0-180deg)\n");
     printf("  servo 0 set_speed <idx> <speed>   - Set speed (0-20)\n");
     printf("  servo 0 sweep <i> <en> <min> <max> <step> - Configure sweep\n");
     printf("  servo 0 get_pos                   - Get positions\n\n");
@@ -576,7 +576,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
 
         rc = servo_send_set_pos(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)idx, (uint8_t)angle);
         if (rc == 0)
-            printf("OK: Servo %u at 0x%02X position set to %u°\n", idx, addr, angle);
+            printf("OK: Servo %u at 0x%02X position set to %udeg\n", idx, addr, angle);
         return rc;
     }
     else if (strcmp(subcmd, "set_speed") == 0)
@@ -623,7 +623,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
         {
             crumbs_msg_read_u8(reply.data, reply.data_len, 0, &pos0);
             crumbs_msg_read_u8(reply.data, reply.data_len, 1, &pos1);
-            printf("Servo positions at 0x%02X: [0]=%u°, [1]=%u°\n", addr, pos0, pos1);
+            printf("Servo positions at 0x%02X: [0]=%udeg, [1]=%udeg\n", addr, pos0, pos1);
         }
         return 0;
     }
@@ -864,8 +864,10 @@ int main(int argc, char *argv[])
         else if (strcmp(cmd, "led") == 0)
             cmd_led(&ctx, &lw, args);
         else if (strcmp(cmd, "servo") == 0)
-            cmd_servo(&ctx, &lw, args);        else if (strcmp(cmd, "display") == 0)
-            cmd_display(&ctx, &lw, args);        else
+            cmd_servo(&ctx, &lw, args);
+        else if (strcmp(cmd, "display") == 0)
+            cmd_display(&ctx, &lw, args);
+        else
             printf("Unknown command: %s (type 'help')\n", cmd);
     }
 

@@ -1,11 +1,12 @@
 # Usage Families (Tier 3)
 
 **Audience:** Advanced users building complete systems  
-**Purpose:** Real-world multi-module coordination with actual hardware
+**Purpose:** Real-world multi-module coordination with actual hardware  
+**Prerequisites:** Complete [Tier 1 core_usage](../core_usage/) and [Tier 2 handlers_usage](../handlers_usage/) examples first
 
 ## Overview
 
-Usage families demonstrate complete, multi-device I²C systems with both peripheral and controller implementations. Unlike Tier 1 (handler patterns) and Tier 2 (single-device examples), usage families show how multiple devices coordinate to form a functional system.
+Usage families demonstrate complete, multi-device I²C systems with both peripheral and controller implementations. Unlike Tier 1 (core patterns) and Tier 2 (handler patterns), usage families show how multiple devices coordinate to form a functional system.
 
 **What you'll find here:**
 
@@ -17,21 +18,22 @@ Usage families demonstrate complete, multi-device I²C systems with both periphe
 
 ## Tier Comparison
 
-| Tier                         | Focus                               | Complexity | Hardware |
-| ---------------------------- | ----------------------------------- | ---------- | -------- |
-| **Tier 1** (handlers_usage)  | Handler patterns, single operations | Low        | Optional |
-| **Tier 2** (device_examples) | Single complete devices             | Medium     | Required |
-| **Tier 3** (families_usage)  | Multi-device systems                | High       | Required |
+| Tier                        | Focus                              | Complexity | Hardware |
+| --------------------------- | ---------------------------------- | ---------- | -------- |
+| **Tier 1** (core_usage)     | Core patterns, basic messaging     | Low        | Optional |
+| **Tier 2** (handlers_usage) | Handler registration, mock devices | Medium     | Optional |
+| **Tier 3** (families_usage) | Multi-device systems               | High       | Required |
 
 ## Available Families
 
 ### LHWIT Family (Low Hardware Implementation Test)
 
-Three-device reference system demonstrating different handler patterns:
+Four-device reference system demonstrating different handler patterns:
 
 - **Calculator** (Type 0x03) - Function-style interface (ADD/SUB/MUL/DIV + history)
 - **LED Array** (Type 0x01) - State-query interface (4 LEDs + blink control)
 - **Servo Controller** (Type 0x02) - Position-control interface (2 servos + sweep)
+- **Display** (Type 0x04) - Display-control interface (4-digit 7-segment display)
 
 **Controllers:**
 
@@ -52,7 +54,7 @@ Three-device reference system demonstrating different handler patterns:
 
 **Start with Tier 1-2 if:**
 
-- New to CRUMBS (start with handlers_usage)
+- New to CRUMBS (start with core_usage hello examples)
 - Learning basic I²C concepts
 - Building single-device applications
 - Just exploring the library

@@ -121,7 +121,6 @@ static void handler_add(crumbs_context_t *ctx, uint8_t opcode,
     if (crumbs_msg_read_u32(data, data_len, 0, &a) != 0 ||
         crumbs_msg_read_u32(data, data_len, 4, &b) != 0)
     {
-        Serial.println(F("ADD: Invalid payload"));
         return;
     }
 
@@ -131,14 +130,6 @@ static void handler_add(crumbs_context_t *ctx, uint8_t opcode,
 
     /* Append to history */
     append_to_history("ADD", a, b, result);
-
-    /* Log to serial */
-    Serial.print(F("ADD: "));
-    Serial.print(a);
-    Serial.print(F(" + "));
-    Serial.print(b);
-    Serial.print(F(" = "));
-    Serial.println(result);
 }
 
 /* ============================================================================
@@ -161,7 +152,6 @@ static void handler_sub(crumbs_context_t *ctx, uint8_t opcode,
     if (crumbs_msg_read_u32(data, data_len, 0, &a) != 0 ||
         crumbs_msg_read_u32(data, data_len, 4, &b) != 0)
     {
-        Serial.println(F("SUB: Invalid payload"));
         return;
     }
 
@@ -171,14 +161,6 @@ static void handler_sub(crumbs_context_t *ctx, uint8_t opcode,
 
     /* Append to history */
     append_to_history("SUB", a, b, result);
-
-    /* Log to serial */
-    Serial.print(F("SUB: "));
-    Serial.print(a);
-    Serial.print(F(" - "));
-    Serial.print(b);
-    Serial.print(F(" = "));
-    Serial.println(result);
 }
 
 /* ============================================================================
@@ -201,7 +183,6 @@ static void handler_mul(crumbs_context_t *ctx, uint8_t opcode,
     if (crumbs_msg_read_u32(data, data_len, 0, &a) != 0 ||
         crumbs_msg_read_u32(data, data_len, 4, &b) != 0)
     {
-        Serial.println(F("MUL: Invalid payload"));
         return;
     }
 
@@ -211,14 +192,6 @@ static void handler_mul(crumbs_context_t *ctx, uint8_t opcode,
 
     /* Append to history */
     append_to_history("MUL", a, b, result);
-
-    /* Log to serial */
-    Serial.print(F("MUL: "));
-    Serial.print(a);
-    Serial.print(F(" * "));
-    Serial.print(b);
-    Serial.print(F(" = "));
-    Serial.println(result);
 }
 
 /* ============================================================================
@@ -242,7 +215,6 @@ static void handler_div(crumbs_context_t *ctx, uint8_t opcode,
     if (crumbs_msg_read_u32(data, data_len, 0, &a) != 0 ||
         crumbs_msg_read_u32(data, data_len, 4, &b) != 0)
     {
-        Serial.println(F("DIV: Invalid payload"));
         return;
     }
 
@@ -251,21 +223,11 @@ static void handler_div(crumbs_context_t *ctx, uint8_t opcode,
     if (b == 0)
     {
         result = 0xFFFFFFFF;
-        Serial.print(F("DIV: "));
-        Serial.print(a);
-        Serial.print(F(" / "));
-        Serial.print(b);
-        Serial.println(F(" = ERROR (div by zero)"));
+        Serial.println("DIV: Error (div by zero)");
     }
     else
     {
         result = a / b;
-        Serial.print(F("DIV: "));
-        Serial.print(a);
-        Serial.print(F(" / "));
-        Serial.print(b);
-        Serial.print(F(" = "));
-        Serial.println(result);
     }
 
     g_last_result = result;
@@ -365,13 +327,9 @@ void setup()
         delay(10);
     }
 
-    Serial.println(F("\n=== CRUMBS Calculator Peripheral ==="));
-    Serial.print(F("I2C Address: 0x"));
+    Serial.println("\n=== CRUMBS Calculator Peripheral ===");
+    Serial.print("I2C Address: 0x");
     Serial.println(PERIPHERAL_ADDR, HEX);
-    Serial.print(F("Type ID: 0x"));
-    Serial.println(CALC_TYPE_ID, HEX);
-    Serial.println(F("Operations: ADD, SUB, MUL, DIV"));
-    Serial.println(F("History: 12 entries (circular buffer)"));
     Serial.println();
 
     /* Initialize CRUMBS context */
@@ -386,8 +344,7 @@ void setup()
     /* Register GET operation callback */
     crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
 
-    Serial.println(F("Calculator peripheral ready!"));
-    Serial.println(F("Waiting for I2C commands...\n"));
+    Serial.println("Ready");
 }
 
 void loop()

@@ -109,7 +109,6 @@ static void handler_set_all(crumbs_context_t *ctx, uint8_t opcode,
 
     if (data_len < 1)
     {
-        Serial.println(F("SET_ALL: Invalid payload"));
         return;
     }
 
@@ -120,15 +119,6 @@ static void handler_set_all(crumbs_context_t *ctx, uint8_t opcode,
 
     /* Update hardware */
     update_all_leds();
-
-    Serial.print(F("SET_ALL: mask=0x"));
-    Serial.print(g_led_states, HEX);
-    Serial.print(F(" (LEDs: "));
-    for (int i = 0; i < NUM_LEDS; i++)
-    {
-        Serial.print((g_led_states >> i) & 1);
-    }
-    Serial.println(F(")"));
 }
 
 /* ============================================================================
@@ -147,7 +137,6 @@ static void handler_set_one(crumbs_context_t *ctx, uint8_t opcode,
 
     if (data_len < 2)
     {
-        Serial.println(F("SET_ONE: Invalid payload"));
         return;
     }
 
@@ -156,8 +145,6 @@ static void handler_set_one(crumbs_context_t *ctx, uint8_t opcode,
 
     if (led_idx >= NUM_LEDS)
     {
-        Serial.print(F("SET_ONE: Invalid LED index "));
-        Serial.println(led_idx);
         return;
     }
 
@@ -173,11 +160,6 @@ static void handler_set_one(crumbs_context_t *ctx, uint8_t opcode,
 
     /* Update hardware */
     set_led_physical(led_idx, state);
-
-    Serial.print(F("SET_ONE: LED"));
-    Serial.print(led_idx);
-    Serial.print(F("="));
-    Serial.println(state ? 1 : 0);
 }
 
 /* ============================================================================
@@ -196,7 +178,6 @@ static void handler_blink(crumbs_context_t *ctx, uint8_t opcode,
 
     if (data_len < 4)
     {
-        Serial.println(F("BLINK: Invalid payload"));
         return;
     }
 
@@ -206,14 +187,11 @@ static void handler_blink(crumbs_context_t *ctx, uint8_t opcode,
 
     if (crumbs_msg_read_u16(data, data_len, 2, &period_ms) != 0)
     {
-        Serial.println(F("BLINK: Failed to read period"));
         return;
     }
 
     if (led_idx >= NUM_LEDS)
     {
-        Serial.print(F("BLINK: Invalid LED index "));
-        Serial.println(led_idx);
         return;
     }
 
@@ -222,14 +200,6 @@ static void handler_blink(crumbs_context_t *ctx, uint8_t opcode,
     g_blink[led_idx].period_ms = period_ms;
     g_blink[led_idx].last_toggle = millis();
     g_blink[led_idx].current_state = 0;
-
-    Serial.print(F("BLINK: LED"));
-    Serial.print(led_idx);
-    Serial.print(F(" "));
-    Serial.print(enable ? F("ENABLED") : F("DISABLED"));
-    Serial.print(F(" (period="));
-    Serial.print(period_ms);
-    Serial.println(F("ms)"));
 }
 
 /* ============================================================================
@@ -263,7 +233,7 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     {
         crumbs_msg_init(reply, LED_TYPE_ID, LED_OP_GET_BLINK);
 
-        /* Pack blink configuration: [enable:u8][period:u16] × 4 LEDs = 12 bytes */
+        /* Pack blink configuration: [enable:u8][period:u16] x 4 LEDs = 12 bytes */
         for (uint8_t i = 0; i < NUM_LEDS; i++)
         {
             crumbs_msg_add_u8(reply, g_blink[i].enable);
@@ -291,22 +261,9 @@ void setup()
         delay(10);
     }
 
-    Serial.println(F("\n=== CRUMBS LED Array Peripheral ==="));
-    Serial.print(F("I2C Address: 0x"));
+    Serial.println("\n=== CRUMBS LED Array Peripheral ===");
+    Serial.print("I2C Address: 0x");
     Serial.println(PERIPHERAL_ADDR, HEX);
-    Serial.print(F("Type ID: 0x"));
-    Serial.println(LED_TYPE_ID, HEX);
-    Serial.print(F("LEDs: "));
-    Serial.print(NUM_LEDS);
-    Serial.print(F(" (D"));
-    Serial.print(LED_PINS[0]);
-    Serial.print(F(", D"));
-    Serial.print(LED_PINS[1]);
-    Serial.print(F(", D"));
-    Serial.print(LED_PINS[2]);
-    Serial.print(F(", D"));
-    Serial.print(LED_PINS[3]);
-    Serial.println(F(")"));
     Serial.println();
 
     /* Initialize LED GPIO pins */
@@ -333,8 +290,7 @@ void setup()
     /* Register GET operation callback */
     crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
 
-    Serial.println(F("LED peripheral ready!"));
-    Serial.println(F("Waiting for I2C commands...\n"));
+    Serial.println("Ready");
 }
 
 void loop()

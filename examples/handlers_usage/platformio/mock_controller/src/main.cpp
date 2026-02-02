@@ -56,15 +56,15 @@ static uint8_t cmd_len = 0;
  */
 static void print_help()
 {
-    Serial.println(F("\n=== Mock Controller Commands ==="));
-    Serial.println(F("  help                   - Show this help"));
-    Serial.println(F("  echo <hex bytes>       - Send echo data (e.g., 'echo DE AD BE EF')"));
-    Serial.println(F("  heartbeat <ms>         - Set heartbeat period (e.g., 'heartbeat 1000')"));
-    Serial.println(F("  toggle                 - Toggle heartbeat enable/disable"));
-    Serial.println(F("  status                 - Query heartbeat status and period"));
-    Serial.println(F("  getecho                - Query stored echo data"));
-    Serial.println(F("  info                   - Query device info"));
-    Serial.println(F("  scan                   - Scan I2C bus"));
+    Serial.println("\n=== Mock Controller Commands ===");
+    Serial.println("  help                   - Show this help");
+    Serial.println("  echo <hex bytes>       - Send echo data (e.g., 'echo DE AD BE EF')");
+    Serial.println("  heartbeat <ms>         - Set heartbeat period (e.g., 'heartbeat 1000')");
+    Serial.println("  toggle                 - Toggle heartbeat enable/disable");
+    Serial.println("  status                 - Query heartbeat status and period");
+    Serial.println("  getecho                - Query stored echo data");
+    Serial.println("  info                   - Query device info");
+    Serial.println("  scan                   - Scan I2C bus");
     Serial.println();
 }
 
@@ -90,16 +90,16 @@ static int query_and_print(uint8_t query_op, const char *label)
     }
     else
     {
-        Serial.print(F("Error: Unknown query opcode 0x"));
+        Serial.print("Error: Unknown query opcode 0x");
         Serial.println(query_op, HEX);
         return -1;
     }
 
     if (rc != 0)
     {
-        Serial.print(F("Error: Failed to send query ("));
+        Serial.print("Error: Failed to send query (");
         Serial.print(rc);
-        Serial.println(F(")"));
+        Serial.println(")");
         return -1;
     }
 
@@ -110,7 +110,7 @@ static int query_and_print(uint8_t query_op, const char *label)
     int n = crumbs_arduino_read(NULL, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
     if (n < 0)
     {
-        Serial.println(F("Error: No response from peripheral"));
+        Serial.println("Error: No response from peripheral");
         return -1;
     }
 
@@ -119,19 +119,19 @@ static int query_and_print(uint8_t query_op, const char *label)
     rc = crumbs_decode_message(raw, n, &reply, &ctx);
     if (rc != 0)
     {
-        Serial.print(F("Error: Failed to decode reply ("));
+        Serial.print("Error: Failed to decode reply (");
         Serial.print(rc);
-        Serial.println(F(")"));
+        Serial.println(")");
         return -1;
     }
 
     /* Print reply */
     Serial.print(label);
-    Serial.print(F(": "));
+    Serial.print(": ");
 
     if (query_op == MOCK_OP_GET_INFO || query_op == MOCK_OP_GET_ECHO)
     {
-        /* Print as string/hex dump */
+        /* Print as string */
         for (uint8_t i = 0; i < reply.data_len; i++)
         {
             if (reply.data[i] >= 32 && reply.data[i] < 127)
@@ -140,28 +140,14 @@ static int query_and_print(uint8_t query_op, const char *label)
             }
             else
             {
-                Serial.print(F("<0x"));
+                Serial.print("<0x");
                 if (reply.data[i] < 0x10)
                     Serial.print('0');
                 Serial.print(reply.data[i], HEX);
-                Serial.print(F(">"));
+                Serial.print(">");
             }
         }
         Serial.println();
-
-        /* Also print hex dump */
-        if (reply.data_len > 0)
-        {
-            Serial.print(F("  Hex: "));
-            for (uint8_t i = 0; i < reply.data_len; i++)
-            {
-                if (reply.data[i] < 0x10)
-                    Serial.print('0');
-                Serial.print(reply.data[i], HEX);
-                Serial.print(' ');
-            }
-            Serial.println();
-        }
     }
     else if (query_op == MOCK_OP_GET_STATUS)
     {
@@ -173,16 +159,16 @@ static int query_and_print(uint8_t query_op, const char *label)
             if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &state) == 0 &&
                 crumbs_msg_read_u16(reply.data, reply.data_len, 1, &period) == 0)
             {
-                Serial.print(F("Heartbeat: "));
-                Serial.print(state ? F("ENABLED") : F("DISABLED"));
-                Serial.print(F(", Period: "));
+                Serial.print("Heartbeat: ");
+                Serial.print(state ? "ENABLED" : "DISABLED");
+                Serial.print(", Period: ");
                 Serial.print(period);
-                Serial.println(F(" ms"));
+                Serial.println(" ms");
             }
         }
         else
         {
-            Serial.println(F("(invalid data)"));
+            Serial.println("(invalid data)");
         }
     }
 
@@ -227,21 +213,15 @@ static void cmd_echo(const char *args)
 
     if (len == 0)
     {
-        Serial.println(F("Usage: echo <hex bytes> (e.g., 'echo DE AD BE EF')"));
+        Serial.println("Usage: echo <hex bytes> (e.g., 'echo DE AD BE EF')");
         return;
     }
 
     /* Send using helper function */
     int rc = mock_send_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL, data, len);
-    if (rc == 0)
+    if (rc != 0)
     {
-        Serial.print(F("Sent echo data ("));
-        Serial.print(len);
-        Serial.println(F(" bytes)"));
-    }
-    else
-    {
-        Serial.println(F("Error: Failed to send echo"));
+        Serial.println("Error: Failed to send echo");
     }
 }
 
@@ -252,31 +232,25 @@ static void cmd_heartbeat(const char *args)
 {
     /* Parse period in milliseconds */
     unsigned long period = strtoul(args, nullptr, 10);
-    
+
     if (period > 65535)
     {
-        Serial.println(F("Error: Period must be 0-65535 ms"));
+        Serial.println("Error: Period must be 0-65535 ms");
         return;
     }
 
     if (*args == '\0')
     {
-        Serial.println(F("Usage: heartbeat <ms> (e.g., 'heartbeat 500')"));
+        Serial.println("Usage: heartbeat <ms> (e.g., 'heartbeat 500')");
         return;
     }
 
     /* Send using helper function */
     int rc = mock_send_heartbeat(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL,
-                                  (uint16_t)period);
-    if (rc == 0)
+                                 (uint16_t)period);
+    if (rc != 0)
     {
-        Serial.print(F("Set heartbeat period to "));
-        Serial.print(period);
-        Serial.println(F(" ms"));
-    }
-    else
-    {
-        Serial.println(F("Error: Failed to send heartbeat command"));
+        Serial.println("Error: Failed to send heartbeat command");
     }
 }
 
@@ -286,13 +260,9 @@ static void cmd_heartbeat(const char *args)
 static void cmd_toggle()
 {
     int rc = mock_send_toggle(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
-    if (rc == 0)
+    if (rc != 0)
     {
-        Serial.println(F("Sent toggle command"));
-    }
-    else
-    {
-        Serial.println(F("Error: Failed to send toggle"));
+        Serial.println("Error: Failed to send toggle");
     }
 }
 
@@ -301,7 +271,7 @@ static void cmd_toggle()
  */
 static void cmd_scan()
 {
-    Serial.println(F("Scanning I2C bus..."));
+    Serial.println("Scanning I2C bus...");
 
     uint8_t found = 0;
     for (uint8_t addr = 0x08; addr < 0x78; addr++)
@@ -309,7 +279,7 @@ static void cmd_scan()
         Wire.beginTransmission(addr);
         if (Wire.endTransmission() == 0)
         {
-            Serial.print(F("  Device at 0x"));
+            Serial.print("  Device at 0x");
             if (addr < 0x10)
                 Serial.print('0');
             Serial.println(addr, HEX);
@@ -319,7 +289,7 @@ static void cmd_scan()
 
     if (found == 0)
     {
-        Serial.println(F("  No devices found"));
+        Serial.println("  No devices found");
     }
 }
 
@@ -393,9 +363,9 @@ static void parse_command()
     }
     else
     {
-        Serial.print(F("Unknown command: "));
+        Serial.print("Unknown command: ");
         Serial.println(cmd_buffer);
-        Serial.println(F("Type 'help' for available commands"));
+        Serial.println("Type 'help' for available commands");
     }
 }
 
@@ -411,8 +381,8 @@ void setup()
         delay(1);
     }
 
-    Serial.println(F("\n=== CRUMBS Mock Controller ==="));
-    Serial.print(F("Target peripheral: 0x"));
+    Serial.println("\n=== CRUMBS Mock Controller ===");
+    Serial.print("Target peripheral: 0x");
     if (PERIPHERAL_ADDR < 0x10)
         Serial.print('0');
     Serial.println(PERIPHERAL_ADDR, HEX);
@@ -425,7 +395,7 @@ void setup()
     Wire.setClock(100000);
 
     print_help();
-    Serial.print(F("> "));
+    Serial.print("> ");
 }
 
 void loop()
@@ -440,7 +410,7 @@ void loop()
             Serial.println(); /* Echo newline */
             parse_command();
             cmd_len = 0;
-            Serial.print(F("> "));
+            Serial.print("> ");
         }
         else if (c == '\b' || c == 0x7F) /* Backspace */
         {

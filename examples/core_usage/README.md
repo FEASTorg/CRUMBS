@@ -1,21 +1,42 @@
 # Core Usage Examples (Tier 1)
 
-**Audience:** First-time users, Arduino beginners  
-**Purpose:** Learn CRUMBS basics without complexity
+**START HERE** if you're new to CRUMBS.
 
-These examples demonstrate direct API usage without handlers or complex patterns. Each example is self-contained and can be understood in isolation.
+## Learning Path
+
+**Level 1: Hello World** (15 min)  
+[hello_peripheral](arduino/hello_peripheral/) • [hello_controller](arduino/hello_controller/)  
+Get basic communication working.
+
+**Level 2: Command Handling** (30 min)  
+[basic_peripheral](arduino/basic_peripheral/) • [basic_controller](arduino/basic_controller/)  
+Handle multiple commands, query replies.
+
+**Level 3: Advanced** (production patterns)  
+[advanced_controller](arduino/advanced_controller/)  
+Serial parsing, I2C scanning.
 
 ---
 
-## Arduino Examples
+**Next Steps:**
 
-| Example                                                              | Description                                        |
-| -------------------------------------------------------------------- | -------------------------------------------------- |
-| [simple_peripheral/](arduino/simple_peripheral/)                     | Basic peripheral responding to controller commands |
-| [simple_controller/](arduino/simple_controller/)                     | Basic controller sending commands via serial input |
-| [simple_peripheral_noncrumbs/](arduino/simple_peripheral_noncrumbs/) | Raw I²C peripheral (no CRUMBS) for comparison      |
-| [display_peripheral/](arduino/display_peripheral/)                   | Multi-byte data peripheral (display values)        |
-| [display_controller/](arduino/display_controller/)                   | Multi-byte data controller                         |
+- Ready for handlers? → [handlers_usage](../handlers_usage/)
+- Building a system? → [families_usage](../families_usage/)
+
+---
+
+## All Arduino Examples
+
+| Example                                                            | Description                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------- |
+| [hello_peripheral/](arduino/hello_peripheral/)                     | Minimal peripheral (START HERE)                   |
+| [hello_controller/](arduino/hello_controller/)                     | Minimal controller (pair with hello_peripheral)   |
+| [basic_peripheral/](arduino/basic_peripheral/)                     | Basic peripheral with multiple commands           |
+| [basic_controller/](arduino/basic_controller/)                     | Basic controller with key commands                |
+| [advanced_controller/](arduino/advanced_controller/)               | Advanced controller with CSV parsing and scanning |
+| [basic_peripheral_noncrumbs/](arduino/basic_peripheral_noncrumbs/) | Raw I²C peripheral (no CRUMBS) for comparison     |
+
+**Quick Start:** Upload [hello_peripheral](arduino/hello_peripheral/) and [hello_controller](arduino/hello_controller/) to see CRUMBS working in 15 minutes.
 
 ### Getting Started (Arduino)
 
@@ -65,9 +86,9 @@ make
 
 ---
 
-## Learning Path
+## Quick Start Path
 
-1. **Start here:** `simple_peripheral` + `simple_controller` pair
-2. **Understand the difference:** Compare `simple_peripheral` with `simple_peripheral_noncrumbs`
-3. **Multi-byte data:** `display_peripheral` + `display_controller` pair
-4. **Next step:** Move to [handlers_usage/](../handlers_usage/) (Tier 2) for callback patterns
+1. **Start:** [hello_peripheral](arduino/hello_peripheral/) + [hello_controller](arduino/hello_controller/)
+2. **Learn:** [basic_peripheral](arduino/basic_peripheral/) + [basic_controller](arduino/basic_controller/) (commands & queries)
+3. **Compare:** [basic_peripheral_noncrumbs](arduino/basic_peripheral_noncrumbs/) (CRUMBS vs raw I²C)
+4. **Next tier:** [handlers_usage](../handlers_usage/) (modular command routing)

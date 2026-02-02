@@ -1,7 +1,8 @@
 # Handler Usage Examples (Tier 2)
 
 **Audience:** Users comfortable with basics, ready for production patterns  
-**Purpose:** Learn callback registration pattern and SET_REPLY query mechanism
+**Purpose:** Learn callback registration pattern and SET_REPLY query mechanism  
+**Prerequisites:** Complete [core_usage hello examples](../core_usage/arduino/hello_peripheral/) and [basic examples](../core_usage/arduino/basic_peripheral/) first
 
 These examples demonstrate two key patterns:
 

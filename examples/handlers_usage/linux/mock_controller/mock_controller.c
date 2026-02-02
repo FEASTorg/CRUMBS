@@ -51,7 +51,7 @@
 static void print_help(void);
 static void trim_whitespace(char *str);
 static int query_and_print(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw,
-                            uint8_t query_op, const char *label);
+                           uint8_t query_op, const char *label);
 static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw);
 static int cmd_echo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
 static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
@@ -109,7 +109,7 @@ static void trim_whitespace(char *str)
  * @brief Query peripheral using SET_REPLY and print result.
  */
 static int query_and_print(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw,
-                            uint8_t query_op, const char *label)
+                           uint8_t query_op, const char *label)
 {
     int rc;
 
@@ -301,7 +301,7 @@ static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const ch
 
     /* Parse period in milliseconds */
     unsigned long period = strtoul(args, NULL, 10);
-    
+
     if (period > 65535)
     {
         fprintf(stderr, "Error: Period must be 0-65535 ms\n");
@@ -310,7 +310,7 @@ static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const ch
 
     /* Send using helper function */
     int rc = mock_send_heartbeat(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw,
-                                  (uint16_t)period);
+                                 (uint16_t)period);
     if (rc == 0)
     {
         printf("OK: Set heartbeat period to %lu ms\n", period);
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     /* Initialize CRUMBS context and open I2C device */
     crumbs_context_t ctx;
     crumbs_linux_i2c_t lw;
-    
+
     int rc = crumbs_linux_init_controller(&ctx, &lw, i2c_device, 25000);
     if (rc != 0)
     {

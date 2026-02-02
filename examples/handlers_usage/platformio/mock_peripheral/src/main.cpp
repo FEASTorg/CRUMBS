@@ -45,10 +45,10 @@
  * ============================================================================ */
 
 static crumbs_context_t ctx;
-static uint8_t g_state = 0;          /* Heartbeat enable (0=off, 1=on) */
+static uint8_t g_state = 0;           /* Heartbeat enable (0=off, 1=on) */
 static uint16_t g_heartbeat_ms = 500; /* Heartbeat period in milliseconds */
-static uint8_t g_echo_buf[27];       /* Echo data buffer */
-static uint8_t g_echo_len = 0;       /* Echo data length */
+static uint8_t g_echo_buf[27];        /* Echo data buffer */
+static uint8_t g_echo_len = 0;        /* Echo data length */
 
 /* ============================================================================
  * Handler: Echo (MOCK_OP_ECHO)
@@ -70,22 +70,8 @@ static void handler_echo(crumbs_context_t *ctx, uint8_t opcode,
     {
         g_echo_len = sizeof(g_echo_buf);
     }
-    
+
     memcpy(g_echo_buf, data, g_echo_len);
-
-    Serial.print(F("Echo: received "));
-    Serial.print(g_echo_len);
-    Serial.print(F(" bytes: "));
-
-    /* Print hex dump */
-    for (uint8_t i = 0; i < g_echo_len; i++)
-    {
-        if (g_echo_buf[i] < 0x10)
-            Serial.print('0');
-        Serial.print(g_echo_buf[i], HEX);
-        Serial.print(' ');
-    }
-    Serial.println();
 }
 
 /* ============================================================================
@@ -106,13 +92,6 @@ static void handler_set_heartbeat(crumbs_context_t *ctx, uint8_t opcode,
     if (crumbs_msg_read_u16(data, data_len, 0, &period) == 0)
     {
         g_heartbeat_ms = period;
-        Serial.print(F("Heartbeat: period set to "));
-        Serial.print(g_heartbeat_ms);
-        Serial.println(F(" ms"));
-    }
-    else
-    {
-        Serial.println(F("Heartbeat: invalid payload"));
     }
 }
 
@@ -133,8 +112,6 @@ static void handler_toggle(crumbs_context_t *ctx, uint8_t opcode,
     (void)user_data;
 
     g_state ^= 1;
-    Serial.print(F("Toggle: heartbeat now "));
-    Serial.println(g_state ? F("ENABLED") : F("DISABLED"));
 }
 
 /* ============================================================================
@@ -202,7 +179,7 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
-    Serial.print(F("CRUMBS Mock Peripheral - address 0x"));
+    Serial.print("CRUMBS Mock Peripheral - address 0x");
     if (PERIPHERAL_ADDR < 0x10)
         Serial.print('0');
     Serial.println(PERIPHERAL_ADDR, HEX);
@@ -218,19 +195,19 @@ void setup()
     /* Register GET operation callback */
     crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
 
-    Serial.println(F("Ready - awaiting I2C commands"));
+    Serial.println("Ready");
 }
 
 void loop()
 {
     /* Peripheral work is interrupt-driven by Wire callbacks */
-    
+
     /* Implement LED heartbeat if enabled */
     if (g_state && g_heartbeat_ms > 0)
     {
         static unsigned long last_pulse = 0;
         unsigned long now = millis();
-        
+
         if (now - last_pulse >= g_heartbeat_ms)
         {
             last_pulse = now;
@@ -245,6 +222,6 @@ void loop()
     {
         digitalWrite(LED_BUILTIN, LOW);
     }
-    
+
     delay(10);
 }
