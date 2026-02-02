@@ -271,6 +271,12 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
             exp_major = SERVO_MODULE_VER_MAJOR;
             exp_minor = SERVO_MODULE_VER_MINOR;
         }
+        else if (types[i] == DISPLAY_TYPE_ID)
+        {
+            name = "Display";
+            exp_major = DISPLAY_MODULE_VER_MAJOR;
+            exp_minor = DISPLAY_MODULE_VER_MINOR;
+        }
 
         printf("[0x%02X] %s\n", addrs[i], name);
 
