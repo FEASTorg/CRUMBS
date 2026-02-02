@@ -246,11 +246,10 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     switch (ctx->requested_opcode)
     {
     case 0: /* Version info per versioning.md convention */
-        crumbs_msg_init(reply, LED_TYPE_ID, 0);
-        crumbs_msg_add_u16(reply, CRUMBS_VERSION);
-        crumbs_msg_add_u8(reply, LED_MODULE_VER_MAJOR);
-        crumbs_msg_add_u8(reply, LED_MODULE_VER_MINOR);
-        crumbs_msg_add_u8(reply, LED_MODULE_VER_PATCH);
+        crumbs_build_version_reply(reply, LED_TYPE_ID,
+                                   LED_MODULE_VER_MAJOR,
+                                   LED_MODULE_VER_MINOR,
+                                   LED_MODULE_VER_PATCH);
         break;
 
     case LED_OP_GET_STATE:

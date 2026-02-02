@@ -246,6 +246,43 @@ Testing and CI
   - Static unit tests for encode/decode/CRC in CI (fast, no hardware)
   - Integration tests using Linux I²C loopback hardware or a hardware lab (requires attached devices)
 
+## Local Development with PlatformIO Examples
+
+When developing changes to the CRUMBS library itself, you can test them locally in the example projects before publishing to the registry.
+
+**To use local symlinked library during development:**
+
+Edit the example's `platformio.ini` and replace the registry reference with a symlink:
+
+```ini
+# Production (registry version)
+lib_deps =
+    cameronbrooks11/CRUMBS@^0.10.1
+
+# Development (local symlink)
+lib_deps =
+    symlink://../../../../
+```
+
+The `symlink://` prefix creates a symbolic link from the PlatformIO library manager to your local CRUMBS source directory. Changes you make to the source will be immediately reflected in builds without needing to republish.
+
+**Relative path explanation:**
+
+- From example location: `examples/families_usage/lhwit_family/calculator/`
+- Path `../../../../` goes up 4 levels to the CRUMBS repository root
+- PlatformIO expects a `library.json` manifest at the target location
+
+**Important:** Revert back to the registry version (`cameronbrooks11/CRUMBS@^0.10.1`) before committing changes, so users get the published stable version.
+
+**Clean build after switching:**
+
+```bash
+pio run --target clean
+pio run
+```
+
+This ensures PlatformIO removes the cached registry version and picks up your local symlinked code.
+
 Integration tips and pitfalls
 
 - Bus reliability: use pull-ups, twisted pairs, good wiring, and proper grounding — CRC reduces but doesn't eliminate the need for good wiring

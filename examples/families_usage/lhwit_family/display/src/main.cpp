@@ -53,12 +53,12 @@ const uint8_t digitSelectionPins[] = {8, 11, 12, 2};
 static crumbs_context_t ctx;
 static Simple5641AS display(segmentPins, digitSelectionPins);
 
-static uint16_t g_current_number = 0;       /* Current displayed number */
-static uint8_t g_decimal_pos = 0;           /* Decimal position (0=none, 1-4) */
-static uint8_t g_brightness = 5;            /* Brightness level (0-10) */
-static uint8_t g_custom_segments[4] = {0};  /* Custom segment patterns */
-static bool g_use_custom_segments = false;  /* Use custom patterns vs number */
-static bool g_display_active = false;       /* Display is showing something */
+static uint16_t g_current_number = 0;      /* Current displayed number */
+static uint8_t g_decimal_pos = 0;          /* Decimal position (0=none, 1-4) */
+static uint8_t g_brightness = 5;           /* Brightness level (0-10) */
+static uint8_t g_custom_segments[4] = {0}; /* Custom segment patterns */
+static bool g_use_custom_segments = false; /* Use custom patterns vs number */
+static bool g_display_active = false;      /* Display is showing something */
 
 /* Display refresh timing */
 static unsigned long g_last_refresh = 0;
@@ -70,27 +70,27 @@ static const unsigned long REFRESH_INTERVAL_US = 2000; /* 2ms per digit cycle */
 
 /**
  * @brief Refresh the display (call frequently from loop).
- * 
+ *
  * This handles multiplexing of the 4 digits. Must be called regularly
  * to prevent flickering.
  */
 static void refresh_display(void)
 {
     unsigned long now = micros();
-    
+
     if (now - g_last_refresh < REFRESH_INTERVAL_US)
     {
         return; /* Not time to refresh yet */
     }
-    
+
     g_last_refresh = now;
-    
+
     if (!g_display_active)
     {
         display.clean(); /* Clear display if inactive */
         return;
     }
-    
+
     if (g_use_custom_segments)
     {
         /* Display custom segment patterns */
@@ -114,7 +114,7 @@ static void set_display_number(uint16_t number, uint8_t decimal_pos)
     g_decimal_pos = decimal_pos;
     g_use_custom_segments = false;
     g_display_active = true;
-    
+
     Serial.print(F("Display: "));
     Serial.print(number);
     if (decimal_pos > 0 && decimal_pos <= 4)
@@ -137,7 +137,7 @@ static void set_custom_segments(const uint8_t segments[4])
     }
     g_use_custom_segments = true;
     g_display_active = true;
-    
+
     Serial.print(F("Custom segments: 0x"));
     for (int i = 0; i < 4; i++)
     {
@@ -154,13 +154,13 @@ static void set_brightness(uint8_t level)
 {
     if (level > 10)
         level = 10;
-    
+
     g_brightness = level;
-    
+
     /* Note: Simple5641AS library doesn't have brightness control,
      * so this is stored but not actively used. For hardware PWM,
      * you'd control digit select pins with PWM here. */
-    
+
     Serial.print(F("Brightness: "));
     Serial.println(level);
 }
@@ -172,7 +172,7 @@ static void clear_display(void)
 {
     g_display_active = false;
     display.clean();
-    
+
     Serial.println(F("Display cleared"));
 }
 
@@ -181,21 +181,21 @@ static void clear_display(void)
  * ============================================================================ */
 
 static void handler_set_number(crumbs_context_t *ctx, uint8_t opcode,
-                                const uint8_t *data, uint8_t data_len, void *user_data)
+                               const uint8_t *data, uint8_t data_len, void *user_data)
 {
     (void)ctx;
     (void)opcode;
     (void)user_data;
-    
+
     if (data_len < 3)
     {
         Serial.println(F("SET_NUMBER: Invalid payload"));
         return;
     }
-    
+
     uint16_t number = data[0] | ((uint16_t)data[1] << 8);
     uint8_t decimal_pos = data[2];
-    
+
     set_display_number(number, decimal_pos);
 }
 
@@ -209,13 +209,13 @@ static void handler_set_segments(crumbs_context_t *ctx, uint8_t opcode,
     (void)ctx;
     (void)opcode;
     (void)user_data;
-    
+
     if (data_len < 4)
     {
         Serial.println(F("SET_SEGMENTS: Invalid payload"));
         return;
     }
-    
+
     set_custom_segments(data);
 }
 
@@ -229,13 +229,13 @@ static void handler_set_brightness(crumbs_context_t *ctx, uint8_t opcode,
     (void)ctx;
     (void)opcode;
     (void)user_data;
-    
+
     if (data_len < 1)
     {
         Serial.println(F("SET_BRIGHTNESS: Invalid payload"));
         return;
     }
-    
+
     uint8_t level = data[0];
     set_brightness(level);
 }
@@ -245,14 +245,14 @@ static void handler_set_brightness(crumbs_context_t *ctx, uint8_t opcode,
  * ============================================================================ */
 
 static void handler_clear(crumbs_context_t *ctx, uint8_t opcode,
-                         const uint8_t *data, uint8_t data_len, void *user_data)
+                          const uint8_t *data, uint8_t data_len, void *user_data)
 {
     (void)ctx;
     (void)opcode;
     (void)data;
     (void)data_len;
     (void)user_data;
-    
+
     clear_display();
 }
 
@@ -263,20 +263,19 @@ static void handler_clear(crumbs_context_t *ctx, uint8_t opcode,
 static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
     uint8_t requested_op = ctx->requested_opcode;
-    
+
     Serial.print(F("on_request: opcode=0x"));
     Serial.println(requested_op, HEX);
-    
+
     switch (requested_op)
     {
     case 0x00: /* Version query (standard convention) */
     {
-        crumbs_msg_init(reply, DISPLAY_TYPE_ID, 0x00);
-        crumbs_msg_add_u16(reply, CRUMBS_VERSION);
-        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_MAJOR);
-        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_MINOR);
-        crumbs_msg_add_u8(reply, DISPLAY_MODULE_VER_PATCH);
-        
+        crumbs_build_version_reply(reply, DISPLAY_TYPE_ID,
+                                   DISPLAY_MODULE_VER_MAJOR,
+                                   DISPLAY_MODULE_VER_MINOR,
+                                   DISPLAY_MODULE_VER_PATCH);
+
         Serial.print(F("Version: CRUMBS="));
         Serial.print(CRUMBS_VERSION);
         Serial.print(F(" Module="));
@@ -287,14 +286,14 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
         Serial.println(DISPLAY_MODULE_VER_PATCH);
         break;
     }
-    
+
     case DISPLAY_OP_GET_VALUE: /* Get current value */
     {
         crumbs_msg_init(reply, DISPLAY_TYPE_ID, DISPLAY_OP_GET_VALUE);
         crumbs_msg_add_u16(reply, g_current_number);
         crumbs_msg_add_u8(reply, g_decimal_pos);
         crumbs_msg_add_u8(reply, g_brightness);
-        
+
         Serial.print(F("GET_VALUE: number="));
         Serial.print(g_current_number);
         Serial.print(F(" decimal="));
@@ -303,7 +302,7 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
         Serial.println(g_brightness);
         break;
     }
-    
+
     default:
         Serial.print(F("Unknown GET opcode: 0x"));
         Serial.println(requested_op, HEX);
@@ -320,7 +319,7 @@ void setup()
     Serial.begin(115200);
     while (!Serial && millis() < 2000)
         ; /* Wait for serial or timeout */
-    
+
     Serial.println(F("\n=== LHWIT Display Peripheral ==="));
     Serial.print(F("Type ID: 0x"));
     Serial.println(DISPLAY_TYPE_ID, HEX);
@@ -335,24 +334,24 @@ void setup()
     Serial.print(F("CRUMBS: "));
     Serial.println(CRUMBS_VERSION_STRING);
     Serial.println(F("==============================\n"));
-    
+
     /* Initialize display */
     display.clean();
     g_display_active = false;
-    
+
     /* Initialize CRUMBS peripheral */
     crumbs_arduino_init_peripheral(&ctx, PERIPHERAL_ADDR);
     crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
-    
+
     /* Register command handlers */
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_NUMBER, handler_set_number, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_SEGMENTS, handler_set_segments, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_BRIGHTNESS, handler_set_brightness, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_CLEAR, handler_clear, NULL);
-    
+
     Serial.println(F("Display peripheral ready"));
     Serial.println(F("Waiting for commands...\n"));
-    
+
     /* Show a brief boot sequence */
     set_display_number(8888, 0);
     delay(500);
@@ -367,7 +366,7 @@ void loop()
 {
     /* Refresh display continuously (multiplexing) */
     refresh_display();
-    
+
     /* Small delay to prevent tight loop */
     delayMicroseconds(100);
 }

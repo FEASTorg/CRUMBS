@@ -34,6 +34,7 @@
 #define CRUMBS_MESSAGE_HELPERS_H
 
 #include "crumbs_message.h"
+#include "crumbs_version.h"
 #include <string.h>
 
 #ifdef __cplusplus
@@ -340,6 +341,63 @@ extern "C"
         if (offset + count > len)
             return -1;
         memcpy(out, &data[offset], count);
+        return 0;
+    }
+
+    /* ============================================================================
+     * Protocol Helpers
+     * ============================================================================ */
+
+    /**
+     * @brief Build standard version reply for opcode 0x00.
+     *
+     * Builds a reply message following the opcode 0x00 convention defined in
+     * versioning.md:
+     *   [CRUMBS_VERSION:u16][module_major:u8][module_minor:u8][module_patch:u8]
+     *
+     * Total payload: 5 bytes
+     *
+     * This helper reduces boilerplate and ensures consistent version reporting
+     * across all peripherals. Use in on_request callback for requested_opcode 0x00.
+     *
+     * @code
+     * void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
+     *     switch (ctx->requested_opcode) {
+     *         case 0x00:
+     *             crumbs_build_version_reply(reply, MY_TYPE_ID, 1, 0, 0);
+     *             break;
+     *         // ... other GET operations
+     *     }
+     * }
+     * @endcode
+     *
+     * @param reply     Pointer to message to initialize and populate
+     * @param type_id   Module type ID
+     * @param major     Module firmware major version
+     * @param minor     Module firmware minor version
+     * @param patch     Module firmware patch version
+     * @return 0 on success, -1 on error (NULL reply or payload overflow)
+     */
+    static inline int crumbs_build_version_reply(crumbs_message_t *reply,
+                                                 uint8_t type_id,
+                                                 uint8_t major,
+                                                 uint8_t minor,
+                                                 uint8_t patch)
+    {
+        if (!reply)
+            return -1;
+
+        crumbs_msg_init(reply, type_id, 0x00);
+
+        if (crumbs_msg_add_u16(reply, CRUMBS_VERSION) != 0)
+            return -1;
+        if (crumbs_msg_add_u8(reply, major) != 0)
+            return -1;
+        if (crumbs_msg_add_u8(reply, minor) != 0)
+            return -1;
+        if (crumbs_msg_add_u8(reply, patch) != 0)
+            return -1;
+
         return 0;
     }
 
