@@ -1,6 +1,6 @@
 # CRUMBS Message Structure Reference
 
-**Version:** 0.10.1  
+**Version:** 0.10.2
 **Last Updated:** February 1, 2026
 
 ---
@@ -113,7 +113,7 @@ GET_CHANNEL_08_15  = 0x21
 - Peripheral executes operation immediately
 - Typically from SET range (low end)
 
-**2. Target Opcode** (received in SET_REPLY `data[0]`, v0.10.1+):
+**2. Target Opcode** (received in SET_REPLY `data[0]`, v0.10.0+):
 
 - Peripheral stages reply in buffer for next I²C read
 - Typically from GET range (high end)
@@ -135,7 +135,7 @@ GET_CHANNEL_08_15  = 0x21
 
 ---
 
-## Reserved Values (v0.10.1+)
+## Reserved Values (v0.10.0+)
 
 | Field    | Value  | Purpose                              | Version |
 | -------- | ------ | ------------------------------------ | ------- |

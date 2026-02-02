@@ -4,6 +4,30 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
+## [0.10.2] - Version Reply Helper
+
+### Added
+
+- **Version Reply Helper Function** (`crumbs_build_version_reply()`)
+  - New helper in `crumbs_message_helpers.h` for building standard opcode 0x00 replies
+  - Reduces boilerplate from 6 lines to 1 line in `on_request` callbacks
+  - Enforces consistent version reply format: `[CRUMBS_VERSION:u16][major:u8][minor:u8][patch:u8]`
+  - Includes comprehensive Doxygen documentation with usage examples
+
+### Changed
+
+- **All LHWIT Peripherals Updated**
+  - Calculator, LED, Servo, and Display peripherals now use `crumbs_build_version_reply()`
+  - Consistent version reporting across all reference implementations
+
+### Documentation
+
+- **developer-guide.md**: Added section on local development with PlatformIO symlinks
+  - Documents `symlink://../../../../` pattern for testing local library changes
+  - Explains relative path calculation and clean build workflow
+
+---
+
 ## [0.10.1] - Linux Scan Improvements & Multi-Device Support
 
 ### Added

@@ -257,7 +257,7 @@ Edit the example's `platformio.ini` and replace the registry reference with a sy
 ```ini
 # Production (registry version)
 lib_deps =
-    cameronbrooks11/CRUMBS@^0.10.1
+    cameronbrooks11/CRUMBS@^0.10.2
 
 # Development (local symlink)
 lib_deps =
@@ -272,7 +272,7 @@ The `symlink://` prefix creates a symbolic link from the PlatformIO library mana
 - Path `../../../../` goes up 4 levels to the CRUMBS repository root
 - PlatformIO expects a `library.json` manifest at the target location
 
-**Important:** Revert back to the registry version (`cameronbrooks11/CRUMBS@^0.10.1`) before committing changes, so users get the published stable version.
+**Important:** Revert back to the registry version (`cameronbrooks11/CRUMBS@^0.10.2`) before committing changes, so users get the published stable version.
 
 **Clean build after switching:**
 
