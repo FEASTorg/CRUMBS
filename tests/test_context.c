@@ -509,6 +509,36 @@ static int test_controller_send_null_params(void)
     return 0;
 }
 
+/* Fake write function that simulates I2C failure */
+static int fake_write_fails(void *user_ctx, uint8_t addr, const uint8_t *data, size_t len)
+{
+    (void)user_ctx;
+    (void)addr;
+    (void)data;
+    (void)len;
+    return -99; /* Simulate I2C write failure */
+}
+
+static int test_controller_send_write_fails(void)
+{
+    crumbs_context_t ctx = {0};
+    crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    crumbs_message_t msg = {0};
+    msg.type_id = 0x01;
+    msg.opcode = 0x02;
+
+    int rc = crumbs_controller_send(&ctx, 0x20, &msg, fake_write_fails, NULL);
+    if (rc != -99)
+    {
+        fprintf(stderr, "controller_send_write_fails: expected -99, got %d\n", rc);
+        return 1;
+    }
+
+    printf("  controller_send write_fn failure: PASS\n");
+    return 0;
+}
+
 /* ---- Main ------------------------------------------------------------- */
 
 int main(void)
@@ -550,6 +580,7 @@ int main(void)
 
     failures += test_controller_send_wrong_role();
     failures += test_controller_send_null_params();
+    failures += test_controller_send_write_fails();
 
     if (failures == 0)
     {
