@@ -244,6 +244,7 @@ When developing changes to CRUMBS itself, test locally before publishing:
    ```
 
 4. Revert `platformio.ini` before committing:
+
    ```ini
    lib_deps =
        cameronbrooks11/CRUMBS@^0.10.3
@@ -375,7 +376,7 @@ git checkout -b feature/your-feature-name
 
 **Commit message format:**
 
-```
+```text
 Short summary (50 chars or less)
 
 More detailed explanation if needed. Wrap at 72 characters.
