@@ -453,7 +453,7 @@ servo get_pos → verify positions
 - [Discovery Controller README](../examples/families_usage/controller_discovery/README.md)
 - [Manual Controller README](../examples/families_usage/controller_manual/README.md)
 - [Protocol Specification](protocol.md)
-- [Handler Guide](handler-guide.md)
+- [API Reference - Handler Dispatch](api-reference.md#handler-dispatch)
 
 ---
 

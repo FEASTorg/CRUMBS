@@ -46,8 +46,8 @@ See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detaile
 **Audience:** Users building multi-device I²C systems  
 **Purpose:** Complete device family implementations with canonical operation headers
 
-| Family    | Devices                                                                             | Controllers                               | Purpose                                                                                                               |
-| --------- | ----------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Family    | Devices                                                                 | Controllers                               | Purpose                                                                                                             |
+| --------- | ----------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **LHWIT** | Calculator (0x03)<br>LED Array (0x01)<br>Servo (0x02)<br>Display (0x04) | Discovery Controller<br>Manual Controller | Low Hardware Implementation Test - demonstrates function-style, state-query, position-control, and display patterns |
 
 **Key concepts:**
@@ -295,7 +295,7 @@ void setup() {
 }
 ```
 
-See [Message Helpers](message-helpers.md) for complete API documentation.
+See [API Reference - Message Helpers](api-reference.md#message-helpers) for complete API documentation.
 
 ---
 

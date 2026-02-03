@@ -1,83 +1,111 @@
 # Protocol Specification
 
-## Message Format (Variable Length: 4–31 bytes)
+**CRUMBS Protocol v0.10**  
+Variable-length I²C messaging with CRC-8 validation
 
-```yml
+---
+
+## Wire Format
+
+```text
 ┌──────────┬──────────┬──────────┬─────────────────┬──────────┐
 │  type_id │  opcode  │ data_len │   data[0..N]    │   crc8   │
 │ (1 byte) │ (1 byte) │ (1 byte) │ (0–27 bytes)    │ (1 byte) │
 └──────────┴──────────┴──────────┴─────────────────┴──────────┘
 ```
 
-| Field      | Size       | Description                                          |
-| ---------- | ---------- | ---------------------------------------------------- |
-| `type_id`  | 1 byte     | Module type identifier (user-defined)                |
-| `opcode`   | 1 byte     | Command/operation identifier (user-defined)          |
-| `data_len` | 1 byte     | Number of payload bytes (0–27)                       |
-| `data[]`   | 0–27 bytes | Opaque payload data (user-defined format)            |
-| `crc8`     | 1 byte     | CRC-8 over `type_id`, `opcode`, `data_len`, `data[]` |
+**Message size:** 4–31 bytes  
+**Maximum payload:** 27 bytes (constrained by Arduino Wire's 32-byte buffer)
 
-**Notes**:
+---
 
-- `address` exists in the struct but is not serialized (used for routing at the application layer).
-- Maximum frame size is 31 bytes to fit within Arduino Wire's 32-byte buffer.
-- CRC excludes `address` and the CRC byte itself.
-- Payload is opaque bytes; applications can encode floats, ints, structs, etc.
-- **Opcode convention**: Separate SET and GET ranges to avoid reply ambiguity. Common: SET `0x01`-`0x7F`, GET `0x80`-`0xFD`. Each type_id can choose allocation based on needs.
+## Field Specifications
 
-## Communication Patterns
+| Field      | Size       | Range         | Available | Description                      |
+| ---------- | ---------- | ------------- | --------- | -------------------------------- |
+| `address`  | 1 byte     | `0x08`-`0x77` | 112       | I²C address (not serialized)     |
+| `type_id`  | 1 byte     | `0x01`-`0xFF` | 255       | Device type identifier           |
+| `opcode`   | 1 byte     | `0x01`-`0xFD` | 253       | Command identifier (per type_id) |
+| `data_len` | 1 byte     | `0`-`27`      | 28        | Payload byte count               |
+| `data[]`   | 0-27 bytes | N/A           | N/A       | Opaque payload                   |
+| `crc8`     | 1 byte     | N/A           | N/A       | CRC-8 (polynomial 0x07)          |
 
-```yml
-Controller [4–31 byte message]> Peripheral    # Send command
-Controller [I2C request]> Peripheral          # Request data
-Controller <[4–31 byte response] Peripheral   # Response
-```
+**Notes:**
 
-### CRC
+- `address` field exists in struct but is not serialized (used for routing only)
+- Maximum 31 bytes ensures Arduino Wire compatibility
+- CRC covers `type_id`, `opcode`, `data_len`, and `data[]` (excludes address and CRC itself)
+- Payload is opaque bytes; applications encode floats, ints, structs, etc. as needed
 
-- Polynomial: 0x07 (CRC-8)
-- Calculated using `crc8_nibble_calculate()` (crc8_nibble variant)
-- Applied to serialized header + payload (bytes 0 through 2 + data_len)
+---
 
-## Timing Guidelines
+## Address Space
 
-- 10ms minimum between messages
-- 50ms timeout for peripheral response
-- 100kHz I2C clock speed (standard)
-- Addresses 0x08-0x77 usable
+| Range         | Decimal | Status                           |
+| ------------- | ------- | -------------------------------- |
+| `0x00`-`0x07` | 0-7     | **Reserved** (I²C specification) |
+| `0x08`-`0x77` | 8-119   | **Available** (112 addresses)    |
+| `0x78`-`0x7F` | 120-127 | **Reserved** (I²C specification) |
 
-## Example: Encoding a Float
+---
 
-To send a float value in the payload:
+## Type ID Space
+
+| Range         | Decimal | Status                          |
+| ------------- | ------- | ------------------------------- |
+| `0x00`        | 0       | **Avoid** (uninitialized value) |
+| `0x01`-`0xFF` | 1-255   | **Available** (255 type IDs)    |
+
+**Semantics:**
+
+- Type ID identifies device **class/type**, not individual device
+- Multiple devices can share same type_id (distinguished by I²C address)
+- Each type_id has independent opcode namespace
+
+---
+
+## Opcode Space
+
+| Range         | Decimal | Status                          |
+| ------------- | ------- | ------------------------------- |
+| `0x00`        | 0       | **Convention** (version info)   |
+| `0x01`-`0xFD` | 1-253   | **Available** (253 opcodes)     |
+| `0xFE`        | 254     | **Reserved** (SET_REPLY)        |
+| `0xFF`        | 255     | **Convention** (error response) |
+
+### Opcode Allocation Convention
+
+**Purpose:** Separate SET (commands) and GET (queries) operations to avoid reply ambiguity.
+
+**Common strategies:** Each type_id chooses allocation based on device needs.
+
+| Strategy           | SET Range     | GET Range     | Use Case                           |
+| ------------------ | ------------- | ------------- | ---------------------------------- |
+| **Balanced**       | `0x01`-`0x7F` | `0x80`-`0xFD` | General purpose (127 SET, 126 GET) |
+| **Sensor-heavy**   | `0x01`-`0x1F` | `0x20`-`0xFD` | Many readings (31 SET, 222 GET)    |
+| **Actuator-heavy** | `0x01`-`0xDF` | `0xE0`-`0xFD` | Many commands (223 SET, 30 GET)    |
+| **Simple device**  | `0x01`-`0x0F` | `0x10`-`0x1F` | Minimal opcodes (15 SET, 16 GET)   |
+
+**Example (balanced 0x80 split):**
 
 ```c
-crumbs_message_t m = {0};
-m.type_id = 1;
-m.opcode = 1;
-
-float value = 3.14f;
-m.data_len = sizeof(float);
-memcpy(m.data, &value, sizeof(float));
+// LED controller
+#define LED_OP_SET_ALL   0x01  // SET: Change all LEDs
+#define LED_OP_BLINK     0x02  // SET: Configure blinking
+#define LED_OP_GET_STATE 0x80  // GET: Query current state
 ```
+
+---
 
 ## Reserved Opcodes
 
-CRUMBS reserves certain opcode values for library-level functionality:
+### Opcode 0xFE: SET_REPLY
 
-| Opcode | Name       | Description                                       |
-| ------ | ---------- | ------------------------------------------------- |
-| `0xFE` | SET_REPLY  | Library-handled: sets target opcode for next read |
-| `0xFF` | (Reserved) | Reserved for future use                           |
+The SET_REPLY command allows a controller to specify which data a peripheral should return on the next I²C read request.
 
-### SET_REPLY (0xFE)
+**Wire format:**
 
-The SET_REPLY command allows a controller to specify which data a peripheral
-should return on the next read. The library automatically intercepts this
-opcode and stores the target in `ctx->requested_opcode`.
-
-**Wire Format:**
-
-```yml
+```text
 ┌──────────┬──────────┬──────────┬───────────────┬──────────┐
 │  type_id │   0xFE   │   0x01   │ target_opcode │   crc8   │
 │ (1 byte) │ (1 byte) │ (1 byte) │   (1 byte)    │ (1 byte) │
@@ -86,19 +114,137 @@ opcode and stores the target in `ctx->requested_opcode`.
 
 **Workflow:**
 
-```yml
-1. Controller ──[SET_REPLY(0x10)]──> Peripheral   # "I want opcode 0x10"
-2. Library intercepts, stores ctx->requested_opcode = 0x10
-3. Controller ──[I2C read request]──> Peripheral
-4. Peripheral's on_request switches on ctx->requested_opcode
-5. Controller <──[reply with opcode 0x10 data]── Peripheral
+```text
+1. Controller → SET_REPLY(0x80) → Peripheral  # Request opcode 0x80
+2. Library intercepts, stores ctx->requested_opcode = 0x80
+3. Controller → I²C read request → Peripheral
+4. Peripheral on_request() switches on ctx->requested_opcode
+5. Controller ← Reply with opcode 0x80 data ← Peripheral
 ```
 
 **Properties:**
 
-- SET_REPLY is NOT dispatched to user handlers or `on_message` callbacks
+- SET_REPLY is NOT dispatched to user handlers or callbacks
 - `requested_opcode` persists until another SET_REPLY is received
 - Initial value is `0x00` (by convention: device/version info)
-- Empty SET_REPLY payload is ignored (no change to `requested_opcode`)
+- Empty payload is ignored (no change to requested_opcode)
 
-See [versioning.md](versioning.md) for the opcode 0x00 convention.
+### Opcode 0x00: Version Info Convention
+
+By convention, opcode `0x00` should return device identification and version information.
+
+**Recommended payload format (5 bytes):**
+
+```text
+┌─────────────────┬───────────────┬───────────────┬───────────────┐
+│ CRUMBS_VERSION  │  module_major │  module_minor │  module_patch │
+│    (2 bytes)    │    (1 byte)   │    (1 byte)   │    (1 byte)   │
+└─────────────────┴───────────────┴───────────────┴───────────────┘
+```
+
+**Example implementation:**
+
+```c
+void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
+    switch (ctx->requested_opcode) {
+        case 0x00:  // Version info
+            crumbs_msg_init(reply, MY_TYPE_ID, 0x00);
+            crumbs_msg_add_u16(reply, CRUMBS_VERSION);  // Library version
+            crumbs_msg_add_u8(reply, 1);  // Module major version
+            crumbs_msg_add_u8(reply, 0);  // Module minor version
+            crumbs_msg_add_u8(reply, 0);  // Module patch version
+            break;
+        // ... other opcodes ...
+    }
+}
+```
+
+**Benefits:**
+
+- Controllers can identify device types during bus scan
+- Version compatibility checking
+- Debugging aid
+
+---
+
+## Versioning
+
+**Library version:** `CRUMBS_VERSION` macro (integer: major*10000 + minor*100 + patch)
+
+**Module compatibility:** Follow [Semantic Versioning](https://semver.org/):
+
+- **MAJOR**: Incompatible protocol changes (must match)
+- **MINOR**: New commands added (peripheral >= controller required)
+- **PATCH**: Bug fixes (no compatibility impact)
+
+**Version check example:**
+
+```c
+if (crumbs_version < 1003) {  // Require >= 0.10.3
+    fprintf(stderr, "CRUMBS library too old\n");
+}
+```
+
+---
+
+## CRC-8 Specification
+
+| Property   | Value                                     |
+| ---------- | ----------------------------------------- |
+| Polynomial | `0x07` (x^8 + x^2 + x + 1)                |
+| Initial    | `0x00`                                    |
+| Algorithm  | Nibble-based (4-bit chunks)               |
+| Coverage   | `type_id`, `opcode`, `data_len`, `data[]` |
+| Excluded   | `address`, `crc8` field itself            |
+
+Implementation: `crc8_nibble_calculate()` from `src/crc/crc8_nibble.c`
+
+---
+
+## Communication Patterns
+
+```text
+Controller → [4–31 byte message] → Peripheral    # Send command (SET)
+Controller → [SET_REPLY + target] → Peripheral   # Request specific data
+Controller → [I²C read request] → Peripheral     # Read staged reply
+Controller ← [4–31 byte response] ← Peripheral   # Receive data (GET)
+```
+
+---
+
+## Timing Guidelines
+
+| Parameter       | Value              |
+| --------------- | ------------------ |
+| Message spacing | 10ms minimum       |
+| Read timeout    | 50ms typical       |
+| I²C clock       | 100kHz (standard)  |
+| Baud rate       | 115200 (for debug) |
+
+---
+
+## Example: Encoding Data Types
+
+**Float:**
+
+```c
+crumbs_message_t msg;
+crumbs_msg_init(&msg, 0x01, 0x01);
+crumbs_msg_add_float(&msg, 25.5f);
+```
+
+**Multiple values:**
+
+```c
+crumbs_msg_init(&msg, 0x01, 0x02);
+crumbs_msg_add_u16(&msg, 1234);    // 2 bytes
+crumbs_msg_add_u8(&msg, 0xAB);     // 1 byte
+crumbs_msg_add_float(&msg, 3.14f); // 4 bytes
+// Total: 7 bytes payload
+```
+
+---
+
+## See Also
+
+- [api-reference.md](api-reference.md) - Complete API documentation including message helpers

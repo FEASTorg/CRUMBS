@@ -12,7 +12,7 @@
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-E37B0D?logo=platformio&logoColor=white&style=flat)
 ![Arduino](https://img.shields.io/badge/Arduino-00979D?logo=arduino&logoColor=white)
 
-CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I2C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
+CRUMBS (Communications Router and Unified Message Broker System) is a small, portable C-based protocol for controller/peripheral I²C messaging. The project ships a C core (encoding/decoding, CRC) and thin platform HALs for Arduino and Linux so the same protocol works on microcontrollers and native hosts.
 
 > _So you've mastered bits and bytes, maybe toiled with nibbles and words-get ready to indulge in some serious crumb crunching!_
 
@@ -56,19 +56,28 @@ No external dependencies required - CRC implementations are included under `src/
 ## Hardware Requirements
 
 - Arduino or compatible microcontroller
-- I2C bus with 4.7k-Ohm pull-up resistors on SDA/SCL lines
+- I²C bus with 4.7k-Ohm pull-up resistors on SDA/SCL lines
 - Unique addresses (0x08-0x77) for each peripheral device
 
 ## Documentation
 
 Documentation is available in the [docs](docs/) directory:
 
-- [Getting Started](docs/getting-started.md) - Installation and basic usage
-- [API Reference](docs/api-reference.md) - Core C API and platform HALs
-- [Handler Guide](docs/handler-guide.md) - Per-command handler dispatch tutorial
-- [Message Helpers](docs/message-helpers.md) - Payload building and reading helpers
-- [Protocol Specification](docs/protocol.md) - Message format details
-- [Examples](docs/examples.md) - Code examples and patterns
+**Getting Started:**
+
+- [Platform Setup](docs/platform-setup.md) — Installation for Arduino, PlatformIO, and Linux
+- [Examples](docs/examples.md) — Three-tier learning path
+
+**Reference:**
+
+- [API Reference](docs/api-reference.md) — Complete C API, handlers, message helpers, platform HALs
+- [Protocol Specification](docs/protocol.md) — Wire format, versioning, CRC-8
+- [Architecture](docs/architecture.md) — Design philosophy and system architecture
+
+**Developer:**
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — How to build, test, and contribute
+- [Documentation Index](docs/index.md) — Complete documentation catalog
 
 ## Examples
 
