@@ -9,7 +9,7 @@
 crumbs_context_t ctx;
 uint8_t counter = 0;
 
-void on_message(crumbs_context_t *ctx, crumbs_message_t *msg)
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 {
     Serial.print("RX cmd=");
     Serial.println(msg->opcode);

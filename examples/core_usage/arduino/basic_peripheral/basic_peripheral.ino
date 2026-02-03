@@ -10,7 +10,7 @@ crumbs_context_t ctx;
 uint8_t stored_data[10];
 uint8_t stored_len = 0;
 
-void on_message(crumbs_context_t *ctx, crumbs_message_t *msg)
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 {
     Serial.print("RX: cmd=");
     Serial.print(msg->opcode);
@@ -51,11 +51,11 @@ void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     {
         // Version info
         reply->data_len = 5;
-        reply->data[0] = (CRUMBS_VERSION >> 8) & 0xFF;
-        reply->data[1] = CRUMBS_VERSION & 0xFF;
-        reply->data[2] = 1; // Major
-        reply->data[3] = 0; // Minor
-        reply->data[4] = 0; // Patch
+        reply->data[0] = CRUMBS_VERSION & 0xFF;        // LSB first (little-endian)
+        reply->data[1] = (CRUMBS_VERSION >> 8) & 0xFF; // MSB second
+        reply->data[2] = 1;                            // Major
+        reply->data[3] = 0;                            // Minor
+        reply->data[4] = 0;                            // Patch
     }
     else if (requested_op == 0x80)
     {
