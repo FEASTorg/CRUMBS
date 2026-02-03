@@ -1,6 +1,6 @@
 # CRUMBS Examples
 
-Examples are organized into three tiers based on complexity:
+Examples organized by complexity. **Test I²C bus with [scanner](https://playground.arduino.cc/Main/I2cScanner/) first.**
 
 ## Tier 1: Core Usage (Beginner)
 
@@ -51,28 +51,13 @@ Examples are organized into three tiers based on complexity:
 
 ---
 
-## Quick Start
+## Quick Start (15 min)
 
-### Arduino Users
+1. Wire: SDA↔SDA, SCL↔SCL, GND↔GND + 4.7kΩ pull-ups (**level shifter 5V↔3.3V**)
+2. Upload `core_usage/arduino/hello_peripheral/` + `hello_controller/`
+3. Serial (115200): `s` (send), `r` (receive)
 
-1. Install CRUMBS via Library Manager
-2. Open `examples/core_usage/arduino/hello_peripheral/`
-3. Upload and open Serial Monitor
-
-### PlatformIO Users
-
-```bash
-cd examples/core_usage/platformio/simple_peripheral
-pio run --target upload
-```
-
-### Linux Users
-
-```bash
-cd examples/core_usage/linux/simple_controller
-make
-./simple_controller /dev/i2c-1
-```
+[Troubleshooting](../README.md#troubleshooting)
 
 ---
 

@@ -56,7 +56,7 @@ float range = 0.0 to 1.0;  // or: 0.0-1.0
 - Decorative Unicode symbols
 - Non-standard punctuation
 
-### Examples
+### Examples (Documentation)
 
 ```markdown
 <!-- ✅ GOOD -->

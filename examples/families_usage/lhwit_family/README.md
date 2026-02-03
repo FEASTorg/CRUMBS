@@ -134,7 +134,7 @@ lhwit> display 0 set_number 42 0
 
 - `GET_RESULT` (0x80) - Last calculation result
 - `GET_HIST_META` (0x81) - History metadata (count + position)
-- `GET_HIST_0` to `GET_HIST_11` (0x82-0x8D) - Individual history entries
+- `GET_HIST_0` to `GET_HIST_11` (0x82–0x8D) - Individual history entries
 
 **State:**
 
@@ -180,7 +180,7 @@ Controls 4 LEDs (D4-D7) with individual and blink control.
 
 **State:**
 
-- LED bitmask (bits 0-3 for LEDs 0-3)
+- LED bitmask (bits 0–3 for LEDs 0–3)
 - Blink timers (per-LED)
 
 **Hardware:**
@@ -197,8 +197,8 @@ Controls 2 hobby servos (D9-D10) with speed and sweep.
 
 **Operations:**
 
-- `SET_POS` (0x01) - Set servo position (0-180°)
-- `SET_SPEED` (0x02) - Set movement speed (0=instant, 1-20=slow)
+- `SET_POS` (0x01) - Set servo position (0–180°)
+- `SET_SPEED` (0x02) - Set movement speed (0=instant, 1–20=slow)
 - `SWEEP` (0x03) - Configure sweep pattern
 
 **Queries:**
@@ -227,9 +227,9 @@ Controls 4-digit 7-segment display (5641AS or compatible) with multiplexing.
 
 **Operations:**
 
-- `SET_NUMBER` (0x01) - Display number (0-9999) with optional decimal point
+- `SET_NUMBER` (0x01) - Display number (0–9999) with optional decimal point
 - `SET_SEGMENTS` (0x02) - Set custom segment patterns for all 4 digits
-- `SET_BRIGHTNESS` (0x03) - Set brightness level (0-10)
+- `SET_BRIGHTNESS` (0x03) - Set brightness level (0–10)
 - `CLEAR` (0x04) - Clear display
 
 **Queries:**
@@ -238,9 +238,9 @@ Controls 4-digit 7-segment display (5641AS or compatible) with multiplexing.
 
 **State:**
 
-- Current number (uint16_t, 0-9999)
+- Current number (uint16_t, 0–9999)
 - Decimal position (uint8_t, 0=none, 1-4)
-- Brightness level (uint8_t, 0-10)
+- Brightness level (uint8_t, 0–10)
 - Display active flag
 
 **Hardware:**
@@ -277,7 +277,7 @@ Auto-discovers devices by scanning I²C bus and identifying by type ID.
 **Workflow:**
 
 1. Run `scan` command
-2. Controller queries 0x08-0x77 for CRUMBS devices
+2. Controller queries 0x08–0x77 for CRUMBS devices
 3. Identifies devices by type ID (0x01=LED, 0x02=Servo, 0x03=Calculator)
 4. Stores addresses for use in commands
 
@@ -330,7 +330,7 @@ All operation definitions live in shared headers:
 5. **Test complex operations:**
    - Calculator history: multiple operations, then `history`
    - LED blinking: `blink 0 1 500` (LED 0, 500ms period)
-   - Servo sweep: `sweep 0 1 0 180 10` (servo 0, 0-180°, step 10)
+   - Servo sweep: `sweep 0 1 0 180 10` (servo 0, 0–180°, step 10)
 
 ## Troubleshooting
 

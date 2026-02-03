@@ -11,6 +11,7 @@ Reference implementation demonstrating multi-device I²C systems with canonical 
 | Calculator | 0x03 | 0x10 | Function-style   | 32-bit calculator with history |
 | LED Array  | 0x01 | 0x20 | State-query      | 4 LEDs with blink              |
 | Servo      | 0x02 | 0x30 | Position-control | 2 servos with sweep            |
+| Display    | 0x04 | 0x40 | Display-control  | Quad 7-segment display         |
 
 **Controllers:** Discovery (scan-based) and Manual (config-based)
 
@@ -25,13 +26,14 @@ Operation definitions live in shared headers included by both peripherals and co
 - `calculator_ops.h` - Calculator operations (Type 0x03)
 - `led_ops.h` - LED operations (Type 0x01)
 - `servo_ops.h` - Servo operations (Type 0x02)
-- `lhwit_ops.h` - Convenience header (includes all three)
+- `display_ops.h` - Display operations (Type 0x04)
+- `lhwit_ops.h` - Convenience header (includes all four)
 
 Benefits: no protocol drift, no magic numbers, single source of truth.
 
 ### SET_REPLY Pattern
 
-Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
+Operations (0x01–0x7F) set state, queries (0x80–0xFF) retrieve it:
 
 1. Send operation → peripheral stores result → returns ACK
 2. Send query → peripheral returns stored data
@@ -42,7 +44,7 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 
 ### Calculator (Type 0x03)
 
-**Operations:**
+#### Calculator Operations
 
 | Op   | Name | Payload           | Description |
 | ---- | ---- | ----------------- | ----------- |
@@ -57,7 +59,7 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 | --------- | -------------- | ----- | ----------------- |
 | 0x80      | GET_RESULT     | 4B    | Last result (i32) |
 | 0x81      | GET_HIST_META  | 2B    | Count + position  |
-| 0x82-0x8D | GET_HIST_0..11 | 16B   | History entries   |
+| 0x82–0x8D | GET_HIST_0..11 | 16B   | History entries   |
 
 **State:** Last result (i32), 12-entry ring buffer (192B total), each entry: operation, operands, result, timestamp.
 
@@ -67,7 +69,7 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 
 ### LED Array (Type 0x01)
 
-**Operations:**
+#### LED Array Operations
 
 | Op   | Name    | Payload              | Description     |
 | ---- | ------- | -------------------- | --------------- |
@@ -75,7 +77,7 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 | 0x02 | SET_ONE | 2B (led, state)      | Set single LED  |
 | 0x03 | BLINK   | 4B (led, en, period) | Configure blink |
 
-**Queries:**
+#### Queries
 
 | Op   | Name      | Reply | Description             |
 | ---- | --------- | ----- | ----------------------- |
@@ -90,12 +92,12 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 
 ### Servo (Type 0x02)
 
-**Operations:**
+#### Servo Operations
 
 | Op   | Name      | Payload                        | Description         |
 | ---- | --------- | ------------------------------ | ------------------- |
-| 0x01 | SET_POS   | 2B (servo, pos)                | Set position 0-180° |
-| 0x02 | SET_SPEED | 2B (servo, speed)              | Set speed 0-20      |
+| 0x01 | SET_POS   | 2B (servo, pos)                | Set position 0–180° |
+| 0x02 | SET_SPEED | 2B (servo, speed)              | Set speed 0–20      |
 | 0x03 | SWEEP     | 5B (servo, en, min, max, step) | Configure sweep     |
 
 **Queries:**
@@ -108,7 +110,30 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 
 **Hardware:** D9/D10 → Servo signal. **External 5V power required** (2-3A). Common ground with Arduino.
 
-**Notes:** Speed 0=instant, 1-20=gradual. Sweep oscillates between min/max. Position 0=CCW, 90=center, 180=CW.
+**Notes:** Speed 0=instant, 1–20=gradual. Sweep oscillates between min/max. Position 0=CCW, 90=center, 180=CW.
+
+---
+
+### Display (Type 0x04)
+
+**Operations:**
+
+| Op   | Name           | Payload           | Description             |
+| ---- | -------------- | ----------------- | ----------------------- |
+| 0x01 | SET_NUMBER     | 3B (num, decimal) | Display number 0–9999   |
+| 0x02 | SET_SEGMENTS   | 4B (patterns)     | Custom segment patterns |
+| 0x03 | SET_BRIGHTNESS | 1B (level)        | Brightness control      |
+| 0x04 | CLEAR          | —                 | Clear display           |
+
+**Queries:**
+
+| Op   | Name      | Reply | Description               |
+| ---- | --------- | ----- | ------------------------- |
+| 0x80 | GET_VALUE | 4B    | Current number+pos+bright |
+
+**Hardware:** Quad 7-segment display (5641AS or compatible) with multiplexing control.
+
+**Notes:** SET_NUMBER decimal_pos: 0=no decimal, 1–4=position after digit. Brightness level 0–10. GET_VALUE returns: `[number:u16][decimal_pos:u8][brightness:u8]`.
 
 ---
 
@@ -116,7 +141,7 @@ Operations (0x01-0x7F) set state, queries (0x80-0xFF) retrieve it:
 
 ### Discovery Controller
 
-Scans I²C bus (0x08-0x77), queries device types, stores addresses. Interactive shell with `scan`, `list`, `help` commands.
+Scans I²C bus (0x08–0x77), queries device types, stores addresses. Interactive shell with `scan`, `list`, `help` commands.
 
 **Advantages:** Flexible addressing, type verification, handles address changes.  
 **Limitations:** Slower startup (~1-2s scan), requires type query support.
@@ -149,7 +174,7 @@ Uses hardcoded addresses from `config.h`. Same command interface, no scan needed
 All Arduino Nanos share I²C bus:
 
 - SDA: Linux SBC → A4 (all 4 Arduinos)
-- SCL: Linux SBC → A5 (all 3 Arduinos)
+- SCL: Linux SBC → A5 (all 4 Arduinos)
 - GND: Common ground
 
 **Raspberry Pi I²C:** GPIO 2 (Pin 3) = SDA, GPIO 3 (Pin 5) = SCL
@@ -188,6 +213,7 @@ Arduino Nano 3:
 cd examples/families_usage/lhwit_family/calculator && pio run
 cd ../led && pio run
 cd ../servo && pio run
+cd ../display && pio run
 ```
 
 ### Flashing Peripherals
@@ -196,6 +222,7 @@ cd ../servo && pio run
 cd calculator && pio run -t upload  # Arduino 1 → 0x10
 cd ../led && pio run -t upload      # Arduino 2 → 0x20
 cd ../servo && pio run -t upload    # Arduino 3 → 0x30
+cd ../display && pio run -t upload  # Arduino 4 → 0x40
 ```
 
 Verify with: `i2cdetect -y 1`
@@ -222,15 +249,15 @@ sudo usermod -a -G i2c $USER  # Log out and back in
 
 ### Starting System
 
-1. Power on all 3 Arduino Nanos via USB
-2. Verify: `i2cdetect -y 1` shows 0x10, 0x20, 0x30
+1. Power on all 4 Arduino Nanos via USB
+2. Verify: `i2cdetect -y 1` shows 0x10, 0x20, 0x30, 0x40
 3. Run controller: `./controller_discovery /dev/i2c-1`
 
 ### Command Reference
 
-**Calculator:**
+#### Calculator
 
-```
+```text
 calculator add <a> <b>      Add
 calculator sub <a> <b>      Subtract
 calculator mul <a> <b>      Multiply
@@ -239,34 +266,42 @@ calculator result           Get last result
 calculator history          Show all history
 ```
 
-**LED:**
+#### LED
 
-```
-led set_all <mask>          Set all (0x00-0x0F bitmask)
+```text
+led set_all <mask>          Set all (0x00–0x0F bitmask)
 led set_one <led> <state>   Set single (led: 0-3, state: 0/1)
 led blink <led> <en> <ms>   Configure blink
 led get_state               Get current state
 ```
 
-**Servo:**
+#### Servo
 
-```
-servo set_pos <n> <deg>         Set position (n: 0-1, deg: 0-180)
-servo set_speed <n> <speed>     Set speed (0-20)
+```text
+servo set_pos <n> <deg>         Set position (n: 0–1, deg: 0–180)
+servo set_speed <n> <speed>     Set speed (0–20)
 servo sweep <n> <en> <min> <max> <step>  Configure sweep
 servo get_pos                   Get positions
 ```
 
-**Discovery only:**
+#### Display
 
+```text
+display set_number <num> <dec>  Display number (num: 0–9999, dec: 0–4)
+display clear                   Clear display
+display get_value               Get displayed value
 ```
+
+#### Discovery only
+
+```text
 scan                        Discover devices
 list                        Show discovered devices
 ```
 
-**Common:**
+#### Common
 
-```
+```text
 help                        Show help
 quit / exit                 Exit program
 ```
@@ -352,7 +387,7 @@ servo set_pos 0 0 → fully CCW
 servo set_pos 0 90 → center
 servo set_pos 0 180 → fully CW
 servo set_speed 0 10 → medium speed
-servo sweep 0 1 0 180 10 → oscillate 0-180°, 10° steps
+servo sweep 0 1 0 180 10 → oscillate 0–180°, 10° steps
 servo sweep 0 0 0 0 0 → stop sweep
 servo get_pos → verify positions
 ```
@@ -425,7 +460,7 @@ servo get_pos → verify positions
 
 - [ ] Unique type ID (0x04+)
 - [ ] Unique I²C address
-- [ ] Operations 0x01-0x7F, queries 0x80-0xFF
+- [ ] Operations 0x01–0x7F, queries 0x80–0xFF
 - [ ] Helper functions in header
 - [ ] SET_REPLY pattern followed
 - [ ] Hardware documented

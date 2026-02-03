@@ -174,7 +174,7 @@ We follow a concise in-source documentation style. See [docs/doxygen-style-guide
  * @param msg Message to encode
  * @param buffer Output buffer (min 31 bytes)
  * @param buffer_len Size of output buffer
- * @return Encoded frame length (4-31 bytes), or 0 on error
+ * @return Encoded frame length (4–31 bytes), or 0 on error
  */
 size_t crumbs_encode_message(const crumbs_message_t *msg,
                              uint8_t *buffer,

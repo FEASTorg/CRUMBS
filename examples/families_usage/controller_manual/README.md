@@ -68,14 +68,14 @@ make
 
 ### Servo
 
-- `servo set_pos <idx> <angle>` - Set position (0-180°)
-- `servo set_speed <idx> <speed>` - Set speed (0-20)
+- `servo set_pos <idx> <angle>` - Set position (0–180°)
+- `servo set_speed <idx> <speed>` - Set speed (0–20)
 - `servo sweep <idx> <enable> <min> <max> <step>` - Configure sweep
 - `servo get_pos` - Get current positions
 
 ## Example Session
 
-```
+```text
 lhwit> calculator add 42 8
 OK: add(42, 8) sent. Use 'calculator result' to get answer.
 

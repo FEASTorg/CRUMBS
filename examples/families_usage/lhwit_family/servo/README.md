@@ -18,7 +18,7 @@
 
 ### Power Wiring
 
-```
+```text
 External 5V PSU (+) → Servo power rails (red wires)
 External 5V PSU (-) → Arduino GND + Servo ground (brown/black wires)
 Arduino D9/D10      → Servo signal (orange/white wires)
@@ -26,8 +26,8 @@ Arduino D9/D10      → Servo signal (orange/white wires)
 
 ## Features
 
-- **Position Control:** Set servo angles (0-180 degrees)
-- **Speed Limiting:** Smooth movement at configurable speeds (0=instant, 1-20=slow)
+- **Position Control:** Set servo angles (0–180 degrees)
+- **Speed Limiting:** Smooth movement at configurable speeds (0=instant, 1–20=slow)
 - **Sweep Patterns:** Automatic back-and-forth movement for demos/testing
 - **2 Channels:** Control 2 servos independently
 
@@ -46,18 +46,18 @@ pio device monitor         # View serial output
 
 ### SET Commands (Control Servos)
 
-| Opcode | Command   | Payload                                  | Description                               |
-| ------ | --------- | ---------------------------------------- | ----------------------------------------- |
-| 0x01   | SET_POS   | [servo_idx:u8][position:u8]              | Set target position (0-180°)              |
-| 0x02   | SET_SPEED | [servo_idx:u8][speed:u8]                 | Set movement speed (0=instant, 1-20=slow) |
-| 0x03   | SWEEP     | [idx:u8][en:u8][min:u8][max:u8][step:u8] | Configure sweep pattern                   |
+| Opcode | Command   | Payload                                    | Description                               |
+| ------ | --------- | ------------------------------------------ | ----------------------------------------- |
+| 0x01   | SET_POS   | `[servo_idx:u8][position:u8]`              | Set target position (0–180°)              |
+| 0x02   | SET_SPEED | `[servo_idx:u8][speed:u8]`                 | Set movement speed (0=instant, 1–20=slow) |
+| 0x03   | SWEEP     | `[idx:u8][en:u8][min:u8][max:u8][step:u8]` | Configure sweep pattern                   |
 
 ### GET Commands (Query State via SET_REPLY)
 
-| Opcode | Command   | Reply                  | Description                 |
-| ------ | --------- | ---------------------- | --------------------------- |
-| 0x80   | GET_POS   | [pos0:u8][pos1:u8]     | Current positions (degrees) |
-| 0x81   | GET_SPEED | [speed0:u8][speed1:u8] | Speed limits                |
+| Opcode | Command   | Reply                    | Description                 |
+| ------ | --------- | ------------------------ | --------------------------- |
+| 0x80   | GET_POS   | `[pos0:u8][pos1:u8]`     | Current positions (degrees) |
+| 0x81   | GET_SPEED | `[speed0:u8][speed1:u8]` | Speed limits                |
 
 ## Example Usage
 
@@ -75,7 +75,7 @@ servo_send_set_speed(&ctx, 0x30, write_fn, io, 1, 5);
 /* Move servo 1 to 45 degrees (smooth movement at speed=5) */
 servo_send_set_pos(&ctx, 0x30, write_fn, io, 1, 45);
 
-/* Configure servo 2 to sweep 0-180° */
+/* Configure servo 2 to sweep 0–180° */
 servo_send_sweep(&ctx, 0x30, write_fn, io, 2, 1, 0, 180, 2);
 
 /* Query current positions */
@@ -103,7 +103,7 @@ When sweep is enabled for a servo:
 
 The peripheral logs all operations to serial:
 
-```
+```text
 === CRUMBS Servo Controller Peripheral ===
 I2C Address: 0x30
 Type ID: 0x02
@@ -115,7 +115,7 @@ Servo controller peripheral ready!
 Waiting for I2C commands...
 
 SET_POS: Servo 0 target=45 (current=90, speed=0)
-SET_SPEED: Servo 1 speed=5 (0=instant, 1-20=slow)
+SET_SPEED: Servo 1 speed=5 (0=instant, 1–20=slow)
 SWEEP: Servo 2 ENABLED (min=0, max=180, step=2)
 ```
 
@@ -140,7 +140,7 @@ SWEEP: Servo 2 ENABLED (min=0, max=180, step=2)
 ## Notes
 
 - All servos initialize to **90 degrees** on startup
-- Position range: **0-180 degrees** (standard servo)
+- Position range: **0–180 degrees** (standard servo)
 - Speed setting persists until changed
 - Manual SET_POS automatically **disables sweep**
 - Smooth movement updates every **20ms**

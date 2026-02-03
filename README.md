@@ -18,7 +18,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 
 ## Features
 
-- **Variable-Length Message Format**: 4-31 byte frames with opaque byte payloads (0-27 bytes)
+- **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
 - **Per-Command Handler Dispatch**: Register handlers for specific command types
 - **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_message_helpers.h`
@@ -26,38 +26,48 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 - **CRC-8 Protection**: Integrity check on every message
 - **CRUMBS-aware Discovery**: Core scanner helper to find devices that speak CRUMBS
 
-## Quick Start (Arduino - C API)
+## Quick Start
 
 ```c
 #include <crumbs_arduino.h>
 #include <crumbs_message_helpers.h>
 
-crumbs_context_t controller_ctx;
-crumbs_arduino_init_controller(&controller_ctx);
+crumbs_context_t ctx;
+crumbs_arduino_init_controller(&ctx);
 
 crumbs_message_t m;
-crumbs_msg_init(&m, 0x01, 0x01);  // type_id=1, opcode=1
+crumbs_msg_init(&m, 0x01, 0x01);     // type_id=1, opcode=1
+crumbs_msg_add_float(&m, 25.5f);     // Payload: float
+crumbs_msg_add_u8(&m, 0x01);         // Payload: byte
 
-// Type-safe payload building
-crumbs_msg_add_float(&m, 25.5f);  // e.g. change a temperature value
-crumbs_msg_add_u8(&m, 0x01);      // e.g. configure the channel index
-
-crumbs_controller_send(&controller_ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
+crumbs_controller_send(&ctx, 0x08, &m, crumbs_arduino_wire_write, NULL);
 ```
+
+Upload [hello examples](examples/core_usage/arduino/hello_peripheral/) to two Arduinos, wire I²C + GND, Serial Monitor (115200): `s`/`r`. See [examples/](examples/).
 
 ## Installation
 
-1. Download or clone this repository
-2. Place the CRUMBS folder in your Arduino `libraries` directory
-3. Include in your sketch: `#include <crumbs_arduino.h>` (Arduino) or `#include "crumbs.h"` (C projects)
+**PlatformIO (Recommended):**
 
-No external dependencies required - CRC implementations are included under `src/crc`.
+```ini
+[env]
+lib_deps = cameronbrooks11/CRUMBS@^0.10.3
+```
+
+**Arduino IDE:** Tools → Manage Libraries → "CRUMBS" → Install, or copy to `~/Arduino/libraries/`
+
+**Linux/Native:** CMake build (see [CONTRIBUTING.md](CONTRIBUTING.md))
+
+No external dependencies.
 
 ## Hardware Requirements
 
 - Arduino or compatible microcontroller
-- I²C bus with 4.7k-Ohm pull-up resistors on SDA/SCL lines
-- Unique addresses (0x08-0x77) for each peripheral device
+- I²C bus with 4.7kΩ pull-up resistors on SDA/SCL
+- Unique addresses (0x08–0x77) for each peripheral
+- **Level shifter if mixing 5V/3.3V devices**
+
+**Wiring:** SDA↔SDA, SCL↔SCL, GND↔GND (+ 4.7kΩ pull-ups to VCC)
 
 ## Documentation
 
@@ -88,6 +98,18 @@ Examples are organized into three progressive tiers:
 - **Tier 3** (`examples/families_usage/`) - Production patterns (Roadmap-03)
 
 See [examples/README.md](examples/README.md) for complete platform coverage and [docs/examples.md](docs/examples.md) for detailed documentation.
+
+## Troubleshooting
+
+**No communication:** Check 4.7kΩ pull-ups, common ground, addresses. Level shifter for 5V↔3.3V.
+
+**CRC errors:** Shorten wires (<30cm), `Wire.setClock(50000)`, add 0.1µF caps.
+
+**Handlers:** `build_flags = -DCRUMBS_MAX_HANDLERS=16` in platformio.ini.
+
+Details: [platform-setup.md](docs/platform-setup.md)
+
+---
 
 ## License
 

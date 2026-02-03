@@ -27,7 +27,7 @@ Variable-length I²C messaging with CRC-8 validation
 | `type_id`  | 1 byte     | `0x01`-`0xFF` | 255       | Device type identifier           |
 | `opcode`   | 1 byte     | `0x01`-`0xFD` | 253       | Command identifier (per type_id) |
 | `data_len` | 1 byte     | `0`-`27`      | 28        | Payload byte count               |
-| `data[]`   | 0-27 bytes | N/A           | N/A       | Opaque payload                   |
+| `data[]`   | 0–27 bytes | N/A           | N/A       | Opaque payload                   |
 | `crc8`     | 1 byte     | N/A           | N/A       | CRC-8 (polynomial 0x07)          |
 
 **Notes:**
@@ -43,9 +43,9 @@ Variable-length I²C messaging with CRC-8 validation
 
 | Range         | Decimal | Status                           |
 | ------------- | ------- | -------------------------------- |
-| `0x00`-`0x07` | 0-7     | **Reserved** (I²C specification) |
-| `0x08`-`0x77` | 8-119   | **Available** (112 addresses)    |
-| `0x78`-`0x7F` | 120-127 | **Reserved** (I²C specification) |
+| `0x00`–`0x07` | 0–7     | **Reserved** (I²C specification) |
+| `0x08`–`0x77` | 8–119   | **Available** (112 addresses)    |
+| `0x78`–`0x7F` | 120–127 | **Reserved** (I²C specification) |
 
 ---
 
@@ -54,7 +54,7 @@ Variable-length I²C messaging with CRC-8 validation
 | Range         | Decimal | Status                          |
 | ------------- | ------- | ------------------------------- |
 | `0x00`        | 0       | **Avoid** (uninitialized value) |
-| `0x01`-`0xFF` | 1-255   | **Available** (255 type IDs)    |
+| `0x01`–`0xFF` | 1–255   | **Available** (255 type IDs)    |
 
 **Semantics:**
 
@@ -69,7 +69,7 @@ Variable-length I²C messaging with CRC-8 validation
 | Range         | Decimal | Status                          |
 | ------------- | ------- | ------------------------------- |
 | `0x00`        | 0       | **Convention** (version info)   |
-| `0x01`-`0xFD` | 1-253   | **Available** (253 opcodes)     |
+| `0x01`–`0xFD` | 1–253   | **Available** (253 opcodes)     |
 | `0xFE`        | 254     | **Reserved** (SET_REPLY)        |
 | `0xFF`        | 255     | **Convention** (error response) |
 
@@ -103,7 +103,7 @@ Variable-length I²C messaging with CRC-8 validation
 
 The SET_REPLY command allows a controller to specify which data a peripheral should return on the next I²C read request.
 
-**Wire format:**
+#### Wire format
 
 ```text
 ┌──────────┬──────────┬──────────┬───────────────┬──────────┐
@@ -112,7 +112,7 @@ The SET_REPLY command allows a controller to specify which data a peripheral sho
 └──────────┴──────────┴──────────┴───────────────┴──────────┘
 ```
 
-**Workflow:**
+#### Workflow
 
 ```text
 1. Controller → SET_REPLY(0x80) → Peripheral  # Request opcode 0x80
@@ -122,7 +122,7 @@ The SET_REPLY command allows a controller to specify which data a peripheral sho
 5. Controller ← Reply with opcode 0x80 data ← Peripheral
 ```
 
-**Properties:**
+#### Properties
 
 - SET_REPLY is NOT dispatched to user handlers or callbacks
 - `requested_opcode` persists until another SET_REPLY is received
@@ -133,7 +133,7 @@ The SET_REPLY command allows a controller to specify which data a peripheral sho
 
 By convention, opcode `0x00` should return device identification and version information.
 
-**Recommended payload format (5 bytes):**
+#### Recommended payload format (5 bytes)
 
 ```text
 ┌─────────────────┬───────────────┬───────────────┬───────────────┐
@@ -142,7 +142,7 @@ By convention, opcode `0x00` should return device identification and version inf
 └─────────────────┴───────────────┴───────────────┴───────────────┘
 ```
 
-**Example implementation:**
+#### Example implementation
 
 ```c
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
@@ -212,20 +212,28 @@ Controller ← [4–31 byte response] ← Peripheral   # Receive data (GET)
 
 ---
 
-## Timing Guidelines
+## Timing
 
-| Parameter       | Value              |
-| --------------- | ------------------ |
-| Message spacing | 10ms minimum       |
-| Read timeout    | 50ms typical       |
-| I²C clock       | 100kHz (standard)  |
-| Baud rate       | 115200 (for debug) |
+| Parameter       | Value        | Notes                                |
+| --------------- | ------------ | ------------------------------------ |
+| Message spacing | 10ms min     | delay() between send/read            |
+| Read timeout    | 50ms typical | Processing time                      |
+| I²C clock       | 100kHz       | Use 50kHz if CRC errors              |
+| Bus length      | <30cm        | Longer needs lower clock/termination |
+
+**Critical:** `delay(10)` between send and read:
+
+```c
+crumbs_controller_send(&ctx, 0x08, &msg, write_fn, NULL);
+delay(10);
+crumbs_arduino_read(NULL, 0x08, buf, sizeof(buf), 5000);
+```
 
 ---
 
 ## Example: Encoding Data Types
 
-**Float:**
+### Float
 
 ```c
 crumbs_message_t msg;
@@ -233,7 +241,7 @@ crumbs_msg_init(&msg, 0x01, 0x01);
 crumbs_msg_add_float(&msg, 25.5f);
 ```
 
-**Multiple values:**
+### Multiple values
 
 ```c
 crumbs_msg_init(&msg, 0x01, 0x02);

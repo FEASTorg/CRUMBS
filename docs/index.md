@@ -1,6 +1,17 @@
 # CRUMBS Documentation
 
-Arduino I²C communication library for controller/peripheral messaging with variable-length payloads and CRC validation.
+I²C messaging library for controller/peripheral communication with CRC validation.
+
+## 🚀 Start Here
+
+1. [Platform Setup](platform-setup.md) → PlatformIO
+2. Test I²C: [scanner](https://playground.arduino.cc/Main/I2cScanner/)
+3. Upload [hello examples](../examples/core_usage/arduino/)
+4. Read [Protocol](protocol.md) and [examples](examples.md)
+
+Issues? [Troubleshooting](../README.md#troubleshooting)
+
+---
 
 ## Quick Start
 
@@ -48,14 +59,15 @@ void setup() {
 
 ## Features
 
-- **Variable-length payload** (0–27 bytes per message)
-- **Controller/peripheral architecture** (one controller, multiple devices)
-- **Per-command handler dispatch** (register handlers for specific opcodes)
-- **Message builder/reader helpers** (type-safe payload construction)
-- **Event-driven callbacks** (message and request handling)
-- **CRC-8 data integrity** (automatic validation)
-- **CRUMBS-aware discovery** (find devices that speak the protocol)
-- **Platform support** (Arduino, PlatformIO, Linux)
+- **Variable-length payload** (0–27 bytes, 4–31 total frame)
+- **Controller/peripheral** (one controller, up to 112 devices)
+- **Handler dispatch** (per-opcode callbacks, O(n) lookup)
+- **Message helpers** (type-safe: u8, u16, u32, i32, float)
+- **Event callbacks** (on_message, on_request)
+- **CRC-8 integrity** (auto validation, error stats)
+- **Discovery** (scan for compatible devices)
+- **Platforms** (Arduino, PlatformIO, Linux)
+- **Zero allocation** (deterministic, RTOS-safe)
 
 ---
 
@@ -120,13 +132,13 @@ typedef struct {
     uint8_t address;      // Device I²C address (not serialized)
     uint8_t type_id;      // Device/module type identifier
     uint8_t opcode;       // Command/query opcode
-    uint8_t data_len;     // Payload length (0-27)
+    uint8_t data_len;     // Payload length (0–27)
     uint8_t data[27];     // Payload buffer
     uint8_t crc8;         // CRC-8 checksum
 } crumbs_message_t;
 ```
 
-**Wire format:** `[type_id:1][opcode:1][data_len:1][data:0-27][crc8:1]` (4-31 bytes)
+**Wire format:** `[type_id:1][opcode:1][data_len:1][data:0–27][crc8:1]` (4–31 bytes)
 
 ### Core Functions
 

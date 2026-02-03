@@ -4,18 +4,9 @@ This guide covers installation, configuration, and first-run setup for CRUMBS on
 
 ## Quick Start
 
-**Choose your platform:**
+**Platform:** [PlatformIO](#platformio-setup) (recommended), [Arduino IDE](#arduino-setup) (simple projects), or [Linux](#linux-setup) (Raspberry Pi/PC)
 
-- [Arduino IDE](#arduino-setup) — Easiest for beginners
-- [PlatformIO](#platformio-setup) — Professional IDE with library management
-- [Linux (CMake)](#linux-setup) — Controller mode on Raspberry Pi or PC
-
-**Hardware requirements:**
-
-- I²C bus with 4.7kΩ pull-up resistors on SDA/SCL
-- Controller device (Arduino/Raspberry Pi/PC)
-- Peripheral device(s) at addresses 0x08-0x77
-- Common ground connection
+**Hardware:** 4.7kΩ pull-ups on SDA/SCL, common ground. **Level shifter for 5V↔3.3V.**
 
 ---
 
@@ -23,14 +14,14 @@ This guide covers installation, configuration, and first-run setup for CRUMBS on
 
 ### Installation
 
-**Method 1: Library Manager (recommended)**
+#### Method 1: Library Manager (recommended)
 
 1. Open Arduino IDE
 2. Go to Sketch → Include Library → Manage Libraries
 3. Search for "CRUMBS"
 4. Click Install
 
-**Method 2: Manual Installation**
+#### Method 2: Manual Installation
 
 1. Download or clone the CRUMBS repository
 2. Place the `CRUMBS` folder in your Arduino `libraries` directory
@@ -74,12 +65,15 @@ void loop() {
 }
 ```
 
-**Upload and test:**
+**Upload:** Select board/port, upload, wire I²C + GND + pull-ups.
 
-1. Connect Arduino to PC via USB
-2. Select board and port from Tools menu
-3. Click Upload
-4. Connect I²C wires (SDA/SCL) to controller device
+**Always delay 10ms between send/read:**
+
+```cpp
+crumbs_controller_send(&ctx, 0x08, &msg, crumbs_arduino_wire_write, NULL);
+delay(10);
+crumbs_arduino_read(NULL, 0x08, buf, sizeof(buf), 5000);
+```
 
 ### First Program (Controller)
 
@@ -121,7 +115,7 @@ void loop() {
 
 ### Hardware Notes
 
-**I²C pins by board:**
+#### I²C pins by board
 
 - Arduino Uno/Nano: A4 (SDA), A5 (SCL)
 - Arduino Mega: 20 (SDA), 21 (SCL)
@@ -129,7 +123,7 @@ void loop() {
 - ESP32: GPIO 21 (SDA), GPIO 22 (SCL) — configurable
 - ESP8266: GPIO 4 (SDA), GPIO 5 (SCL)
 
-**Pull-up resistors:**
+#### Pull-up resistors
 
 - Required on SDA and SCL lines
 - Typical value: 4.7kΩ to Vcc (3.3V or 5V depending on board)
@@ -139,11 +133,11 @@ void loop() {
 
 ## PlatformIO Setup
 
-### Installation
+### Installation (PlatformIO)
 
 PlatformIO can automatically fetch CRUMBS as a library dependency.
 
-**platformio.ini:**
+**Example platformio.ini:**
 
 ```ini
 [env:uno]
@@ -158,7 +152,7 @@ build_flags =
     -DCRUMBS_MAX_HANDLERS=8  # Optional: reduce handler table size
 ```
 
-**Install and build:**
+**To install and build:**
 
 ```bash
 pio lib install
@@ -175,14 +169,14 @@ Create `src/main.cpp` with the same Arduino code shown above. PlatformIO will au
 
 ### Advanced Configuration
 
-**Adjust handler memory usage:**
+**To adjust handler memory usage:**
 
 ```ini
 build_flags =
     -DCRUMBS_MAX_HANDLERS=4  # Reduce from default 16
 ```
 
-**Multiple environments:**
+**For multiple environments:**
 
 ```ini
 [env:controller]
@@ -229,7 +223,7 @@ sudo dnf install cmake gcc git
 
 CRUMBS Linux HAL requires the `linux-wire` library for I²C bus access.
 
-**System-wide installation (recommended):**
+#### System-wide installation (recommended)
 
 ```bash
 # Clone linux-wire
@@ -242,7 +236,7 @@ cmake --build build --parallel
 sudo cmake --install build --prefix /usr/local
 ```
 
-**Verify installation:**
+**To verify installation:**
 
 ```bash
 cmake --find-package -DNAME=linux_wire -DCOMPILER_ID=GNU \
@@ -250,7 +244,7 @@ cmake --find-package -DNAME=linux_wire -DCOMPILER_ID=GNU \
 # Should print: "linux_wire found."
 ```
 
-**Local build (development):**
+#### Local build (development)
 
 For development without system install:
 
@@ -290,23 +284,24 @@ sudo cmake --install build --prefix /usr/local
 
 Linux I²C devices (`/dev/i2c-*`) typically require root access or group membership.
 
-**Option 1: Add user to i2c group**
+#### Option 1: Add user to i2c group
 
 ```bash
 sudo usermod -a -G i2c $USER
 # Log out and back in for changes to take effect
 ```
 
-**Option 2: Use sudo**
+#### Option 2: Use sudo
 
 ```bash
 sudo ./build/crumbs_simple_linux_controller
 ```
 
-**Option 3: udev rule (advanced)**
+#### Option 3: udev rule (advanced)
+
 Create `/etc/udev/rules.d/99-i2c.rules`:
 
-```
+```text
 KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
 ```
 
@@ -354,9 +349,9 @@ sudo ./build/crumbs_simple_linux_controller scan strict
 
 ### Write Your Own Linux Controller
 
-**CMake project structure:**
+**Example CMake project structure:**
 
-```
+```text
 my_project/
 ├── CMakeLists.txt
 └── src/
@@ -434,7 +429,7 @@ cmake --build build
 
 ### Standard I²C Connection
 
-```
+```text
 Controller          Peripheral
 ---------          ----------
     SDA  ───────────  SDA
@@ -447,7 +442,7 @@ Controller          Peripheral
 
 ### Multiple Peripherals
 
-```
+```text
 Controller          Peripheral 1 (0x08)    Peripheral 2 (0x09)
 ---------          ------------------      ------------------
     SDA  ────┬──────  SDA                      SDA

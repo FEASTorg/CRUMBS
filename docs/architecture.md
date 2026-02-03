@@ -14,7 +14,7 @@ CRUMBS is a lightweight I²C messaging protocol enabling controllers (e.g., sing
 
 CRUMBS was created to solve practical problems in distributed embedded systems:
 
-- **Compact wire format**: 4-31 bytes per message (variable length)
+- **Compact wire format**: 4–31 bytes per message (variable length)
 - **Robust communication**: CRC-8 integrity checking for noisy I²C buses
 - **Portable C core**: Easy to integrate on resource-constrained microcontrollers
 - **Platform abstraction**: Thin HALs for Arduino (Wire) and Linux (linux-wire)
@@ -108,7 +108,7 @@ The same headers are used by peripheral firmware to implement handlers.
 **Bus topology:**
 
 - Modules connect to shared I²C bus (SDA/SCL)
-- Each peripheral at unique 7-bit address (0x08-0x77)
+- Each peripheral at unique 7-bit address (0x08–0x77)
 - Controller initiates all communication (I²C master)
 - Pull-up resistors required (typically 4.7kΩ)
 
@@ -124,7 +124,7 @@ Controllers use CRUMBS-aware scanning to discover devices on the bus:
 
 **How Discovery Works:**
 
-1. **Bus scan**: Controller probes each address (0x08-0x77)
+1. **Bus scan**: Controller probes each address (0x08–0x77)
 2. **Read attempt**: Tries to read a CRUMBS frame from each address
 3. **Validation**: Decodes message and validates CRC
 4. **Type extraction**: Valid response contains type_id in frame
@@ -258,7 +258,7 @@ Controller can:
 
 - Wire format encoding/decoding
 - CRC-8 computation and validation
-- Frame boundaries (4-31 bytes)
+- Frame boundaries (4–31 bytes)
 - Role management (controller/peripheral)
 
 **Platform Layer (HALs):**
@@ -276,10 +276,10 @@ Controller can:
 
 ### Wire Format
 
-**Serialized frame** (4-31 bytes):
+**Serialized frame** (4–31 bytes):
 
 ```
-[type_id:1][opcode:1][data_len:1][data:0-27][crc8:1]
+[type_id:1][opcode:1][data_len:1][data:0–27][crc8:1]
 ```
 
 **Key properties:**
@@ -460,8 +460,8 @@ The LHWIT family is intentionally simple (4 module types, basic commands) to rem
 **Buffer sizing:**
 
 - `crumbs_message_t`: 31 bytes (fixed maximum)
-- `crumbs_context_t`: ~100-200 bytes depending on handler configuration
-- Handler table: configurable (0-255 entries)
+- `crumbs_context_t`: ~100–200 bytes depending on handler configuration
+- Handler table: configurable (0–255 entries)
 
 ### CRC Implementation
 

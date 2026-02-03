@@ -21,16 +21,16 @@ typedef struct {
     uint8_t address;      // Device address (not serialized, for context only)
     uint8_t type_id;      // Device/module type identifier
     uint8_t opcode;       // Command/query opcode
-    uint8_t data_len;     // Payload length (0-27)
+    uint8_t data_len;     // Payload length (0–27)
     uint8_t data[27];     // Payload buffer
     uint8_t crc8;         // CRC-8 checksum over serialized frame
 } crumbs_message_t;
 ```
 
-**Serialized frame format** (4-31 bytes):
+**Serialized frame format** (4–31 bytes):
 
-```
-[type_id:1][opcode:1][data_len:1][data:0-27][crc8:1]
+```text
+[type_id:1][opcode:1][data_len:1][data:0–27][crc8:1]
 ```
 
 CRC is computed over: `type_id + opcode + data_len + data[0..data_len-1]`
@@ -61,7 +61,7 @@ typedef struct crumbs_context_t {
 ```c
 #define CRUMBS_MAX_PAYLOAD      27    // Maximum payload bytes
 #define CRUMBS_MESSAGE_MAX_SIZE 31    // Maximum serialized frame size
-#define CRUMBS_VERSION          0x0A03 // Library version (0x0A03 = v0.10.3)
+#define CRUMBS_VERSION          1003  // Library version (1003 = v0.10.3, formula: major*10000 + minor*100 + patch)
 ```
 
 ### Callback Signatures
@@ -182,8 +182,14 @@ Send a message from controller to a peripheral device.
 - `0` — Success
 - `-1` — Invalid arguments (NULL ctx/msg/write_fn)
 - `-2` — Context not in controller role
-- `-3` — Encode failed
-- `>0` — I2C write error (from write_fn)
+- `-3` — Encode failed (data_len > 27 or buffer issue)
+- `>0` — I2C write error (platform-specific, from write_fn)
+
+**Common issues:**
+
+- Return `-3`: Check `msg->data_len` ≤ 27
+- Return `>0`: I²C bus error - check wiring, pull-ups, address
+- No response from peripheral: Add 10ms delay before reading
 
 **Example:**
 
@@ -192,6 +198,10 @@ crumbs_message_t msg;
 crumbs_msg_init(&msg, 0x01, 0x10);  // type=LED, opcode=query
 int rc = crumbs_controller_send(&ctx, 0x08, &msg,
                                 crumbs_arduino_wire_write, NULL);
+if (rc != 0) {
+    Serial.print("Send failed: ");
+    Serial.println(rc);  // Debug error code
+}
 ```
 
 ### Peripheral Operations
@@ -204,13 +214,9 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
 
 Process incoming data on a peripheral device. Decodes the message, validates CRC, and invokes callbacks/handlers.
 
-**Returns:**
+**Returns:** `0`=success, `-1`=invalid/decode fail, `-2`=CRC error (check wiring, use `crumbs_get_crc_error_count()`)
 
-- `0` — Success (callbacks invoked)
-- `-1` — Invalid arguments, not peripheral role, or decode failed
-- `-2` — CRC mismatch
-
-Typically called from Wire `onReceive()` callback on Arduino.
+Called from Wire `onReceive()` on Arduino.
 
 ---
 
@@ -320,7 +326,7 @@ void my_handler(crumbs_context_t *ctx,
 - `ctx` — The CRUMBS context
 - `opcode` — The command that triggered this handler
 - `data` — Payload bytes (may be NULL if data_len == 0)
-- `data_len` — Payload length (0-27)
+- `data_len` — Payload length (0–27)
 - `user_data` — Opaque pointer registered with this handler
 
 ### Handler Dispatch Flow
@@ -547,7 +553,7 @@ Wire-based read function for scanner and diagnostics.
 
 **Returns:**
 
-- Number of bytes read (0-31)
+- Number of bytes read (0–31)
 - Negative values on error
 
 ### Bus Scanner
@@ -677,7 +683,7 @@ Platform-independent bus scanner for CRUMBS-compatible devices.
 
 **Parameters:**
 
-- `start_addr`/`end_addr` — Inclusive probe range (0x08-0x77 typical)
+- `start_addr`/`end_addr` — Inclusive probe range (0x08–0x77 typical)
 - `strict` — Non-zero: request data-phase read (strong detection). Zero: ACK probe only.
 - `write_fn`/`read_fn` — Platform primitives
 - `found` — Output array for discovered addresses

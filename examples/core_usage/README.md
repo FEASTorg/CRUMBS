@@ -4,24 +4,11 @@
 
 ## Learning Path
 
-**Level 1: Hello World** (15 min)  
-[hello_peripheral](arduino/hello_peripheral/) • [hello_controller](arduino/hello_controller/)  
-Get basic communication working.
+**Level 1 (15min):** [hello_peripheral](arduino/hello_peripheral/) • [hello_controller](arduino/hello_controller/)  
+**Level 2 (30min):** [basic_peripheral](arduino/basic_peripheral/) • [basic_controller](arduino/basic_controller/)  
+**Level 3 (1hr):** [advanced_controller](arduino/advanced_controller/)
 
-**Level 2: Command Handling** (30 min)  
-[basic_peripheral](arduino/basic_peripheral/) • [basic_controller](arduino/basic_controller/)  
-Handle multiple commands, query replies.
-
-**Level 3: Advanced** (production patterns)  
-[advanced_controller](arduino/advanced_controller/)  
-Serial parsing, I2C scanning.
-
----
-
-**Next Steps:**
-
-- Ready for handlers? → [handlers_usage](../handlers_usage/)
-- Building a system? → [families_usage](../families_usage/)
+**Next:** [handlers_usage](../handlers_usage/) | [families_usage](../families_usage/)
 
 ---
 

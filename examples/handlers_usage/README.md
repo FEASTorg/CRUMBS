@@ -28,12 +28,12 @@ A mock device is used to focus on the patterns without hardware complexity.
 
 ### GET Operations (via SET_REPLY + on_request)
 
-| Opcode | Name               | Description                                    |
-| ------ | ------------------ | ---------------------------------------------- |
-| `0x00` | (default)          | Device info (version)                          |
-| `0x80` | MOCK_OP_GET_ECHO   | Return stored echo data                        |
-| `0x81` | MOCK_OP_GET_STATUS | Return heartbeat state (on/off) and period (ms)|
-| `0x82` | MOCK_OP_GET_INFO   | Return device info (default)                   |
+| Opcode | Name               | Description                                     |
+| ------ | ------------------ | ----------------------------------------------- |
+| `0x00` | (default)          | Device info (version)                           |
+| `0x80` | MOCK_OP_GET_ECHO   | Return stored echo data                         |
+| `0x81` | MOCK_OP_GET_STATUS | Return heartbeat state (on/off) and period (ms) |
+| `0x82` | MOCK_OP_GET_INFO   | Return device info (default)                    |
 
 ---
 
@@ -41,10 +41,10 @@ A mock device is used to focus on the patterns without hardware complexity.
 
 ### PlatformIO
 
-| Example                                         | Description                                     |
-| ----------------------------------------------- | ----------------------------------------------- |
-| [mock_peripheral/](platformio/mock_peripheral/) | Registers 3 handlers + on_request callback      |
-| [mock_controller/](platformio/mock_controller/) | Interactive CLI - sends commands via serial     |
+| Example                                         | Description                                 |
+| ----------------------------------------------- | ------------------------------------------- |
+| [mock_peripheral/](platformio/mock_peripheral/) | Registers 3 handlers + on_request callback  |
+| [mock_controller/](platformio/mock_controller/) | Interactive CLI - sends commands via serial |
 
 ### Linux
 
@@ -58,7 +58,7 @@ A mock device is used to focus on the patterns without hardware complexity.
 
 ### 1. Handler Registration (SET Operations)
 
-Handlers are registered for SET operations (0x01-0x7F). These are called automatically when messages arrive:
+Handlers are registered for SET operations (0x01–0x7F). These are called automatically when messages arrive:
 
 ```c
 // Register handlers for SET commands
