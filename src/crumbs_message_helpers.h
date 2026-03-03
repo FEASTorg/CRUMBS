@@ -221,7 +221,7 @@ extern "C"
     static inline int crumbs_msg_read_u16(const uint8_t *data, uint8_t len,
                                           uint8_t offset, uint16_t *out)
     {
-        if (offset + 2 > len)
+        if ((size_t)offset + 2u > (size_t)len)
             return -1;
         *out = (uint16_t)data[offset] | ((uint16_t)data[offset + 1] << 8);
         return 0;
@@ -239,7 +239,7 @@ extern "C"
     static inline int crumbs_msg_read_u32(const uint8_t *data, uint8_t len,
                                           uint8_t offset, uint32_t *out)
     {
-        if (offset + 4 > len)
+        if ((size_t)offset + 4u > (size_t)len)
             return -1;
         *out = (uint32_t)data[offset] |
                ((uint32_t)data[offset + 1] << 8) |
@@ -319,7 +319,7 @@ extern "C"
     static inline int crumbs_msg_read_float(const uint8_t *data, uint8_t len,
                                             uint8_t offset, float *out)
     {
-        if (offset + sizeof(float) > len)
+        if ((size_t)offset + sizeof(float) > (size_t)len)
             return -1;
         memcpy(out, &data[offset], sizeof(float));
         return 0;
@@ -338,7 +338,7 @@ extern "C"
     static inline int crumbs_msg_read_bytes(const uint8_t *data, uint8_t len,
                                             uint8_t offset, void *out, uint8_t count)
     {
-        if (offset + count > len)
+        if ((size_t)offset + (size_t)count > (size_t)len)
             return -1;
         memcpy(out, &data[offset], count);
         return 0;
