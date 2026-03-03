@@ -4,6 +4,18 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
+## [Unreleased] - Code Quality
+
+### Changed
+
+- **Read helper bounds checks now use explicit `size_t` casts** (`crumbs_message_helpers.h`)
+  - `crumbs_msg_read_u16`, `crumbs_msg_read_u32`, `crumbs_msg_read_float`, `crumbs_msg_read_bytes`
+  - Arithmetic in bounds checks now cast to `size_t` before addition, matching the existing style of the `add_*` helpers
+  - Eliminates potential `-Wconversion`/`-Wsign-compare` warnings (particularly the `read_float` case where `int` was previously compared against `size_t` from `sizeof`)
+  - No functional change — semantics were already correct due to C integer promotion rules
+
+---
+
 ## [0.10.3] - Examples Improvements
 
 ### Added
