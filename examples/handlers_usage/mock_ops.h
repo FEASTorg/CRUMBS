@@ -23,6 +23,8 @@
 #include "crumbs.h"
 #include "crumbs_message_helpers.h"
 
+#include <string.h> /* memcpy */
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -215,6 +217,152 @@ extern "C"
         crumbs_msg_init(&msg, MOCK_TYPE_ID, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, MOCK_OP_GET_INFO);
         return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /* ============================================================================
+     * Controller Side: Combined Query + Read (Receiver API)
+     * ============================================================================ */
+
+    /**
+     * @brief Result struct for MOCK_OP_GET_ECHO.
+     *
+     * Contains the echo data stored by the previous MOCK_OP_ECHO command.
+     * Length is in bytes; data is the raw echo payload (up to CRUMBS_MAX_PAYLOAD).
+     */
+    typedef struct
+    {
+        uint8_t data[CRUMBS_MAX_PAYLOAD]; /**< Echoed payload bytes. */
+        uint8_t len;                       /**< Number of valid bytes in data. */
+    } mock_echo_result_t;
+
+    /**
+     * @brief Result struct for MOCK_OP_GET_STATUS.
+     */
+    typedef struct
+    {
+        uint8_t  state;     /**< Current state (heartbeat enable flag). */
+        uint16_t period_ms; /**< Heartbeat period in milliseconds. */
+    } mock_status_result_t;
+
+    /**
+     * @brief Result struct for MOCK_OP_GET_INFO.
+     */
+    typedef struct
+    {
+        char    info[CRUMBS_MAX_PAYLOAD + 1]; /**< Null-terminated device info string. */
+        uint8_t len;                          /**< Length of info string (without null terminator). */
+    } mock_info_result_t;
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for echo data.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of mock peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int mock_get_echo(crumbs_context_t *ctx,
+                                    uint8_t addr,
+                                    crumbs_i2c_write_fn write_fn,
+                                    crumbs_i2c_read_fn read_fn,
+                                    crumbs_delay_fn delay_fn,
+                                    void *io,
+                                    mock_echo_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = mock_query_echo(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        out->len = reply.data_len;
+        if (reply.data_len > 0)
+            memcpy(out->data, reply.data, reply.data_len);
+        return 0;
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for device status.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of mock peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int mock_get_status(crumbs_context_t *ctx,
+                                      uint8_t addr,
+                                      crumbs_i2c_write_fn write_fn,
+                                      crumbs_i2c_read_fn read_fn,
+                                      crumbs_delay_fn delay_fn,
+                                      void *io,
+                                      mock_status_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = mock_query_status(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->state);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u16(reply.data, reply.data_len, 1, &out->period_ms);
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for device info string.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of mock peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int mock_get_info(crumbs_context_t *ctx,
+                                    uint8_t addr,
+                                    crumbs_i2c_write_fn write_fn,
+                                    crumbs_i2c_read_fn read_fn,
+                                    crumbs_delay_fn delay_fn,
+                                    void *io,
+                                    mock_info_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = mock_query_info(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        out->len = reply.data_len;
+        if (reply.data_len > 0)
+            memcpy(out->info, reply.data, reply.data_len);
+        out->info[out->len] = '\0';
+        return 0;
     }
 
 #ifdef __cplusplus

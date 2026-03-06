@@ -297,6 +297,166 @@ extern "C"
         return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
     }
 
+    /* ============================================================================
+     * Controller Side: Combined Query + Read (Receiver API)
+     * ============================================================================ */
+
+    /**
+     * @brief Result struct for CALC_OP_GET_RESULT.
+     */
+    typedef struct
+    {
+        uint32_t result; /**< Last calculation result. */
+    } calc_result_t;
+
+    /**
+     * @brief Result struct for CALC_OP_GET_HIST_META.
+     */
+    typedef struct
+    {
+        uint8_t count;     /**< Number of valid history entries (0-12). */
+        uint8_t write_pos; /**< Next write slot index (0-11, circular). */
+    } calc_hist_meta_t;
+
+    /**
+     * @brief Result struct for one history entry (CALC_OP_GET_HIST_0 .. _11).
+     *
+     * Wire format: [op:4 bytes][a:u32][b:u32][result:u32] (16 bytes total).
+     * An empty entry is signalled by the peripheral sending a zero-length payload;
+     * calc_get_hist_entry() returns -1 in that case.
+     */
+    typedef struct
+    {
+        char     op[5];   /**< Operation string: "ADD\0", "SUB\0", "MUL\0", or "DIV\0". */
+        uint32_t a;       /**< First operand. */
+        uint32_t b;       /**< Second operand. */
+        uint32_t result;  /**< Computed result. */
+    } calc_hist_entry_t;
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for last calculation result.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of calculator peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int calc_get_result(crumbs_context_t *ctx,
+                                      uint8_t addr,
+                                      crumbs_i2c_write_fn write_fn,
+                                      crumbs_i2c_read_fn read_fn,
+                                      crumbs_delay_fn delay_fn,
+                                      void *io,
+                                      calc_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = calc_query_result(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u32(reply.data, reply.data_len, 0, &out->result);
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for history metadata.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of calculator peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int calc_get_hist_meta(crumbs_context_t *ctx,
+                                         uint8_t addr,
+                                         crumbs_i2c_write_fn write_fn,
+                                         crumbs_i2c_read_fn read_fn,
+                                         crumbs_delay_fn delay_fn,
+                                         void *io,
+                                         calc_hist_meta_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = calc_query_hist_meta(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->count);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u8(reply.data, reply.data_len, 1, &out->write_pos);
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for a single history entry.
+     *
+     * Returns -1 if entry_idx > 11 or the peripheral returns an empty payload
+     * (indicates the slot has not been written yet).
+     *
+     * @param ctx       CRUMBS controller context.
+     * @param addr      I2C address of calculator peripheral.
+     * @param write_fn  I2C write function.
+     * @param read_fn   I2C read function.
+     * @param delay_fn  Platform microsecond delay.
+     * @param io        I2C context.
+     * @param entry_idx History slot index (0-11).
+     * @param out       Output struct (must not be NULL).
+     * @return 0 on success, -1 if entry is empty or invalid, non-zero on I2C error.
+     */
+    static inline int calc_get_hist_entry(crumbs_context_t *ctx,
+                                          uint8_t addr,
+                                          crumbs_i2c_write_fn write_fn,
+                                          crumbs_i2c_read_fn read_fn,
+                                          crumbs_delay_fn delay_fn,
+                                          void *io,
+                                          uint8_t entry_idx,
+                                          calc_hist_entry_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out || entry_idx > 11)
+            return -1;
+        rc = calc_query_hist_entry(ctx, addr, write_fn, io, entry_idx);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        if (reply.data_len < 16)
+            return -1; /* Entry is empty or malformed */
+        /* Parse: [op:4][a:u32][b:u32][result:u32] */
+        out->op[0] = (char)reply.data[0];
+        out->op[1] = (char)reply.data[1];
+        out->op[2] = (char)reply.data[2];
+        out->op[3] = (char)reply.data[3];
+        out->op[4] = '\0';
+        rc = crumbs_msg_read_u32(reply.data, reply.data_len, 4, &out->a);
+        if (rc != 0)
+            return rc;
+        rc = crumbs_msg_read_u32(reply.data, reply.data_len, 8, &out->b);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u32(reply.data, reply.data_len, 12, &out->result);
+    }
+
 #ifdef __cplusplus
 }
 #endif

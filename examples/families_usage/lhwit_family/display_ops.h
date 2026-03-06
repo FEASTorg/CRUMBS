@@ -227,6 +227,78 @@ extern "C"
         return 0;
     }
 
+    /* ============================================================================
+     * Controller Side: Query Sender + Combined Query + Read (Receiver API)
+     * ============================================================================ */
+
+    /**
+     * @brief Send a SET_REPLY query for current display value (peripheral will respond on next I2C read).
+     *
+     * Uses SET_REPLY pattern (0xFE) to request current displayed value.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of display peripheral.
+     * @param write_fn I2C write function.
+     * @param io       I2C context.
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_query_value(crumbs_context_t *ctx,
+                                          uint8_t addr,
+                                          crumbs_i2c_write_fn write_fn,
+                                          void *io)
+    {
+        crumbs_message_t msg;
+        crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
+        crumbs_msg_add_u8(&msg, DISPLAY_OP_GET_VALUE);
+        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /**
+     * @brief Result struct for DISPLAY_OP_GET_VALUE.
+     */
+    typedef struct
+    {
+        uint16_t number;      /**< Currently displayed number (0-9999). */
+        uint8_t  decimal_pos; /**< Decimal position (0=none, 1=leftmost, 4=rightmost). */
+        uint8_t  brightness;  /**< Brightness level (0-10). */
+    } display_value_result_t;
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for current display value.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of display peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_get_value(crumbs_context_t *ctx,
+                                        uint8_t addr,
+                                        crumbs_i2c_write_fn write_fn,
+                                        crumbs_i2c_read_fn read_fn,
+                                        crumbs_delay_fn delay_fn,
+                                        void *io,
+                                        display_value_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = display_query_value(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        /* Reply: [number:u16][decimal_pos:u8][brightness:u8] */
+        return display_parse_get_value(reply.data, reply.data_len,
+                                       &out->number, &out->decimal_pos, &out->brightness);
+    }
+
 #ifdef __cplusplus
 }
 #endif

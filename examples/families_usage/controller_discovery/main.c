@@ -5,8 +5,8 @@
  * This is a complete interactive application demonstrating proper CRUMBS usage:
  * - Auto-discovery via crumbs_linux_scan_for_crumbs_with_types()
  * - Command sending via canonical *_ops.h helper functions
- * - SET_REPLY query pattern (write query opcode, then read response)
- * - Platform-specific reading via crumbs_linux_read_message()
+ * - SET_REPLY query pattern via *_get_*() wrapper functions
+ * - Platform-specific delay via crumbs_linux_delay_us()
  *
  * Structure:
  * - Scan: Uses Linux HAL scanner (suppresses noise from empty addresses)
@@ -99,13 +99,15 @@ static void print_help(void)
     printf("  led 0 set_all <mask>              - Set all LEDs (0x0F = all on)\n");
     printf("  led 0 set_one <idx> <0|1>         - Set single LED\n");
     printf("  led 0 blink <idx> <en> <ms>       - Configure blink\n");
-    printf("  led 0 get_state                   - Get LED state\n\n");
+    printf("  led 0 get_state                   - Get LED state\n");
+    printf("  led 0 get_blink                   - Get blink config\n\n");
 
     printf("Servo:\n");
     printf("  servo 0 set_pos <idx> <angle>     - Set position (0-180deg)\n");
     printf("  servo 0 set_speed <idx> <speed>   - Set speed (0-20)\n");
     printf("  servo 0 sweep <i> <en> <min> <max> <step> - Configure sweep\n");
-    printf("  servo 0 get_pos                   - Get positions\n\n");
+    printf("  servo 0 get_pos                   - Get positions\n");
+    printf("  servo 0 get_speed                 - Get speeds\n\n");
 
     printf("Display:\n");
     printf("  display 0 set_number <num> <dec>  - Display number (dec=0-4)\n");
@@ -452,7 +454,6 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         rest++;
 
     int rc;
-    crumbs_message_t reply;
 
     if (strcmp(subcmd, "add") == 0 || strcmp(subcmd, "sub") == 0 ||
         strcmp(subcmd, "mul") == 0 || strcmp(subcmd, "div") == 0)
@@ -489,72 +490,35 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
     }
     else if (strcmp(subcmd, "result") == 0)
     {
-        /* CRUMBS Pattern: SET_REPLY query (2-step)
-         * Step 1: calc_query_result() sends opcode 0xFE with query ID 0x80
-         *         Peripheral prepares response in its reply buffer
-         * Step 2: crumbs_linux_read_message() reads the prepared response
-         * This is the standard CRUMBS query pattern for GET operations
-         */
-        rc = calc_query_result(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
+        calc_result_t res;
+        rc = calc_get_result(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                             crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
         {
-            fprintf(stderr, "ERROR: Query failed (%d)\n", rc);
+            fprintf(stderr, "ERROR: calc_get_result failed (%d)\n", rc);
             return rc;
         }
-
-        /* Platform-specific: crumbs_linux_read_message() wraps I2C read + decode */
-        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
-        if (rc != 0)
-        {
-            fprintf(stderr, "ERROR: Read failed (%d)\n", rc);
-            return rc;
-        }
-
-        /* CRUMBS Pattern: Parse response using message helpers
-         * crumbs_msg_read_u32() extracts little-endian u32 from payload
-         */
-        uint32_t result;
-        if (crumbs_msg_read_u32(reply.data, reply.data_len, 0, &result) == 0)
-            printf("Result: %u\n", result);
-        else
-            fprintf(stderr, "ERROR: Invalid response\n");
-
+        printf("Result: %u\n", res.result);
         return 0;
     }
     else if (strcmp(subcmd, "history") == 0)
     {
-        rc = calc_query_hist_meta(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
+        calc_hist_meta_t meta;
+        rc = calc_get_hist_meta(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                                crumbs_linux_delay_us, (void *)lw, &meta);
         if (rc != 0)
             return rc;
 
-        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
-        if (rc != 0)
-            return rc;
+        printf("History: %u entries\n", meta.count);
 
-        uint8_t count, write_pos;
-        if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &count) != 0 ||
-            crumbs_msg_read_u8(reply.data, reply.data_len, 1, &write_pos) != 0)
-            return -1;
-
-        printf("History: %u entries\n", count);
-
-        for (uint8_t i = 0; i < count; i++)
+        for (uint8_t i = 0; i < meta.count; i++)
         {
-            rc = calc_query_hist_entry(ctx, addr, crumbs_linux_i2c_write, (void *)lw, i);
+            calc_hist_entry_t entry;
+            rc = calc_get_hist_entry(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                                     crumbs_linux_delay_us, (void *)lw, i, &entry);
             if (rc != 0)
                 continue;
-
-            rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
-            if (rc != 0 || reply.data_len < 16)
-                continue;
-
-            char op[5] = {0};
-            memcpy(op, reply.data, 4);
-            uint32_t a, b, result;
-            crumbs_msg_read_u32(reply.data, reply.data_len, 4, &a);
-            crumbs_msg_read_u32(reply.data, reply.data_len, 8, &b);
-            crumbs_msg_read_u32(reply.data, reply.data_len, 12, &result);
-            printf("  [%u] %s(%u, %u) = %u\n", i, op, a, b, result);
+            printf("  [%u] %s(%u, %u) = %u\n", i, entry.op, entry.a, entry.b, entry.result);
         }
         return 0;
     }
@@ -621,7 +585,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
     char subcmd[32];
     if (sscanf(cmd_start, "%31s", subcmd) != 1)
     {
-        printf("Usage: led <idx|@addr> <set_all|set_one|blink|get_state> [args...]\\n");
+        printf("Usage: led <idx|@addr> <set_all|set_one|blink|get_state|get_blink> [args...]\\n");
         return -1;
     }
 
@@ -630,7 +594,6 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
         rest++;
 
     int rc;
-    crumbs_message_t reply;
 
     if (strcmp(subcmd, "set_all") == 0)
     {
@@ -677,24 +640,31 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
     }
     else if (strcmp(subcmd, "get_state") == 0)
     {
-        rc = led_query_state(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
+        led_state_result_t res;
+        rc = led_get_state(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                           crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
             return rc;
 
-        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
+        printf("LED state: 0x%02X (", res.states);
+        for (int i = 3; i >= 0; i--)
+            printf("%d", (res.states >> i) & 1);
+        printf(")\n");
+        for (int i = 0; i < 4; i++)
+            printf("  LED %d: %s\n", i, (res.states & (1 << i)) ? "ON" : "OFF");
+        return 0;
+    }
+    else if (strcmp(subcmd, "get_blink") == 0)
+    {
+        led_blink_result_t res;
+        rc = led_get_blink(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                           crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
             return rc;
 
-        uint8_t state;
-        if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &state) == 0)
-        {
-            printf("LED state: 0x%02X (", state);
-            for (int i = 3; i >= 0; i--)
-                printf("%d", (state >> i) & 1);
-            printf(")\n");
-            for (int i = 0; i < 4; i++)
-                printf("  LED %d: %s\n", i, (state & (1 << i)) ? "ON" : "OFF");
-        }
+        for (int i = 0; i < 4; i++)
+            printf("  LED %d: blink=%s, period=%ums\n", i,
+                   res.enable[i] ? "ON" : "OFF", res.period_ms[i]);
         return 0;
     }
 
@@ -760,7 +730,7 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
     char subcmd[32];
     if (sscanf(cmd_start, "%31s", subcmd) != 1)
     {
-        printf("Usage: servo <idx|@addr> <set_pos|set_speed|sweep|get_pos> [args...]\n");
+        printf("Usage: servo <idx|@addr> <set_pos|set_speed|sweep|get_pos|get_speed> [args...]\n");
         return -1;
     }
 
@@ -769,7 +739,6 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
         rest++;
 
     int rc;
-    crumbs_message_t reply;
 
     if (strcmp(subcmd, "set_pos") == 0)
     {
@@ -816,21 +785,24 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
     }
     else if (strcmp(subcmd, "get_pos") == 0)
     {
-        rc = servo_query_pos(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
+        servo_pos_result_t res;
+        rc = servo_get_pos(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                           crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
             return rc;
 
-        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
+        printf("Servo positions: [0]=%udeg, [1]=%udeg\n", res.pos[0], res.pos[1]);
+        return 0;
+    }
+    else if (strcmp(subcmd, "get_speed") == 0)
+    {
+        servo_speed_result_t res;
+        rc = servo_get_speed(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                             crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
             return rc;
 
-        uint8_t pos0, pos1;
-        if (reply.data_len >= 2)
-        {
-            crumbs_msg_read_u8(reply.data, reply.data_len, 0, &pos0);
-            crumbs_msg_read_u8(reply.data, reply.data_len, 1, &pos1);
-            printf("Servo positions: [0]=%udeg, [1]=%udeg\n", pos0, pos1);
-        }
+        printf("Servo speeds: [0]=%u, [1]=%u\n", res.speed[0], res.speed[1]);
         return 0;
     }
 
@@ -905,7 +877,7 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
         rest++;
 
     int rc;
-    crumbs_message_t msg, reply;
+    crumbs_message_t msg;
 
     if (strcmp(subcmd, "set_number") == 0)
     {
@@ -959,26 +931,15 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
     }
     else if (strcmp(subcmd, "get_value") == 0)
     {
-        rc = display_build_get_value(&msg);
+        display_value_result_t res;
+        rc = display_get_value(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
+                               crumbs_linux_delay_us, (void *)lw, &res);
         if (rc != 0)
             return rc;
 
-        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
-        if (rc != 0)
-            return rc;
-
-        rc = crumbs_linux_read_message(lw, addr, ctx, &reply);
-        if (rc != 0)
-            return rc;
-
-        uint16_t number;
-        uint8_t decimal_pos, brightness;
-        rc = display_parse_get_value(reply.data, reply.data_len, &number, &decimal_pos, &brightness);
-        if (rc == 0)
-        {
-            printf("Display: number=%u, decimal=%u, brightness=%u\n", number, decimal_pos, brightness);
-        }
-        return rc;
+        printf("Display: number=%u, decimal=%u, brightness=%u\n",
+               res.number, res.decimal_pos, res.brightness);
+        return 0;
     }
 
     printf("Unknown display command: %s\n", subcmd);

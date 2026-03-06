@@ -222,6 +222,104 @@ extern "C"
         return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
     }
 
+    /* ============================================================================
+     * Controller Side: Combined Query + Read (Receiver API)
+     * ============================================================================ */
+
+    /**
+     * @brief Result struct for SERVO_OP_GET_POS.
+     *
+     * Current position of each servo in degrees (0-180).
+     */
+    typedef struct
+    {
+        uint8_t pos[2]; /**< Current positions in degrees, indexed by servo (0-1). */
+    } servo_pos_result_t;
+
+    /**
+     * @brief Result struct for SERVO_OP_GET_SPEED.
+     *
+     * Speed limit of each servo in degrees/update (0=instant).
+     */
+    typedef struct
+    {
+        uint8_t speed[2]; /**< Speed limits, indexed by servo (0-1). */
+    } servo_speed_result_t;
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for servo positions.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of servo peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int servo_get_pos(crumbs_context_t *ctx,
+                                    uint8_t addr,
+                                    crumbs_i2c_write_fn write_fn,
+                                    crumbs_i2c_read_fn read_fn,
+                                    crumbs_delay_fn delay_fn,
+                                    void *io,
+                                    servo_pos_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = servo_query_pos(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->pos[0]);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u8(reply.data, reply.data_len, 1, &out->pos[1]);
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for servo speed limits.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of servo peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int servo_get_speed(crumbs_context_t *ctx,
+                                      uint8_t addr,
+                                      crumbs_i2c_write_fn write_fn,
+                                      crumbs_i2c_read_fn read_fn,
+                                      crumbs_delay_fn delay_fn,
+                                      void *io,
+                                      servo_speed_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = servo_query_speed(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->speed[0]);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u8(reply.data, reply.data_len, 1, &out->speed[1]);
+    }
+
 #ifdef __cplusplus
 }
 #endif

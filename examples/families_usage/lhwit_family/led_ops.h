@@ -211,6 +211,113 @@ extern "C"
         return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
     }
 
+    /* ============================================================================
+     * Controller Side: Combined Query + Read (Receiver API)
+     * ============================================================================ */
+
+    /**
+     * @brief Result struct for LED_OP_GET_STATE.
+     *
+     * Bits 0-3 represent LEDs 0-3 (bit=1 means ON).
+     */
+    typedef struct
+    {
+        uint8_t states; /**< Bitmask of LED states (bits 0-3 = LEDs 0-3). */
+    } led_state_result_t;
+
+    /**
+     * @brief Result struct for LED_OP_GET_BLINK.
+     *
+     * Per-LED blink configuration (4 LEDs, indexed 0-3).
+     */
+    typedef struct
+    {
+        uint8_t  enable[4];    /**< Blink enable per LED (0=off, 1=on). */
+        uint16_t period_ms[4]; /**< Blink period in milliseconds per LED. */
+    } led_blink_result_t;
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for LED states.
+     *
+     * Sends the query, waits @p delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US),
+     * reads the reply via crumbs_controller_read(), and parses the payload.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of LED peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay (e.g. crumbs_linux_delay_us).
+     * @param io       I2C context passed to write_fn and read_fn.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on I2C or decode/parse error.
+     */
+    static inline int led_get_state(crumbs_context_t *ctx,
+                                    uint8_t addr,
+                                    crumbs_i2c_write_fn write_fn,
+                                    crumbs_i2c_read_fn read_fn,
+                                    crumbs_delay_fn delay_fn,
+                                    void *io,
+                                    led_state_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = led_query_state(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        return crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->states);
+    }
+
+    /**
+     * @brief Combined SET_REPLY query + read + parse for LED blink config.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of LED peripheral.
+     * @param write_fn I2C write function.
+     * @param read_fn  I2C read function.
+     * @param delay_fn Platform microsecond delay.
+     * @param io       I2C context.
+     * @param out      Output struct (must not be NULL).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int led_get_blink(crumbs_context_t *ctx,
+                                    uint8_t addr,
+                                    crumbs_i2c_write_fn write_fn,
+                                    crumbs_i2c_read_fn read_fn,
+                                    crumbs_delay_fn delay_fn,
+                                    void *io,
+                                    led_blink_result_t *out)
+    {
+        crumbs_message_t reply;
+        int rc;
+        if (!out)
+            return -1;
+        rc = led_query_blink(ctx, addr, write_fn, io);
+        if (rc != 0)
+            return rc;
+        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        if (rc != 0)
+            return rc;
+        /* Reply: [led0_enable:u8][led0_period:u16]...[led3_enable:u8][led3_period:u16] */
+        for (uint8_t i = 0; i < 4; i++)
+        {
+            uint8_t off = (uint8_t)(i * 3u);
+            rc = crumbs_msg_read_u8(reply.data, reply.data_len, off, &out->enable[i]);
+            if (rc != 0)
+                return rc;
+            rc = crumbs_msg_read_u16(reply.data, reply.data_len, (uint8_t)(off + 1u), &out->period_ms[i]);
+            if (rc != 0)
+                return rc;
+        }
+        return 0;
+    }
+
 #ifdef __cplusplus
 }
 #endif
