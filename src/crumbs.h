@@ -315,6 +315,28 @@ extern "C"
                                void *write_ctx);
 
     /**
+     * @brief Read and decode a CRUMBS reply frame from a peripheral (controller helper).
+     *
+     * Symmetric counterpart to crumbs_controller_send(). Reads raw bytes via
+     * @p read_fn, then decodes them with crumbs_decode_message(). Passes
+     * timeout_us=0 to @p read_fn so the HAL uses its own default; call
+     * delay_fn() before this to give the peripheral time to stage its reply
+     * after a SET_REPLY write.
+     *
+     * @param ctx         Initialized CRUMBS context in controller mode.
+     * @param target_addr 7-bit I2C address of the peripheral.
+     * @param out_msg     Output message struct (must not be NULL).
+     * @param read_fn     I2C read function (crumbs_i2c_read_fn).
+     * @param read_ctx    Opaque pointer passed to @p read_fn.
+     * @return 0 on success, -1 on bad args or short read, or crumbs_decode_message error code.
+     */
+    int crumbs_controller_read(crumbs_context_t *ctx,
+                               uint8_t target_addr,
+                               crumbs_message_t *out_msg,
+                               crumbs_i2c_read_fn read_fn,
+                               void *read_ctx);
+
+    /**
      * @brief Probe an I2C address range for CRUMBS-capable devices.
      *
      * The function attempts to read a CRUMBS frame and decode it. In

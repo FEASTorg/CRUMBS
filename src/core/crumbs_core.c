@@ -365,6 +365,40 @@ int crumbs_controller_send(const crumbs_context_t *ctx,
 }
 
 /**
+ * @brief Helper used by controllers to read and decode a CRUMBS frame.
+ */
+int crumbs_controller_read(crumbs_context_t *ctx,
+                           uint8_t target_addr,
+                           crumbs_message_t *out_msg,
+                           crumbs_i2c_read_fn read_fn,
+                           void *read_ctx)
+{
+    if (!ctx || !out_msg || !read_fn)
+    {
+        CRUMBS_DBG("rx: invalid ctx/out_msg/read_fn\n");
+        return -1;
+    }
+
+    if (ctx->role != CRUMBS_ROLE_CONTROLLER)
+    {
+        CRUMBS_DBG("rx: not controller role\n");
+        return -1;
+    }
+
+    uint8_t buf[CRUMBS_MESSAGE_MAX_SIZE];
+    int n = read_fn(read_ctx, target_addr, buf, sizeof(buf), 0u);
+    if (n < 4)
+    {
+        CRUMBS_DBG("rx: short read (%d bytes)\n", n);
+        return -1;
+    }
+
+    CRUMBS_DBG("rx: addr=0x%02X %d bytes\n", target_addr, n);
+
+    return crumbs_decode_message(buf, (size_t)n, out_msg, ctx);
+}
+
+/**
  * @brief Peripheral-side handler for raw bytes received by a HAL.
  */
 int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,

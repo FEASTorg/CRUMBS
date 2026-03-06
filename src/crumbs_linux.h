@@ -209,6 +209,15 @@ typedef struct crumbs_linux_i2c_s
      */
     uint32_t crumbs_linux_millis(void);
 
+    /**
+     * @brief Linux platform microsecond delay (conforms to crumbs_delay_fn).
+     *
+     * Wraps POSIX usleep(). On non-Linux builds this is a no-op stub.
+     *
+     * @param us Microseconds to delay.
+     */
+    void crumbs_linux_delay_us(uint32_t us);
+
 #ifdef __cplusplus
 }
 #endif

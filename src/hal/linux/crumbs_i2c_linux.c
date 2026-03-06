@@ -24,6 +24,7 @@
 #if defined(__linux__)
 
 #include <linux_wire.h> /* linux-wire C API */
+#include <unistd.h>     /* usleep */
 
 /* ---- Public API -------------------------------------------------------- */
 
@@ -263,6 +264,13 @@ uint32_t crumbs_linux_millis(void)
     return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
+void crumbs_linux_delay_us(uint32_t us)
+{
+    if (us == 0)
+        return;
+    usleep((useconds_t)us);
+}
+
 int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,
                                             crumbs_linux_i2c_t *i2c,
                                             uint8_t start_addr,
@@ -391,6 +399,12 @@ uint32_t crumbs_linux_millis(void)
 {
     /* No-op stub for non-Linux platforms */
     return 0;
+}
+
+void crumbs_linux_delay_us(uint32_t us)
+{
+    /* No-op stub for non-Linux platforms */
+    (void)us;
 }
 
 int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,

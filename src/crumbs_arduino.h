@@ -100,6 +100,21 @@ extern "C"
      */
     uint32_t crumbs_arduino_millis(void);
 
+    /**
+     * @brief Arduino platform microsecond delay (conforms to crumbs_delay_fn).
+     *
+     * Wraps Arduino's delayMicroseconds(). Safe to call with us=0.
+     *
+     * @param us Microseconds to delay.
+     */
+    static inline void crumbs_arduino_delay_us(uint32_t us)
+    {
+        if (us > 0)
+        {
+            delayMicroseconds((unsigned long)us);
+        }
+    }
+
 #ifdef __cplusplus
 }
 #endif

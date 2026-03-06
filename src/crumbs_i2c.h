@@ -130,6 +130,27 @@ extern "C"
      */
     typedef uint32_t (*crumbs_platform_millis_fn)(void);
 
+    /**
+     * @brief Platform microsecond delay function signature.
+     *
+     * Implementations should block for approximately @p us microseconds.
+     * Used by ops-header `_get_*` functions to give a peripheral time to
+     * stage its reply after receiving a SET_REPLY write, before the
+     * controller issues the I2C read transaction.
+     *
+     * @param us Delay duration in microseconds.
+     */
+    typedef void (*crumbs_delay_fn)(uint32_t us);
+
+    /**
+     * @brief Default delay between a SET_REPLY write and the subsequent I2C read.
+     *
+     * 10 ms is conservative for 100 kHz I2C with Arduino peripherals running
+     * standard CRUMBS handler firmware.  Reduce only after oscilloscope
+     * validation on your specific hardware.
+     */
+#define CRUMBS_DEFAULT_QUERY_DELAY_US 10000u
+
 #ifdef __cplusplus
 }
 #endif
