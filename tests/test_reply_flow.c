@@ -12,6 +12,8 @@
 #include "test_common.h"
 #include "crumbs_message_helpers.h"
 
+#include <string.h> /* memcpy */
+
 /* ---- Test Infrastructure ---------------------------------------------- */
 
 #define MY_TYPE_ID 0x42
@@ -88,6 +90,34 @@ static int simulate_read_reply(crumbs_context_t *peripheral_ctx,
 
     /* Decode the reply to verify CRC and contents */
     return crumbs_decode_message(reply_frame, reply_len, decoded_reply, NULL);
+}
+
+/* ---- Mock I2C read for crumbs_controller_read tests ------------------ */
+
+/** Buffer staged by tests for the mock read function to return. */
+static uint8_t g_mock_read_buf[CRUMBS_MESSAGE_MAX_SIZE];
+/** Length to return from the mock read function. Negative = simulate error. */
+static int g_mock_read_len = 0;
+
+/**
+ * @brief Mock crumbs_i2c_read_fn: returns bytes from g_mock_read_buf.
+ */
+static int mock_i2c_read(void *user_ctx,
+                         uint8_t addr,
+                         uint8_t *buffer,
+                         size_t len,
+                         uint32_t timeout_us)
+{
+    (void)user_ctx;
+    (void)addr;
+    (void)timeout_us;
+
+    if (g_mock_read_len < 0)
+        return g_mock_read_len; /* simulated I2C error */
+
+    size_t n = (size_t)g_mock_read_len < len ? (size_t)g_mock_read_len : len;
+    memcpy(buffer, g_mock_read_buf, n);
+    return g_mock_read_len;
 }
 
 /* ---- Tests ------------------------------------------------------------ */
@@ -297,6 +327,76 @@ static int test_persistent_opcode(void)
     return 0;
 }
 
+/**
+ * Test: crumbs_controller_read successfully decodes a valid reply frame.
+ */
+static int test_controller_read_ok(void)
+{
+    const char *test_name = "controller_read_ok";
+
+    /* Set up a peripheral and build a valid reply frame into the mock buffer. */
+    crumbs_context_t periph = {0};
+    crumbs_init(&periph, CRUMBS_ROLE_PERIPHERAL, 0x20);
+    crumbs_set_callbacks(&periph, NULL, test_on_request, NULL);
+
+    /* Prime peripheral for opcode 0x10 (sensor value). */
+    int rc = simulate_set_reply(&periph, 0x10);
+    TEST_ASSERT_EQ(test_name, rc, 0, "simulate_set_reply should succeed");
+
+    /* Build the encoded reply frame into the mock buffer. */
+    size_t frame_len = 0;
+    rc = crumbs_peripheral_build_reply(&periph, g_mock_read_buf, sizeof(g_mock_read_buf), &frame_len);
+    TEST_ASSERT_EQ(test_name, rc, 0, "build_reply should succeed");
+    TEST_ASSERT(test_name, frame_len >= 4, "frame_len should be >= 4");
+    g_mock_read_len = (int)frame_len;
+
+    /* Now test crumbs_controller_read on the controller side. */
+    crumbs_context_t ctrl = {0};
+    crumbs_init(&ctrl, CRUMBS_ROLE_CONTROLLER, 0);
+
+    crumbs_message_t out_msg;
+    rc = crumbs_controller_read(&ctrl, 0x20, &out_msg, mock_i2c_read, NULL);
+    TEST_ASSERT_EQ(test_name, rc, 0, "crumbs_controller_read should succeed");
+    TEST_ASSERT_EQ(test_name, out_msg.opcode, 0x10, "opcode should be 0x10");
+    TEST_ASSERT_EQ(test_name, out_msg.data_len, 2, "data_len should be 2 (u16)");
+
+    uint16_t sensor = (uint16_t)(out_msg.data[0] | (out_msg.data[1] << 8));
+    TEST_ASSERT_EQ(test_name, sensor, g_sensor_value, "sensor value mismatch");
+
+    printf("  %s: PASS\n", test_name);
+    return 0;
+}
+
+/**
+ * Test: crumbs_controller_read returns -1 when read_fn supplies a short frame.
+ */
+static int test_controller_read_short(void)
+{
+    const char *test_name = "controller_read_short";
+
+    crumbs_context_t ctrl = {0};
+    crumbs_init(&ctrl, CRUMBS_ROLE_CONTROLLER, 0);
+
+    crumbs_message_t out_msg;
+
+    /* 3 bytes: one fewer than the minimum frame size (4). */
+    g_mock_read_buf[0] = 0x42;
+    g_mock_read_buf[1] = 0x10;
+    g_mock_read_buf[2] = 0x00;
+    g_mock_read_len = 3;
+
+    int rc = crumbs_controller_read(&ctrl, 0x20, &out_msg, mock_i2c_read, NULL);
+    TEST_ASSERT_EQ(test_name, rc, -1, "should return -1 on short read");
+
+    /* 0 bytes: empty read. */
+    g_mock_read_len = 0;
+    rc = crumbs_controller_read(&ctrl, 0x20, &out_msg, mock_i2c_read, NULL);
+    TEST_ASSERT_EQ(test_name, rc, -1, "should return -1 on zero-byte read");
+
+    printf("  %s: PASS\n", test_name);
+    return 0;
+}
+
 /* ---- Main ------------------------------------------------------------- */
 
 int main(void)
@@ -311,6 +411,8 @@ int main(void)
     failures += test_unknown_opcode();
     failures += test_reply_crc();
     failures += test_persistent_opcode();
+    failures += test_controller_read_ok();
+    failures += test_controller_read_short();
 
     printf("\n");
     if (failures == 0)
