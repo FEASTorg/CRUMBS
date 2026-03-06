@@ -4,6 +4,53 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
+## [Unreleased] - Family Receiver API
+
+### Added
+
+- **`crumbs_controller_read()`** (`src/crumbs.h`, `src/core/crumbs_core.c`)
+  - Symmetric counterpart to `crumbs_controller_send()`
+  - Reads a single CRUMBS frame from a peripheral using any `crumbs_i2c_read_fn`
+  - Returns `-1` for reads shorter than the minimum valid frame (4 bytes)
+
+- **`crumbs_delay_fn` typedef** (`src/crumbs_i2c.h`)
+  - `void (*crumbs_delay_fn)(uint32_t us)` — platform-agnostic microsecond delay callback
+  - Used by `_get_*` wrapper functions to insert the required settle time between write and read
+
+- **`CRUMBS_DEFAULT_QUERY_DELAY_US`** (`src/crumbs_i2c.h`)
+  - Default 10 ms delay constant for the SET_REPLY two-step query pattern
+
+- **Platform delay implementations**
+  - `crumbs_linux_delay_us(uint32_t us)` (`src/crumbs_linux.h`, `src/hal/linux/crumbs_i2c_linux.c`) — wraps `usleep()`
+  - `crumbs_arduino_delay_us(uint32_t us)` (`src/crumbs_arduino.h`) — wraps `delayMicroseconds()`, static inline
+
+- **Result structs and `_get_*` functions for all four lhwit_family ops headers**
+  - `led_ops.h`: `led_state_result_t`, `led_blink_result_t`, `led_get_state()`, `led_get_blink()`
+  - `servo_ops.h`: `servo_pos_result_t`, `servo_speed_result_t`, `servo_get_pos()`, `servo_get_speed()`
+  - `calculator_ops.h`: `calc_result_t`, `calc_hist_meta_t`, `calc_hist_entry_t`, `calc_get_result()`, `calc_get_hist_meta()`, `calc_get_hist_entry()`
+  - `display_ops.h`: `display_value_result_t`, `display_query_value()`, `display_get_value()`
+  - All `_get_*` functions follow the unified pattern: `query → delay → crumbs_controller_read → parse`
+
+- **Receiver API for `mock_ops.h`** (`examples/handlers_usage/mock_ops.h`)
+  - `mock_echo_result_t`, `mock_status_result_t`, `mock_info_result_t`
+  - `mock_get_echo()`, `mock_get_status()`, `mock_get_info()` static inline wrappers
+
+- **`docs/create-a-family.md`** — new guide for authoring custom CRUMBS families
+  - Eight-step walkthrough using a toy thermometer peripheral as a running example
+  - Covers: type ID selection, ops header structure, SET/SET*REPLY op pairs, result structs, `\_get*\*` pattern, Linux and Arduino usage, helper reference tables, and a completeness checklist
+
+### Changed
+
+- **Example controllers updated to use `_get_*` wrappers** (`examples/families_usage/`)
+  - `controller_manual/main.c`: replaced all manual `query + crumbs_linux_read_message` blocks with `_get_*` calls; removed now-unused `crumbs_message_t reply` declarations; added `get_blink` and `get_speed` commands
+  - `controller_discovery/main.c`: same replacements; scan-phase version reads left unchanged
+
+- **Two new unit tests added** (`tests/test_reply_flow.c`)
+  - `test_controller_read_ok`: verifies `crumbs_controller_read` decodes a valid frame
+  - `test_controller_read_short`: verifies `-1` is returned for undersized reads
+
+---
+
 ## [Unreleased] - Code Quality
 
 ### Changed
