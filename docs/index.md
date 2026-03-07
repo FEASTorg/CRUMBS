@@ -2,7 +2,7 @@
 
 I²C messaging library for controller/peripheral communication with CRC validation.
 
-## 🚀 Start Here
+## Start Here
 
 1. [Platform Setup](platform-setup.md) → PlatformIO
 2. Test I²C: [scanner](https://playground.arduino.cc/Main/I2cScanner/)
@@ -92,12 +92,12 @@ void setup() {
 
 ### Reference
 
-| Document                          | Description                                                      |
-| --------------------------------- | ---------------------------------------------------------------- |
-| [API Reference](api-reference.md) | Complete C API, handler dispatch, message helpers, platform HALs |
-| [Architecture](architecture.md)   | Design philosophy, stakeholder roles, system architecture        |
-| [LHWIT Family](lhwit-family.md)   | Reference implementation (LEDs, servos, calculator, display)     |
-| [Create a Family](create-a-family.md) | Step-by-step guide for authoring custom device families      |
+| Document                              | Description                                                      |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| [API Reference](api-reference.md)     | Complete C API, handler dispatch, message helpers, platform HALs |
+| [Architecture](architecture.md)       | Design philosophy, stakeholder roles, system architecture        |
+| [LHWIT Family](lhwit-family.md)       | Reference implementation (LEDs, servos, calculator, display)     |
+| [Create a Family](create-a-family.md) | Step-by-step guide for authoring custom device families          |
 
 ### Developer
 
