@@ -266,9 +266,12 @@ uint32_t crumbs_linux_millis(void)
 
 void crumbs_linux_delay_us(uint32_t us)
 {
+    struct timespec ts;
     if (us == 0)
         return;
-    usleep((useconds_t)us);
+    ts.tv_sec  = (time_t)(us / 1000000U);
+    ts.tv_nsec = (long)((us % 1000000U) * 1000U);
+    nanosleep(&ts, NULL);
 }
 
 int crumbs_linux_scan_for_crumbs_with_types(crumbs_context_t *ctx,
