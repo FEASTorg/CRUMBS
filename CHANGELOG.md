@@ -39,6 +39,14 @@ All notable changes to CRUMBS are documented in this file.
   - Eight-step walkthrough using a toy thermometer peripheral as a running example
   - Covers: type ID selection, ops header structure, SET/SET*REPLY op pairs, result structs, `\_get*\*` pattern, Linux and Arduino usage, helper reference tables, and a completeness checklist
 
+### Fixed
+
+- **Reply identity validation in all `_get_*` wrappers**
+  - All 11 `_get_*` functions (across `led_ops.h`, `servo_ops.h`, `calculator_ops.h`, `display_ops.h`, `mock_ops.h`) now verify that `reply.type_id` and `reply.opcode` match the expected values before parsing
+  - Returns `-1` immediately on any mismatch, preventing silent data corruption when a valid CRUMBS frame arrives from the wrong device type or address
+  - For `calc_get_hist_entry`, the identity check precedes the `data_len < 16` check
+  - Zero runtime cost on the happy path; two comparisons per GET on any error path
+
 ### Changed
 
 - **Example controllers updated to use `_get_*` wrappers** (`examples/families_usage/`)

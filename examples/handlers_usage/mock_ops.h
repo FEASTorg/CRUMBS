@@ -284,6 +284,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_ECHO)
+            return -1;
         out->len = reply.data_len;
         if (reply.data_len > 0)
             memcpy(out->data, reply.data, reply.data_len);
@@ -321,6 +323,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_STATUS)
+            return -1;
         rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->state);
         if (rc != 0)
             return rc;
@@ -358,6 +362,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_INFO)
+            return -1;
         out->len = reply.data_len;
         if (reply.data_len > 0)
             memcpy(out->info, reply.data, reply.data_len);

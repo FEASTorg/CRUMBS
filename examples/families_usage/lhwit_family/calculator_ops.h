@@ -364,6 +364,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != CALC_TYPE_ID || reply.opcode != CALC_OP_GET_RESULT)
+            return -1;
         return crumbs_msg_read_u32(reply.data, reply.data_len, 0, &out->result);
     }
 
@@ -398,6 +400,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != CALC_TYPE_ID || reply.opcode != CALC_OP_GET_HIST_META)
+            return -1;
         rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->count);
         if (rc != 0)
             return rc;
@@ -440,6 +444,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != CALC_TYPE_ID || reply.opcode != (uint8_t)(CALC_OP_GET_HIST_0 + entry_idx))
+            return -1;
         if (reply.data_len < 16)
             return -1; /* Entry is empty or malformed */
         /* Parse: [op:4][a:u32][b:u32][result:u32] */

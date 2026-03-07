@@ -294,6 +294,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != DISPLAY_TYPE_ID || reply.opcode != DISPLAY_OP_GET_VALUE)
+            return -1;
         /* Reply: [number:u16][decimal_pos:u8][brightness:u8] */
         return display_parse_get_value(reply.data, reply.data_len,
                                        &out->number, &out->decimal_pos, &out->brightness);

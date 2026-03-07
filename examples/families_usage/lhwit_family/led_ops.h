@@ -270,6 +270,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != LED_TYPE_ID || reply.opcode != LED_OP_GET_STATE)
+            return -1;
         return crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->states);
     }
 
@@ -304,6 +306,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != LED_TYPE_ID || reply.opcode != LED_OP_GET_BLINK)
+            return -1;
         /* Reply: [led0_enable:u8][led0_period:u16]...[led3_enable:u8][led3_period:u16] */
         for (uint8_t i = 0; i < 4; i++)
         {

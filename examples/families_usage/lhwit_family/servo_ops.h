@@ -277,6 +277,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != SERVO_TYPE_ID || reply.opcode != SERVO_OP_GET_POS)
+            return -1;
         rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->pos[0]);
         if (rc != 0)
             return rc;
@@ -314,6 +316,8 @@ extern "C"
         rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
         if (rc != 0)
             return rc;
+        if (reply.type_id != SERVO_TYPE_ID || reply.opcode != SERVO_OP_GET_SPEED)
+            return -1;
         rc = crumbs_msg_read_u8(reply.data, reply.data_len, 0, &out->speed[0]);
         if (rc != 0)
             return rc;
