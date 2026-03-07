@@ -301,6 +301,91 @@ The ops header is identical on both platforms. Bundle the platform-specific call
 
 ---
 
+## Peripheral implementation
+
+The ops header covers the **controller side**. On the **peripheral side** you write the firmware
+that receives commands and responds to read requests. CRUMBS provides two dispatch mechanisms:
+
+### SET operations — per-opcode handler table
+
+Register one handler per opcode. The library dispatches automatically:
+
+```c
+static void handle_set_sample_rate(crumbs_context_t *ctx, uint8_t opcode,
+                                   const uint8_t *data, uint8_t len, void *user)
+{
+    uint8_t rate;
+    if (crumbs_msg_read_u8(data, len, 0, &rate) == 0)
+        g_sample_rate = rate;
+}
+
+/* In setup(): */
+crumbs_register_handler(&ctx, THERM_OP_SET_SAMPLE_RATE, handle_set_sample_rate, NULL);
+```
+
+Adding a new SET op means adding one `crumbs_register_handler` call and one handler function.
+No switch statement required.
+
+### GET operations — `on_request` callback
+
+The library calls `on_request` when the controller issues a read. Check `ctx->requested_opcode`
+and fill the `reply` struct:
+
+```c
+static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+{
+    switch (ctx->requested_opcode)
+    {
+    case 0:
+        crumbs_build_version_reply(reply, THERM_TYPE_ID, 1, 0, 0);
+        break;
+
+    case THERM_OP_GET_TEMP:
+        crumbs_msg_init(reply, THERM_TYPE_ID, THERM_OP_GET_TEMP);
+        crumbs_msg_add_u16(reply, (uint16_t)g_temp_ch0);
+        crumbs_msg_add_u16(reply, (uint16_t)g_temp_ch1);
+        break;
+
+    case THERM_OP_GET_SAMPLE_RATE:
+        crumbs_msg_init(reply, THERM_TYPE_ID, THERM_OP_GET_SAMPLE_RATE);
+        crumbs_msg_add_u8(reply, g_sample_rate);
+        break;
+
+    default:
+        /* Unknown opcode — return empty reply as safe fallback */
+        crumbs_msg_init(reply, THERM_TYPE_ID, ctx->requested_opcode);
+        break;
+    }
+}
+
+/* In setup(): */
+crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
+```
+
+> **Always include a `default:` case** that calls `crumbs_msg_init(reply, TYPE_ID, ctx->requested_opcode)`.
+> This ensures the reply struct is never left in an uninitialised state if an unknown opcode arrives.
+
+### Choosing the right mechanism
+
+| Mechanism | Use for | Notes |
+|-----------|---------|-------|
+| `crumbs_register_handler()` | SET operations | One registration per opcode; preferred for all incoming writes |
+| `on_request` callback | GET replies | Single callback; check `ctx->requested_opcode` and fill reply |
+| `on_message` callback | Advanced use only | Fires before the handler table for every write; useful for logging or cross-cutting protocol monitors — not for normal device logic |
+
+`hello_peripheral.ino` uses `on_message` for brevity (one callback, no handler table). For a real
+family peripheral, use `crumbs_register_handler()` for each SET opcode instead — see
+`examples/families_usage/` for the correct pattern.
+
+### Known asymmetry
+
+SET and GET ops use different dispatch models: SET ops are dispatched per-opcode automatically;
+GET replies require a manual switch in `on_request`. This asymmetry is a known limitation. A
+future version of CRUMBS will add `crumbs_register_reply_handler()` to give GET ops the same
+per-opcode registration model as SET ops.
+
+---
+
 ## Reference: payload helper functions
 
 | Helper                                    | Description                    |
@@ -340,3 +425,6 @@ Maximum payload is `CRUMBS_MAX_PAYLOAD` bytes (27). All multi-byte values are li
 - [ ] Header guard (`#ifndef / #define / #endif`) in place
 - [ ] `#ifdef __cplusplus extern "C"` wrapper present for C++ compatibility
 - [ ] Works with both Linux and Arduino function pointer combinations
+- [ ] Peripheral: one `crumbs_register_handler()` call per SET opcode
+- [ ] Peripheral: `on_request` switch has a `default:` case that calls `crumbs_msg_init`
+- [ ] Peripheral: `on_message` not used for device logic (handler table used instead)

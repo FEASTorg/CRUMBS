@@ -9,6 +9,9 @@
 crumbs_context_t ctx;
 uint8_t counter = 0;
 
+/* NOTE: hello_peripheral uses on_message for brevity (one callback, no handler table).
+ * For a real family peripheral, use crumbs_register_handler() for each SET opcode instead.
+ * See examples/families_usage/ for the correct pattern. */
 void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 {
     Serial.print("RX cmd=");

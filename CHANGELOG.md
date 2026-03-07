@@ -47,6 +47,10 @@ All notable changes to CRUMBS are documented in this file.
 
 ### Fixed
 
+- **`display/src/main.cpp` `on_request` default case** — missing `crumbs_msg_init` fallback added
+  - Previously the `default:` branch only printed to Serial, leaving the reply struct uninitialised on any unknown opcode
+  - Now calls `crumbs_msg_init(reply, DISPLAY_TYPE_ID, ctx->requested_opcode)` before logging, consistent with the led, servo, and calculator peripherals
+
 - **Reply identity validation in all `_get_*` wrappers**
   - All 11 `_get_*` functions (across `led_ops.h`, `servo_ops.h`, `calculator_ops.h`, `display_ops.h`, `mock_ops.h`) now verify that `reply.type_id` and `reply.opcode` match the expected values before parsing
   - Returns `-1` immediately on any mismatch, preventing silent data corruption when a valid CRUMBS frame arrives from the wrong device type or address
@@ -58,6 +62,14 @@ All notable changes to CRUMBS are documented in this file.
 - **`docs/create-a-family.md` updated to use `crumbs_device_t` and document macro usage**
   - All function signatures in Steps 3, 4, 6 converted from individual `(ctx, addr, write_fn, read_fn, delay_fn, io)` parameters to `const crumbs_device_t *dev`
   - New Step 7 showing `CRUMBS_DEFINE_GET_OP` / `CRUMBS_DEFINE_SEND_OP` applied to the thermometer running example; documents what the macros cover and what must still be written by hand
+
+- **`docs/create-a-family.md` peripheral dispatch section added**
+  - New "Peripheral implementation" section with SET handler table pattern, GET `on_request` pattern, and `default:` safe-fallback guidance
+  - "Choosing the right mechanism" table clarifying when to use `crumbs_register_handler`, `on_request`, and `on_message`
+  - SET/GET dispatch asymmetry acknowledged explicitly; `crumbs_register_reply_handler` noted as planned future fix
+  - Checklist updated with three peripheral-side items
+
+- **`hello_peripheral.ino` comment added** explaining that `on_message` is used for brevity only; points to `examples/families_usage/` for the handler-table pattern
   - Linux (Step 8) and Arduino (Step 9) usage examples updated to construct a `crumbs_device_t` and pass `&dev`
   - Identity check (`reply.type_id` + `reply.opcode`) added to the Step 6 `_get_*` example
   - `_query_*` functions marked `@internal` in Step 4; `@internal` rationale added to section intro

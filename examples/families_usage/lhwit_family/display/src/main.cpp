@@ -304,6 +304,8 @@ static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
     }
 
     default:
+        /* Unknown opcode — return empty reply as safe fallback */
+        crumbs_msg_init(reply, DISPLAY_TYPE_ID, ctx->requested_opcode);
         Serial.print(F("Unknown GET opcode: 0x"));
         Serial.println(requested_op, HEX);
         break;
