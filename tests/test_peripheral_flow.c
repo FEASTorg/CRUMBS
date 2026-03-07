@@ -251,37 +251,6 @@ static int test_handle_receive_no_callback(void)
     return 0;
 }
 
-static int test_handle_receive_sets_address(void)
-{
-    crumbs_context_t ctx = {0};
-    crumbs_init(&ctx, CRUMBS_ROLE_PERIPHERAL, 0x42);
-    crumbs_set_callbacks(&ctx, test_on_message, NULL, NULL);
-
-    reset_test_state();
-
-    /* Build a valid frame */
-    crumbs_message_t msg = {0};
-    msg.type_id = 0x01;
-    msg.opcode = 0x02;
-    msg.data_len = 0;
-
-    uint8_t frame[CRUMBS_MESSAGE_MAX_SIZE];
-    size_t len = crumbs_encode_message(&msg, frame, sizeof(frame));
-
-    crumbs_peripheral_handle_receive(&ctx, frame, len);
-
-    /* The message passed to callback should have address set from ctx */
-    if (g_last_message.address != 0x42)
-    {
-        fprintf(stderr, "handle_receive_sets_address: address should be 0x42, got 0x%02X\n",
-                g_last_message.address);
-        return 1;
-    }
-
-    printf("  handle_receive sets address: PASS\n");
-    return 0;
-}
-
 /* ---- Peripheral Build Reply Tests ------------------------------------- */
 
 static int test_build_reply_valid(void)
@@ -528,7 +497,6 @@ int main(void)
     failures += test_handle_receive_null_params();
     failures += test_handle_receive_corrupt_crc();
     failures += test_handle_receive_no_callback();
-    failures += test_handle_receive_sets_address();
 
     printf("  Build Reply:\n");
 

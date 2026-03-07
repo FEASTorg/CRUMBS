@@ -435,13 +435,6 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
     }
 
     /*
-     * address is not encoded on the wire. If you want to track which
-     * device a message belongs to, you can set msg.address here from
-     * ctx->address or some higher-level routing logic.
-     */
-    msg.address = ctx->address;
-
-    /*
      * Intercept SET_REPLY (0xFE) before user callbacks.
      * Store the target opcode and return without dispatching to user.
      */

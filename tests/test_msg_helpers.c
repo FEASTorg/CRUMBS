@@ -37,11 +37,6 @@ static int test_msg_init(void)
         fprintf(stderr, "msg_init: data_len should be 0\n");
         return 1;
     }
-    if (msg.address != 0)
-    {
-        fprintf(stderr, "msg_init: address should be 0\n");
-        return 1;
-    }
 
     printf("  msg_init: PASS\n");
     return 0;

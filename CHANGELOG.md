@@ -63,6 +63,11 @@ All notable changes to CRUMBS are documented in this file.
   - `controller_manual/main.c` and `controller_discovery/main.c` updated to call `display_send_*` directly; now-unused `crumbs_message_t msg` declaration removed from `cmd_display` in both files
   - `lhwit_family/README.md` usage example updated to the single-call `display_send_*` pattern
 
+- **Removed `address` field from `crumbs_message_t`** (`src/crumbs_message.h`, `src/core/crumbs_core.c`)
+  - The field was never serialized, never read by any example or handler, and carried no information not already available via `ctx->address` in every callback
+  - `crumbs_peripheral_handle_receive` no longer writes `msg.address = ctx->address`
+  - `test_handle_receive_sets_address` removed from `tests/test_peripheral_flow.c` (tested a write with no corresponding read)
+
 ---
 
 ## [Unreleased] - Code Quality
