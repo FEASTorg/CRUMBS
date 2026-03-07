@@ -512,17 +512,71 @@ All code using CRUMBS must be updated.
 
 ---
 
-## [0.1.x – 0.6.x] - Early Development (2024)
+## [0.6.x] - C API Rewrite & Platform Expansion (~November 2025)
 
-### Summary
+Complete reboot of the library as a proper C99 project. The Arduino-sketch
+prototype was replaced with a structured cross-platform library.
 
-Initial development of the CRUMBS protocol and library:
+### Added
 
-- **0.1.x**: Initial protocol design with fixed 31-byte frames and 7-float payload
-- **0.2.x**: Basic encode/decode implementation with CRC-8 integrity checking
-- **0.3.x**: Arduino HAL with Wire library integration (controller/peripheral)
-- **0.4.x**: Event-driven callbacks (`on_message`, `on_request`)
-- **0.5.x**: Linux HAL with linux-wire dependency for Raspberry Pi support
-- **0.6.x**: I²C bus scanner helpers, documentation improvements
+- **C99 library structure** with CMake build system, `src/core/`, `src/crc/`,
+  `src/hal/arduino/`, `src/hal/linux/` source layout
+- **Custom CRC8 nibble algorithm** (`src/crc/crc8_nibble.c/.h`) — replaces
+  the AceCRC C++ dependency; `scripts/generate_crc8.py` regenerates the
+  lookup tables from scratch
+- **Linux HAL** (`src/hal/linux/crumbs_i2c_linux.c`) via `linux-wire`,
+  enabling native Linux I²C without Arduino runtime
+- **CRUMBS-aware I²C scanner** (`crumbs_controller_scan_for_crumbs()`)
+  for device discovery on the bus
+- **CMake install / `find_package(crumbs)`** support for out-of-tree projects
+  (`cmake/crumbsConfig.cmake.in`, `GNUInstallDirs`)
+- **PlatformIO** `library.json` and example project structure; registry
+  publish and CI guidance
+- **GitHub Actions CI** workflow: CMake build + CTest on Ubuntu and
+  native-C example step; Doxygen doc-check step
+- **CTest suite** bootstrapped: `test_encode_decode`, `test_scan_fake`,
+  `test_crc_failure`
+- `basic_peripheral_noncrumbs` sketch for compatibility testing with
+  non-CRUMBS I²C devices
 
-These versions established the core architecture used in all later releases.
+### Changed
+
+- Rewritten from C++ Arduino sketches to C99 throughout; removed AceCRC
+  and ACE namespace layers
+- Examples split into `arduino/` and `linux/` subtrees under
+  `examples/core_usage/`
+- Source tree cleaned of legacy `src_old/` and `_reference/` directories
+- `library.properties` updated to remove AceCRC dependency entry
+
+---
+
+## [Pre-release] — Arduino Prototype (2024-10 to 2025-11)
+
+Not versioned. CRUMBS lived as a pair of Arduino sketches demonstrating
+a minimal I²C message protocol before the C library existed.
+
+### 2025-09 to 2025-11: Docs, planning, CRC research
+
+- First documentation pass (index, getting-started, API reference)
+- Architecture diagrams and revision planning added
+- CRC-8 support researched and added to the Arduino sketch (untested due to
+  hardware unavailable at the time)
+- Float endianness serialization helpers (`memcpy`-based) added to examples
+
+### 2024-10 to 2025-03: Initial prototype
+
+- Fixed-width 32-byte CRUMBS frame: `[type_id:u8][opcode:u8][data:28 bytes][crc:u8]`
+  — `data` was 7 × `float32` (little-endian via `memcpy`)
+- Controller and peripheral Arduino sketch pair for the Nano; basic
+  send/receive with an `on_message` callback
+- CBOR serialization evaluated and removed — too heavy for Nano RAM
+- Message trimmed from early experiments to 32-byte default I²C buffer size
+- Terminology updated: `master`/`slave` → `controller`/`peripheral` (Mar 2025)
+- TWI clock speed moved from a magic number to a `#define`
+
+### Notes
+
+- 5 V Arduino Nanos had I²C level-compatibility issues with 3.3 V I²C devices
+  encountered in early hardware testing
+- `on_message` callback pattern established here; carried forward unchanged
+  into the C rewrite
