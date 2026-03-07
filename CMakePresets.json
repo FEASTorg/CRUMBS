@@ -1,0 +1,68 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Debug (default)",
+      "description": "Debug build with tests and examples; output to build/",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CRUMBS_ENABLE_TESTS": "ON",
+        "CRUMBS_BUILD_EXAMPLES": "ON",
+        "CRUMBS_ENABLE_LINUX_HAL": "OFF"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "description": "Release build; output to build-release/",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CRUMBS_ENABLE_TESTS": "ON",
+        "CRUMBS_BUILD_EXAMPLES": "ON",
+        "CRUMBS_ENABLE_LINUX_HAL": "OFF"
+      }
+    },
+    {
+      "name": "linux",
+      "displayName": "Linux (Debug with HAL)",
+      "description": "Debug build with Linux I2C HAL enabled; output to build-linux/",
+      "binaryDir": "${sourceDir}/build-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CRUMBS_ENABLE_TESTS": "ON",
+        "CRUMBS_BUILD_EXAMPLES": "ON",
+        "CRUMBS_ENABLE_LINUX_HAL": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "linux",
+      "configurePreset": "linux"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

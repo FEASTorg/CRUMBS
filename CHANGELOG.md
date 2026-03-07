@@ -53,6 +53,14 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_init()` updated to zero `reply_handler_count`
   - `test_reply_handler.c` added: 12 tests covering registration, dispatch, fall-through, priority, overwrite, unregister, table-full, and user_data forwarding
 
+### Added (continued)
+
+- **`CMakePresets.json`** — three configure/build/test presets for the root project
+  - `default`: Debug build, `build/`, tests + examples on, Linux HAL off
+  - `release`: Release build, `build-release/`, same flags
+  - `linux`: Debug build with `CRUMBS_ENABLE_LINUX_HAL=ON`, `build-linux/`
+  - Enables `cmake --preset default` / `cmake --build --preset default` / `ctest --preset default` without specifying `-B` or `-C`
+
 ### Changed (continued)
 
 - **`lhwit_family` peripheral examples converted to `crumbs_register_reply_handler()`**
