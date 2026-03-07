@@ -125,165 +125,114 @@ extern "C"
     /**
      * @brief Send ADD command to calculator peripheral.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context (Wire*, linux handle, etc.).
-     * @param a        First operand (u32).
-     * @param b        Second operand (u32).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param a    First operand (u32).
+     * @param b    Second operand (u32).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_send_add(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    void *io,
-                                    uint32_t a,
-                                    uint32_t b)
+    static inline int calc_send_add(const crumbs_device_t *dev, uint32_t a, uint32_t b)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, CALC_TYPE_ID, CALC_OP_ADD);
         crumbs_msg_add_u32(&msg, a);
         crumbs_msg_add_u32(&msg, b);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Send SUB command to calculator peripheral.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
-     * @param a        Minuend (u32).
-     * @param b        Subtrahend (u32).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param a    Minuend (u32).
+     * @param b    Subtrahend (u32).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_send_sub(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    void *io,
-                                    uint32_t a,
-                                    uint32_t b)
+    static inline int calc_send_sub(const crumbs_device_t *dev, uint32_t a, uint32_t b)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, CALC_TYPE_ID, CALC_OP_SUB);
         crumbs_msg_add_u32(&msg, a);
         crumbs_msg_add_u32(&msg, b);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Send MUL command to calculator peripheral.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
-     * @param a        First factor (u32).
-     * @param b        Second factor (u32).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param a    First factor (u32).
+     * @param b    Second factor (u32).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_send_mul(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    void *io,
-                                    uint32_t a,
-                                    uint32_t b)
+    static inline int calc_send_mul(const crumbs_device_t *dev, uint32_t a, uint32_t b)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, CALC_TYPE_ID, CALC_OP_MUL);
         crumbs_msg_add_u32(&msg, a);
         crumbs_msg_add_u32(&msg, b);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Send DIV command to calculator peripheral.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
-     * @param a        Dividend (u32).
-     * @param b        Divisor (u32).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param a    Dividend (u32).
+     * @param b    Divisor (u32).
      * @return 0 on success, non-zero on error.
      * @note Division by zero results in 0xFFFFFFFF.
      */
-    static inline int calc_send_div(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    void *io,
-                                    uint32_t a,
-                                    uint32_t b)
+    static inline int calc_send_div(const crumbs_device_t *dev, uint32_t a, uint32_t b)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, CALC_TYPE_ID, CALC_OP_DIV);
         crumbs_msg_add_u32(&msg, a);
         crumbs_msg_add_u32(&msg, b);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query last calculation result (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request last result.
+     * @internal Used by calc_get_result(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_query_result(crumbs_context_t *ctx,
-                                        uint8_t addr,
-                                        crumbs_i2c_write_fn write_fn,
-                                        void *io)
+    static inline int calc_query_result(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, CALC_OP_GET_RESULT);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query history metadata (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request history metadata.
+     * @internal Used by calc_get_hist_meta(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_query_hist_meta(crumbs_context_t *ctx,
-                                           uint8_t addr,
-                                           crumbs_i2c_write_fn write_fn,
-                                           void *io)
+    static inline int calc_query_hist_meta(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, CALC_OP_GET_HIST_META);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query specific history entry (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request specific history entry.
+     * @internal Used by calc_get_hist_entry(); prefer that function for combined query+read.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of calculator peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param entry_idx Entry index (0-11).
      * @return 0 on success, -1 if invalid index, non-zero on I2C error.
      */
-    static inline int calc_query_hist_entry(crumbs_context_t *ctx,
-                                            uint8_t addr,
-                                            crumbs_i2c_write_fn write_fn,
-                                            void *io,
-                                            uint8_t entry_idx)
+    static inline int calc_query_hist_entry(const crumbs_device_t *dev, uint8_t entry_idx)
     {
         crumbs_message_t msg;
 
@@ -294,7 +243,7 @@ extern "C"
 
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, CALC_OP_GET_HIST_0 + entry_idx);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /* ============================================================================
@@ -336,32 +285,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for last calculation result.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_get_result(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      crumbs_i2c_read_fn read_fn,
-                                      crumbs_delay_fn delay_fn,
-                                      void *io,
-                                      calc_result_t *out)
+    static inline int calc_get_result(const crumbs_device_t *dev, calc_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = calc_query_result(ctx, addr, write_fn, io);
+        rc = calc_query_result(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != CALC_TYPE_ID || reply.opcode != CALC_OP_GET_RESULT)
@@ -372,32 +310,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for history metadata.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of calculator peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int calc_get_hist_meta(crumbs_context_t *ctx,
-                                         uint8_t addr,
-                                         crumbs_i2c_write_fn write_fn,
-                                         crumbs_i2c_read_fn read_fn,
-                                         crumbs_delay_fn delay_fn,
-                                         void *io,
-                                         calc_hist_meta_t *out)
+    static inline int calc_get_hist_meta(const crumbs_device_t *dev, calc_hist_meta_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = calc_query_hist_meta(ctx, addr, write_fn, io);
+        rc = calc_query_hist_meta(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != CALC_TYPE_ID || reply.opcode != CALC_OP_GET_HIST_META)
@@ -414,22 +341,12 @@ extern "C"
      * Returns -1 if entry_idx > 11 or the peripheral returns an empty payload
      * (indicates the slot has not been written yet).
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of calculator peripheral.
-     * @param write_fn  I2C write function.
-     * @param read_fn   I2C read function.
-     * @param delay_fn  Platform microsecond delay.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param entry_idx History slot index (0-11).
      * @param out       Output struct (must not be NULL).
      * @return 0 on success, -1 if entry is empty or invalid, non-zero on I2C error.
      */
-    static inline int calc_get_hist_entry(crumbs_context_t *ctx,
-                                          uint8_t addr,
-                                          crumbs_i2c_write_fn write_fn,
-                                          crumbs_i2c_read_fn read_fn,
-                                          crumbs_delay_fn delay_fn,
-                                          void *io,
+    static inline int calc_get_hist_entry(const crumbs_device_t *dev,
                                           uint8_t entry_idx,
                                           calc_hist_entry_t *out)
     {
@@ -437,11 +354,11 @@ extern "C"
         int rc;
         if (!out || entry_idx > 11)
             return -1;
-        rc = calc_query_hist_entry(ctx, addr, write_fn, io, entry_idx);
+        rc = calc_query_hist_entry(dev, entry_idx);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != CALC_TYPE_ID || reply.opcode != (uint8_t)(CALC_OP_GET_HIST_0 + entry_idx))

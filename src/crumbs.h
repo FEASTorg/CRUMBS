@@ -191,6 +191,28 @@ extern "C"
     };
 
     /**
+     * @brief Bound device handle — groups all transport fields for a single
+     *        CRUMBS device on the bus.
+     *
+     * Pass a pointer to this struct to ops-header functions instead of the
+     * individual ctx / addr / write_fn / read_fn / delay_fn / io arguments.
+     * Populate once at startup (or after scan) and reuse for every call to
+     * that device.
+     *
+     * @note  read_fn and delay_fn are only required by GET operations (_get_*).
+     *        SET-only devices may leave them NULL.
+     */
+    typedef struct
+    {
+        crumbs_context_t   *ctx;      /**< Shared controller context. */
+        uint8_t             addr;     /**< 7-bit I2C address of this device. */
+        crumbs_i2c_write_fn write_fn; /**< I2C write callback. */
+        crumbs_i2c_read_fn  read_fn;  /**< I2C read callback (NULL if no GET ops). */
+        crumbs_delay_fn     delay_fn; /**< Microsecond delay callback (NULL if no GET ops). */
+        void               *io;       /**< Platform I/O context (Wire*, linux handle, etc.). */
+    } crumbs_device_t;
+
+    /**
      * @brief Initialize a CRUMBS context.
      *
      * Hardware setup is the responsibility of the platform HAL.

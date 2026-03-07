@@ -95,40 +95,27 @@ extern "C"
     /**
      * @brief Set all LEDs at once.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context (Wire*, linux handle, etc.).
-     * @param mask     LED mask (bits 0-3 control LEDs 0-3).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param mask LED mask (bits 0-3 control LEDs 0-3).
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_send_set_all(crumbs_context_t *ctx,
-                                       uint8_t addr,
-                                       crumbs_i2c_write_fn write_fn,
-                                       void *io,
-                                       uint8_t mask)
+    static inline int led_send_set_all(const crumbs_device_t *dev, uint8_t mask)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, LED_TYPE_ID, LED_OP_SET_ALL);
         crumbs_msg_add_u8(&msg, mask);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Set individual LED state.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
-     * @param led_idx  LED index (0-3).
-     * @param state    LED state (0=OFF, 1=ON).
+     * @param dev     Bound device handle (see crumbs_device_t).
+     * @param led_idx LED index (0-3).
+     * @param state   LED state (0=OFF, 1=ON).
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_send_set_one(crumbs_context_t *ctx,
-                                       uint8_t addr,
-                                       crumbs_i2c_write_fn write_fn,
-                                       void *io,
+    static inline int led_send_set_one(const crumbs_device_t *dev,
                                        uint8_t led_idx,
                                        uint8_t state)
     {
@@ -136,25 +123,19 @@ extern "C"
         crumbs_msg_init(&msg, LED_TYPE_ID, LED_OP_SET_ONE);
         crumbs_msg_add_u8(&msg, led_idx);
         crumbs_msg_add_u8(&msg, state);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Configure LED blinking.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of LED peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param led_idx   LED index (0-3).
      * @param enable    Enable blinking (0=OFF, 1=ON).
      * @param period_ms Blink period in milliseconds.
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_send_blink(crumbs_context_t *ctx,
-                                     uint8_t addr,
-                                     crumbs_i2c_write_fn write_fn,
-                                     void *io,
+    static inline int led_send_blink(const crumbs_device_t *dev,
                                      uint8_t led_idx,
                                      uint8_t enable,
                                      uint16_t period_ms)
@@ -164,51 +145,39 @@ extern "C"
         crumbs_msg_add_u8(&msg, led_idx);
         crumbs_msg_add_u8(&msg, enable);
         crumbs_msg_add_u16(&msg, period_ms);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query current LED states (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request LED states.
+     * @internal Used by led_get_state(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_query_state(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      void *io)
+    static inline int led_query_state(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, LED_OP_GET_STATE);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query blink configuration (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request blink configuration.
+     * @internal Used by led_get_blink(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_query_blink(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      void *io)
+    static inline int led_query_blink(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, LED_OP_GET_BLINK);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /* ============================================================================
@@ -239,35 +208,24 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for LED states.
      *
-     * Sends the query, waits @p delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US),
+     * Sends the query, waits dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US),
      * reads the reply via crumbs_controller_read(), and parses the payload.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay (e.g. crumbs_linux_delay_us).
-     * @param io       I2C context passed to write_fn and read_fn.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on I2C or decode/parse error.
      */
-    static inline int led_get_state(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    crumbs_i2c_read_fn read_fn,
-                                    crumbs_delay_fn delay_fn,
-                                    void *io,
-                                    led_state_result_t *out)
+    static inline int led_get_state(const crumbs_device_t *dev, led_state_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = led_query_state(ctx, addr, write_fn, io);
+        rc = led_query_state(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != LED_TYPE_ID || reply.opcode != LED_OP_GET_STATE)
@@ -278,32 +236,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for LED blink config.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of LED peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int led_get_blink(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    crumbs_i2c_read_fn read_fn,
-                                    crumbs_delay_fn delay_fn,
-                                    void *io,
-                                    led_blink_result_t *out)
+    static inline int led_get_blink(const crumbs_device_t *dev, led_blink_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = led_query_blink(ctx, addr, write_fn, io);
+        rc = led_query_blink(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != LED_TYPE_ID || reply.opcode != LED_OP_GET_BLINK)

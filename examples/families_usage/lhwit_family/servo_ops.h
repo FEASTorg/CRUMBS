@@ -97,18 +97,12 @@ extern "C"
     /**
      * @brief Set servo position.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of servo peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context (Wire*, linux handle, etc.).
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param servo_idx Servo index (0-1).
      * @param position  Target position (0-180 degrees).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_send_set_pos(crumbs_context_t *ctx,
-                                         uint8_t addr,
-                                         crumbs_i2c_write_fn write_fn,
-                                         void *io,
+    static inline int servo_send_set_pos(const crumbs_device_t *dev,
                                          uint8_t servo_idx,
                                          uint8_t position)
     {
@@ -116,24 +110,18 @@ extern "C"
         crumbs_msg_init(&msg, SERVO_TYPE_ID, SERVO_OP_SET_POS);
         crumbs_msg_add_u8(&msg, servo_idx);
         crumbs_msg_add_u8(&msg, position);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Set servo movement speed limit.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of servo peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param servo_idx Servo index (0-1).
      * @param speed     Speed limit (0=instant, 1-20=limited).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_send_set_speed(crumbs_context_t *ctx,
-                                           uint8_t addr,
-                                           crumbs_i2c_write_fn write_fn,
-                                           void *io,
+    static inline int servo_send_set_speed(const crumbs_device_t *dev,
                                            uint8_t servo_idx,
                                            uint8_t speed)
     {
@@ -141,16 +129,13 @@ extern "C"
         crumbs_msg_init(&msg, SERVO_TYPE_ID, SERVO_OP_SET_SPEED);
         crumbs_msg_add_u8(&msg, servo_idx);
         crumbs_msg_add_u8(&msg, speed);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Configure servo sweep pattern.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of servo peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param servo_idx Servo index (0-1).
      * @param enable    Enable sweep (0=OFF, 1=ON).
      * @param min_pos   Minimum position (0-180 degrees).
@@ -158,10 +143,7 @@ extern "C"
      * @param step      Step size (degrees per update).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_send_sweep(crumbs_context_t *ctx,
-                                       uint8_t addr,
-                                       crumbs_i2c_write_fn write_fn,
-                                       void *io,
+    static inline int servo_send_sweep(const crumbs_device_t *dev,
                                        uint8_t servo_idx,
                                        uint8_t enable,
                                        uint8_t min_pos,
@@ -175,51 +157,39 @@ extern "C"
         crumbs_msg_add_u8(&msg, min_pos);
         crumbs_msg_add_u8(&msg, max_pos);
         crumbs_msg_add_u8(&msg, step);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query current servo positions (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request servo positions.
+     * @internal Used by servo_get_pos(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of servo peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_query_pos(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      void *io)
+    static inline int servo_query_pos(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, SERVO_OP_GET_POS);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query servo speed limits (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request speed limits.
+     * @internal Used by servo_get_speed(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of servo peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_query_speed(crumbs_context_t *ctx,
-                                        uint8_t addr,
-                                        crumbs_i2c_write_fn write_fn,
-                                        void *io)
+    static inline int servo_query_speed(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, SERVO_OP_GET_SPEED);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /* ============================================================================
@@ -249,32 +219,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for servo positions.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of servo peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_get_pos(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    crumbs_i2c_read_fn read_fn,
-                                    crumbs_delay_fn delay_fn,
-                                    void *io,
-                                    servo_pos_result_t *out)
+    static inline int servo_get_pos(const crumbs_device_t *dev, servo_pos_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = servo_query_pos(ctx, addr, write_fn, io);
+        rc = servo_query_pos(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != SERVO_TYPE_ID || reply.opcode != SERVO_OP_GET_POS)
@@ -288,32 +247,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for servo speed limits.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of servo peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int servo_get_speed(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      crumbs_i2c_read_fn read_fn,
-                                      crumbs_delay_fn delay_fn,
-                                      void *io,
-                                      servo_speed_result_t *out)
+    static inline int servo_get_speed(const crumbs_device_t *dev, servo_speed_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = servo_query_speed(ctx, addr, write_fn, io);
+        rc = servo_query_speed(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != SERVO_TYPE_ID || reply.opcode != SERVO_OP_GET_SPEED)

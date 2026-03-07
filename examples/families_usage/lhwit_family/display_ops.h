@@ -243,18 +243,12 @@ extern "C"
     /**
      * @brief Display a number with optional decimal point.
      *
-     * @param ctx         CRUMBS controller context.
-     * @param addr        I2C address of display peripheral.
-     * @param write_fn    I2C write function.
-     * @param io          I2C context.
+     * @param dev         Bound device handle (see crumbs_device_t).
      * @param number      Number to display (0-9999).
      * @param decimal_pos Decimal point digit (0=none, 1=leftmost, 4=rightmost).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_send_set_number(crumbs_context_t *ctx,
-                                              uint8_t addr,
-                                              crumbs_i2c_write_fn write_fn,
-                                              void *io,
+    static inline int display_send_set_number(const crumbs_device_t *dev,
                                               uint16_t number,
                                               uint8_t decimal_pos)
     {
@@ -262,23 +256,17 @@ extern "C"
         crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_NUMBER);
         crumbs_msg_add_u16(&msg, number);
         crumbs_msg_add_u8(&msg, decimal_pos);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Set custom segment patterns for all 4 digits.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of display peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev      Bound device handle (see crumbs_device_t).
      * @param segments Array of 4 segment patterns (digit 0-3).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_send_set_segments(crumbs_context_t *ctx,
-                                                uint8_t addr,
-                                                crumbs_i2c_write_fn write_fn,
-                                                void *io,
+    static inline int display_send_set_segments(const crumbs_device_t *dev,
                                                 const uint8_t segments[4])
     {
         crumbs_message_t msg;
@@ -286,48 +274,35 @@ extern "C"
         crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_SEGMENTS);
         for (i = 0; i < 4; i++)
             crumbs_msg_add_u8(&msg, segments[i]);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Set display brightness.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of display peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
-     * @param level    Brightness level (0=off, 1-10=dimmest to brightest).
+     * @param dev   Bound device handle (see crumbs_device_t).
+     * @param level Brightness level (0=off, 1-10=dimmest to brightest).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_send_set_brightness(crumbs_context_t *ctx,
-                                                  uint8_t addr,
-                                                  crumbs_i2c_write_fn write_fn,
-                                                  void *io,
-                                                  uint8_t level)
+    static inline int display_send_set_brightness(const crumbs_device_t *dev, uint8_t level)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_BRIGHTNESS);
         crumbs_msg_add_u8(&msg, level);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Clear the display (all segments off).
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of display peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_send_clear(crumbs_context_t *ctx,
-                                         uint8_t addr,
-                                         crumbs_i2c_write_fn write_fn,
-                                         void *io)
+    static inline int display_send_clear(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_CLEAR);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /* ============================================================================
@@ -337,23 +312,17 @@ extern "C"
     /**
      * @brief Send a SET_REPLY query for current display value (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request current displayed value.
+     * @internal Used by display_get_value(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of display peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_query_value(crumbs_context_t *ctx,
-                                          uint8_t addr,
-                                          crumbs_i2c_write_fn write_fn,
-                                          void *io)
+    static inline int display_query_value(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, DISPLAY_OP_GET_VALUE);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
@@ -369,32 +338,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for current display value.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of display peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int display_get_value(crumbs_context_t *ctx,
-                                        uint8_t addr,
-                                        crumbs_i2c_write_fn write_fn,
-                                        crumbs_i2c_read_fn read_fn,
-                                        crumbs_delay_fn delay_fn,
-                                        void *io,
-                                        display_value_result_t *out)
+    static inline int display_get_value(const crumbs_device_t *dev, display_value_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = display_query_value(ctx, addr, write_fn, io);
+        rc = display_query_value(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != DISPLAY_TYPE_ID || reply.opcode != DISPLAY_OP_GET_VALUE)

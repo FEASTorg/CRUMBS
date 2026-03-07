@@ -88,18 +88,12 @@ extern "C"
     /**
      * @brief Send echo data to peripheral (stores for later retrieval).
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context (Wire*, linux handle, etc.).
-     * @param data     Data bytes to echo.
-     * @param len      Number of data bytes (0-27).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param data Data bytes to echo.
+     * @param len  Number of data bytes (0-27).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_send_echo(crumbs_context_t *ctx,
-                                     uint8_t addr,
-                                     crumbs_i2c_write_fn write_fn,
-                                     void *io,
+    static inline int mock_send_echo(const crumbs_device_t *dev,
                                      const uint8_t *data,
                                      uint8_t len)
     {
@@ -109,114 +103,83 @@ extern "C"
         {
             crumbs_msg_add_u8(&msg, data[i]);
         }
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Set LED heartbeat period.
      *
-     * @param ctx       CRUMBS controller context.
-     * @param addr      I2C address of mock peripheral.
-     * @param write_fn  I2C write function.
-     * @param io        I2C context.
+     * @param dev       Bound device handle (see crumbs_device_t).
      * @param period_ms Heartbeat period in milliseconds (0 = off, 1-65535 = pulse period).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_send_heartbeat(crumbs_context_t *ctx,
-                                          uint8_t addr,
-                                          crumbs_i2c_write_fn write_fn,
-                                          void *io,
-                                          uint16_t period_ms)
+    static inline int mock_send_heartbeat(const crumbs_device_t *dev, uint16_t period_ms)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, MOCK_TYPE_ID, MOCK_OP_SET_HEARTBEAT);
         crumbs_msg_add_u16(&msg, period_ms);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Send toggle command to peripheral (flips state bit).
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_send_toggle(crumbs_context_t *ctx,
-                                       uint8_t addr,
-                                       crumbs_i2c_write_fn write_fn,
-                                       void *io)
+    static inline int mock_send_toggle(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, MOCK_TYPE_ID, MOCK_OP_TOGGLE);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query stored echo data (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request echo buffer contents.
+     * @internal Used by mock_get_echo(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_query_echo(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      void *io)
+    static inline int mock_query_echo(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, MOCK_TYPE_ID, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, MOCK_OP_GET_ECHO);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query current status (state + heartbeat period).
      *
-     * Uses SET_REPLY pattern (0xFE) to request status.
+     * @internal Used by mock_get_status(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_query_status(crumbs_context_t *ctx,
-                                        uint8_t addr,
-                                        crumbs_i2c_write_fn write_fn,
-                                        void *io)
+    static inline int mock_query_status(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, MOCK_TYPE_ID, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, MOCK_OP_GET_STATUS);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /**
      * @brief Query device info (peripheral will respond on next I2C read).
      *
-     * Uses SET_REPLY pattern (0xFE) to request device information.
+     * @internal Used by mock_get_info(); prefer that function for combined query+read.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param io       I2C context.
+     * @param dev  Bound device handle (see crumbs_device_t).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_query_info(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      void *io)
+    static inline int mock_query_info(const crumbs_device_t *dev)
     {
         crumbs_message_t msg;
         crumbs_msg_init(&msg, MOCK_TYPE_ID, CRUMBS_CMD_SET_REPLY);
         crumbs_msg_add_u8(&msg, MOCK_OP_GET_INFO);
-        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+        return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
     }
 
     /* ============================================================================
@@ -256,32 +219,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for echo data.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_get_echo(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    crumbs_i2c_read_fn read_fn,
-                                    crumbs_delay_fn delay_fn,
-                                    void *io,
-                                    mock_echo_result_t *out)
+    static inline int mock_get_echo(const crumbs_device_t *dev, mock_echo_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = mock_query_echo(ctx, addr, write_fn, io);
+        rc = mock_query_echo(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_ECHO)
@@ -295,32 +247,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for device status.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_get_status(crumbs_context_t *ctx,
-                                      uint8_t addr,
-                                      crumbs_i2c_write_fn write_fn,
-                                      crumbs_i2c_read_fn read_fn,
-                                      crumbs_delay_fn delay_fn,
-                                      void *io,
-                                      mock_status_result_t *out)
+    static inline int mock_get_status(const crumbs_device_t *dev, mock_status_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = mock_query_status(ctx, addr, write_fn, io);
+        rc = mock_query_status(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_STATUS)
@@ -334,32 +275,21 @@ extern "C"
     /**
      * @brief Combined SET_REPLY query + read + parse for device info string.
      *
-     * @param ctx      CRUMBS controller context.
-     * @param addr     I2C address of mock peripheral.
-     * @param write_fn I2C write function.
-     * @param read_fn  I2C read function.
-     * @param delay_fn Platform microsecond delay.
-     * @param io       I2C context.
-     * @param out      Output struct (must not be NULL).
+     * @param dev  Bound device handle (see crumbs_device_t).
+     * @param out  Output struct (must not be NULL).
      * @return 0 on success, non-zero on error.
      */
-    static inline int mock_get_info(crumbs_context_t *ctx,
-                                    uint8_t addr,
-                                    crumbs_i2c_write_fn write_fn,
-                                    crumbs_i2c_read_fn read_fn,
-                                    crumbs_delay_fn delay_fn,
-                                    void *io,
-                                    mock_info_result_t *out)
+    static inline int mock_get_info(const crumbs_device_t *dev, mock_info_result_t *out)
     {
         crumbs_message_t reply;
         int rc;
         if (!out)
             return -1;
-        rc = mock_query_info(ctx, addr, write_fn, io);
+        rc = mock_query_info(dev);
         if (rc != 0)
             return rc;
-        delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
-        rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+        dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+        rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
         if (rc != 0)
             return rc;
         if (reply.type_id != MOCK_TYPE_ID || reply.opcode != MOCK_OP_GET_INFO)
