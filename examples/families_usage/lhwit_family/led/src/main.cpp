@@ -203,49 +203,34 @@ static void handler_blink(crumbs_context_t *ctx, uint8_t opcode,
 }
 
 /* ============================================================================
- * Request Handler (GET operations via SET_REPLY)
+ * Reply Handlers (GET operations via SET_REPLY)
  * ============================================================================ */
 
-/**
- * @brief Request handler for I2C read operations.
- *
- * Switches on ctx->requested_opcode (set by controller via SET_REPLY).
- */
-static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void reply_handler_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
 {
-    switch (ctx->requested_opcode)
+    (void)ctx; (void)user;
+    crumbs_build_version_reply(reply, LED_TYPE_ID,
+                               LED_MODULE_VER_MAJOR,
+                               LED_MODULE_VER_MINOR,
+                               LED_MODULE_VER_PATCH);
+}
+
+static void reply_handler_get_state(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, LED_TYPE_ID, LED_OP_GET_STATE);
+    crumbs_msg_add_u8(reply, g_led_states);
+}
+
+static void reply_handler_get_blink(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, LED_TYPE_ID, LED_OP_GET_BLINK);
+    /* Pack blink configuration: [enable:u8][period:u16] x 4 LEDs = 12 bytes */
+    for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
-    case 0: /* Version info per versioning.md convention */
-        crumbs_build_version_reply(reply, LED_TYPE_ID,
-                                   LED_MODULE_VER_MAJOR,
-                                   LED_MODULE_VER_MINOR,
-                                   LED_MODULE_VER_PATCH);
-        break;
-
-    case LED_OP_GET_STATE:
-    {
-        crumbs_msg_init(reply, LED_TYPE_ID, LED_OP_GET_STATE);
-        crumbs_msg_add_u8(reply, g_led_states);
-        break;
-    }
-
-    case LED_OP_GET_BLINK:
-    {
-        crumbs_msg_init(reply, LED_TYPE_ID, LED_OP_GET_BLINK);
-
-        /* Pack blink configuration: [enable:u8][period:u16] x 4 LEDs = 12 bytes */
-        for (uint8_t i = 0; i < NUM_LEDS; i++)
-        {
-            crumbs_msg_add_u8(reply, g_blink[i].enable);
-            crumbs_msg_add_u16(reply, g_blink[i].period_ms);
-        }
-        break;
-    }
-
-    default:
-        /* Unknown opcode - return empty message */
-        crumbs_msg_init(reply, LED_TYPE_ID, ctx->requested_opcode);
-        break;
+        crumbs_msg_add_u8(reply, g_blink[i].enable);
+        crumbs_msg_add_u16(reply, g_blink[i].period_ms);
     }
 }
 
@@ -287,8 +272,10 @@ void setup()
     crumbs_register_handler(&ctx, LED_OP_SET_ONE, handler_set_one, nullptr);
     crumbs_register_handler(&ctx, LED_OP_BLINK, handler_blink, nullptr);
 
-    /* Register GET operation callback */
-    crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
+    /* Register GET operation reply handlers */
+    crumbs_register_reply_handler(&ctx, 0,                reply_handler_version,   nullptr);
+    crumbs_register_reply_handler(&ctx, LED_OP_GET_STATE, reply_handler_get_state, nullptr);
+    crumbs_register_reply_handler(&ctx, LED_OP_GET_BLINK, reply_handler_get_blink, nullptr);
 
     Serial.println("Ready");
 }

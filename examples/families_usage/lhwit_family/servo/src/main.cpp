@@ -330,47 +330,35 @@ static void handler_sweep(crumbs_context_t *ctx, uint8_t opcode,
 }
 
 /* ============================================================================
- * Request Handler (GET operations via SET_REPLY)
+ * Reply Handlers (GET operations via SET_REPLY)
  * ============================================================================ */
 
-/**
- * @brief Request handler for I2C read operations.
- */
-static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void reply_handler_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
 {
-    switch (ctx->requested_opcode)
-    {
-    case 0: /* Version info per versioning.md convention */
-        crumbs_build_version_reply(reply, SERVO_TYPE_ID,
-                                   SERVO_MODULE_VER_MAJOR,
-                                   SERVO_MODULE_VER_MINOR,
-                                   SERVO_MODULE_VER_PATCH);
-        break;
+    (void)ctx; (void)user;
+    crumbs_build_version_reply(reply, SERVO_TYPE_ID,
+                               SERVO_MODULE_VER_MAJOR,
+                               SERVO_MODULE_VER_MINOR,
+                               SERVO_MODULE_VER_PATCH);
+}
 
-    case SERVO_OP_GET_POS:
+static void reply_handler_get_pos(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, SERVO_TYPE_ID, SERVO_OP_GET_POS);
+    for (int i = 0; i < NUM_SERVOS; i++)
     {
-        crumbs_msg_init(reply, SERVO_TYPE_ID, SERVO_OP_GET_POS);
-        for (int i = 0; i < NUM_SERVOS; i++)
-        {
-            crumbs_msg_add_u8(reply, g_positions[i]);
-        }
-        break;
+        crumbs_msg_add_u8(reply, g_positions[i]);
     }
+}
 
-    case SERVO_OP_GET_SPEED:
+static void reply_handler_get_speed(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, SERVO_TYPE_ID, SERVO_OP_GET_SPEED);
+    for (int i = 0; i < NUM_SERVOS; i++)
     {
-        crumbs_msg_init(reply, SERVO_TYPE_ID, SERVO_OP_GET_SPEED);
-        for (int i = 0; i < NUM_SERVOS; i++)
-        {
-            crumbs_msg_add_u8(reply, g_speeds[i]);
-        }
-        break;
-    }
-
-    default:
-        /* Unknown opcode - return empty message */
-        crumbs_msg_init(reply, SERVO_TYPE_ID, ctx->requested_opcode);
-        break;
+        crumbs_msg_add_u8(reply, g_speeds[i]);
     }
 }
 
@@ -407,8 +395,10 @@ void setup()
     crumbs_register_handler(&ctx, SERVO_OP_SET_SPEED, handler_set_speed, NULL);
     crumbs_register_handler(&ctx, SERVO_OP_SWEEP, handler_sweep, NULL);
 
-    /* Register GET operation callback */
-    crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
+    /* Register GET operation reply handlers */
+    crumbs_register_reply_handler(&ctx, 0,                 reply_handler_version,   nullptr);
+    crumbs_register_reply_handler(&ctx, SERVO_OP_GET_POS,  reply_handler_get_pos,   nullptr);
+    crumbs_register_reply_handler(&ctx, SERVO_OP_GET_SPEED, reply_handler_get_speed, nullptr);
 
     Serial.println(F("Servo controller peripheral ready!"));
     Serial.println(F("Waiting for I2C commands...\n"));

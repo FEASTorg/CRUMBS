@@ -257,59 +257,39 @@ static void handler_clear(crumbs_context_t *ctx, uint8_t opcode,
 }
 
 /* ============================================================================
- * on_request Callback: Handles GET Operations via SET_REPLY
+ * Reply Handlers (GET operations via SET_REPLY)
  * ============================================================================ */
 
-static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void reply_handler_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
 {
-    uint8_t requested_op = ctx->requested_opcode;
+    (void)ctx; (void)user;
+    crumbs_build_version_reply(reply, DISPLAY_TYPE_ID,
+                               DISPLAY_MODULE_VER_MAJOR,
+                               DISPLAY_MODULE_VER_MINOR,
+                               DISPLAY_MODULE_VER_PATCH);
+    Serial.print(F("Version: CRUMBS="));
+    Serial.print(CRUMBS_VERSION);
+    Serial.print(F(" Module="));
+    Serial.print(DISPLAY_MODULE_VER_MAJOR);
+    Serial.print(F("."));
+    Serial.print(DISPLAY_MODULE_VER_MINOR);
+    Serial.print(F("."));
+    Serial.println(DISPLAY_MODULE_VER_PATCH);
+}
 
-    Serial.print(F("on_request: opcode=0x"));
-    Serial.println(requested_op, HEX);
-
-    switch (requested_op)
-    {
-    case 0x00: /* Version query (standard convention) */
-    {
-        crumbs_build_version_reply(reply, DISPLAY_TYPE_ID,
-                                   DISPLAY_MODULE_VER_MAJOR,
-                                   DISPLAY_MODULE_VER_MINOR,
-                                   DISPLAY_MODULE_VER_PATCH);
-
-        Serial.print(F("Version: CRUMBS="));
-        Serial.print(CRUMBS_VERSION);
-        Serial.print(F(" Module="));
-        Serial.print(DISPLAY_MODULE_VER_MAJOR);
-        Serial.print(F("."));
-        Serial.print(DISPLAY_MODULE_VER_MINOR);
-        Serial.print(F("."));
-        Serial.println(DISPLAY_MODULE_VER_PATCH);
-        break;
-    }
-
-    case DISPLAY_OP_GET_VALUE: /* Get current value */
-    {
-        crumbs_msg_init(reply, DISPLAY_TYPE_ID, DISPLAY_OP_GET_VALUE);
-        crumbs_msg_add_u16(reply, g_current_number);
-        crumbs_msg_add_u8(reply, g_decimal_pos);
-        crumbs_msg_add_u8(reply, g_brightness);
-
-        Serial.print(F("GET_VALUE: number="));
-        Serial.print(g_current_number);
-        Serial.print(F(" decimal="));
-        Serial.print(g_decimal_pos);
-        Serial.print(F(" brightness="));
-        Serial.println(g_brightness);
-        break;
-    }
-
-    default:
-        /* Unknown opcode — return empty reply as safe fallback */
-        crumbs_msg_init(reply, DISPLAY_TYPE_ID, ctx->requested_opcode);
-        Serial.print(F("Unknown GET opcode: 0x"));
-        Serial.println(requested_op, HEX);
-        break;
-    }
+static void reply_handler_get_value(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, DISPLAY_TYPE_ID, DISPLAY_OP_GET_VALUE);
+    crumbs_msg_add_u16(reply, g_current_number);
+    crumbs_msg_add_u8(reply, g_decimal_pos);
+    crumbs_msg_add_u8(reply, g_brightness);
+    Serial.print(F("GET_VALUE: number="));
+    Serial.print(g_current_number);
+    Serial.print(F(" decimal="));
+    Serial.print(g_decimal_pos);
+    Serial.print(F(" brightness="));
+    Serial.println(g_brightness);
 }
 
 /* ============================================================================
@@ -343,13 +323,16 @@ void setup()
 
     /* Initialize CRUMBS peripheral */
     crumbs_arduino_init_peripheral(&ctx, PERIPHERAL_ADDR);
-    crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
 
-    /* Register command handlers */
+    /* Register SET operation handlers */
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_NUMBER, handler_set_number, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_SEGMENTS, handler_set_segments, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_SET_BRIGHTNESS, handler_set_brightness, NULL);
     crumbs_register_handler(&ctx, DISPLAY_OP_CLEAR, handler_clear, NULL);
+
+    /* Register GET operation reply handlers */
+    crumbs_register_reply_handler(&ctx, 0x00,                reply_handler_version,   NULL);
+    crumbs_register_reply_handler(&ctx, DISPLAY_OP_GET_VALUE, reply_handler_get_value, NULL);
 
     Serial.println(F("Display peripheral ready"));
     Serial.println(F("Waiting for commands...\n"));

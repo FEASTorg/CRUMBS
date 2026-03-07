@@ -237,82 +237,53 @@ static void handler_div(crumbs_context_t *ctx, uint8_t opcode,
 }
 
 /* ============================================================================
- * Request Handler (GET operations via SET_REPLY)
+ * Reply Handlers (GET operations via SET_REPLY)
  * ============================================================================ */
 
-/**
- * @brief Request handler for I2C read operations.
- *
- * Switches on ctx->requested_opcode (set by controller via SET_REPLY).
- * Handles:
- * - CALC_OP_GET_RESULT: Returns last result (u32)
- * - CALC_OP_GET_HIST_META: Returns count and write_pos (2 bytes)
- * - CALC_OP_GET_HIST_0..11: Returns specific history entry (16 bytes)
- * - Default: Returns device info
- */
-static void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
+static void reply_handler_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
 {
-    switch (ctx->requested_opcode)
+    (void)ctx; (void)user;
+    crumbs_build_version_reply(reply, CALC_TYPE_ID,
+                               CALC_MODULE_VER_MAJOR,
+                               CALC_MODULE_VER_MINOR,
+                               CALC_MODULE_VER_PATCH);
+}
+
+static void reply_handler_get_result(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, CALC_TYPE_ID, CALC_OP_GET_RESULT);
+    crumbs_msg_add_u32(reply, g_last_result);
+}
+
+static void reply_handler_get_hist_meta(crumbs_context_t *ctx, crumbs_message_t *reply, void *user)
+{
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, CALC_TYPE_ID, CALC_OP_GET_HIST_META);
+    crumbs_msg_add_u8(reply, g_history_count);
+    crumbs_msg_add_u8(reply, g_history_write_pos);
+}
+
+/*
+ * History entry GET ops (CALC_OP_GET_HIST_0..11) are handled via on_request
+ * fallback rather than individually-registered reply handlers. Registering
+ * all 12 alongside the 4 SET handlers would exceed CRUMBS_MAX_HANDLERS (16
+ * by default). The on_request callback is intentionally kept for this fan-out
+ * case and serves as a practical illustration of the fallback model.
+ */
+static void on_request_hist(crumbs_context_t *ctx, crumbs_message_t *reply)
+{
+    uint8_t entry_idx = (uint8_t)(ctx->requested_opcode - CALC_OP_GET_HIST_0);
+
+    crumbs_msg_init(reply, CALC_TYPE_ID, ctx->requested_opcode);
+
+    if (entry_idx < g_history_count)
     {
-    case 0: /* Version info per versioning.md convention */
-        crumbs_build_version_reply(reply, CALC_TYPE_ID,
-                                   CALC_MODULE_VER_MAJOR,
-                                   CALC_MODULE_VER_MINOR,
-                                   CALC_MODULE_VER_PATCH);
-        break;
-
-    case CALC_OP_GET_RESULT:
-    {
-        crumbs_msg_init(reply, CALC_TYPE_ID, CALC_OP_GET_RESULT);
-        crumbs_msg_add_u32(reply, g_last_result);
-        break;
+        /* Copy 16-byte entry directly to reply data */
+        memcpy(reply->data, &g_history[entry_idx], 16);
+        reply->data_len = 16;
     }
-
-    case CALC_OP_GET_HIST_META:
-    {
-        crumbs_msg_init(reply, CALC_TYPE_ID, CALC_OP_GET_HIST_META);
-        crumbs_msg_add_u8(reply, g_history_count);
-        crumbs_msg_add_u8(reply, g_history_write_pos);
-        break;
-    }
-
-    case CALC_OP_GET_HIST_0:
-    case CALC_OP_GET_HIST_1:
-    case CALC_OP_GET_HIST_2:
-    case CALC_OP_GET_HIST_3:
-    case CALC_OP_GET_HIST_4:
-    case CALC_OP_GET_HIST_5:
-    case CALC_OP_GET_HIST_6:
-    case CALC_OP_GET_HIST_7:
-    case CALC_OP_GET_HIST_8:
-    case CALC_OP_GET_HIST_9:
-    case CALC_OP_GET_HIST_10:
-    case CALC_OP_GET_HIST_11:
-    {
-        uint8_t entry_idx = ctx->requested_opcode - CALC_OP_GET_HIST_0;
-
-        crumbs_msg_init(reply, CALC_TYPE_ID, ctx->requested_opcode);
-
-        /* Check if entry exists */
-        if (entry_idx < g_history_count)
-        {
-            /* Copy 16-byte entry directly to reply data */
-            memcpy(reply->data, &g_history[entry_idx], 16);
-            reply->data_len = 16;
-        }
-        else
-        {
-            /* Entry doesn't exist - return empty message */
-            reply->data_len = 0;
-        }
-        break;
-    }
-
-    default:
-        /* Unknown opcode - return empty message */
-        crumbs_msg_init(reply, CALC_TYPE_ID, ctx->requested_opcode);
-        break;
-    }
+    /* else data_len stays 0 — empty reply for non-existent entry */
 }
 
 /* ============================================================================
@@ -341,8 +312,13 @@ void setup()
     crumbs_register_handler(&ctx, CALC_OP_MUL, handler_mul, nullptr);
     crumbs_register_handler(&ctx, CALC_OP_DIV, handler_div, nullptr);
 
-    /* Register GET operation callback */
-    crumbs_set_callbacks(&ctx, nullptr, on_request, nullptr);
+    /* Register GET operation reply handlers */
+    crumbs_register_reply_handler(&ctx, 0,                   reply_handler_version,       nullptr);
+    crumbs_register_reply_handler(&ctx, CALC_OP_GET_RESULT,  reply_handler_get_result,    nullptr);
+    crumbs_register_reply_handler(&ctx, CALC_OP_GET_HIST_META, reply_handler_get_hist_meta, nullptr);
+
+    /* History entry GETs fall through to on_request_hist (see comment above that function) */
+    crumbs_set_callbacks(&ctx, nullptr, on_request_hist, nullptr);
 
     Serial.println("Ready");
 }
