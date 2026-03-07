@@ -23,7 +23,6 @@ Variable-length I²C messaging with CRC-8 validation
 
 | Field      | Size       | Range         | Available | Description                      |
 | ---------- | ---------- | ------------- | --------- | -------------------------------- |
-| `address`  | 1 byte     | `0x08`-`0x77` | 112       | I²C address (not serialized)     |
 | `type_id`  | 1 byte     | `0x01`-`0xFF` | 255       | Device type identifier           |
 | `opcode`   | 1 byte     | `0x01`-`0xFD` | 253       | Command identifier (per type_id) |
 | `data_len` | 1 byte     | `0`-`27`      | 28        | Payload byte count               |
@@ -32,9 +31,9 @@ Variable-length I²C messaging with CRC-8 validation
 
 **Notes:**
 
-- `address` field exists in struct but is not serialized (used for routing only)
+- The I²C address is handled by the transport layer (not part of the CRUMBS frame)
 - Maximum 31 bytes ensures Arduino Wire compatibility
-- CRC covers `type_id`, `opcode`, `data_len`, and `data[]` (excludes address and CRC itself)
+- CRC covers `type_id`, `opcode`, `data_len`, and `data[]` (excludes `crc8` itself)
 - Payload is opaque bytes; applications encode floats, ints, structs, etc. as needed
 
 ---
@@ -195,7 +194,7 @@ if (crumbs_version < 1003) {  // Require >= 0.10.3
 | Initial    | `0x00`                                    |
 | Algorithm  | Nibble-based (4-bit chunks)               |
 | Coverage   | `type_id`, `opcode`, `data_len`, `data[]` |
-| Excluded   | `address`, `crc8` field itself            |
+| Excluded   | `crc8` field itself                       |
 
 Implementation: `crc8_nibble_calculate()` from `src/crc/crc8_nibble.c`
 

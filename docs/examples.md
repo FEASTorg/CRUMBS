@@ -9,16 +9,17 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 **Audience:** New users learning CRUMBS fundamentals  
 **Purpose:** Understand protocol, encoding, I2C communication
 
-| Platform   | Examples                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------ |
-| Arduino    | [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/)                     |
-|            | [simple_controller](../examples/core_usage/arduino/simple_controller/)                     |
-|            | [simple_peripheral_noncrumbs](../examples/core_usage/arduino/simple_peripheral_noncrumbs/) |
-|            | [display_peripheral](../examples/core_usage/arduino/display_peripheral/)                   |
-|            | [display_controller](../examples/core_usage/arduino/display_controller/)                   |
-| PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                  |
-|            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                  |
-| Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                       |
+| Platform   | Examples                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------ |
+| Arduino    | [hello_peripheral](../examples/core_usage/arduino/hello_peripheral/) — minimal peripheral                    |
+|            | [hello_controller](../examples/core_usage/arduino/hello_controller/) — minimal controller                    |
+|            | [basic_peripheral](../examples/core_usage/arduino/basic_peripheral/) — multi-command with state              |
+|            | [basic_controller](../examples/core_usage/arduino/basic_controller/) — key command interface                 |
+|            | [advanced_controller](../examples/core_usage/arduino/advanced_controller/) — production patterns             |
+|            | [basic_peripheral_noncrumbs](../examples/core_usage/arduino/basic_peripheral_noncrumbs/) — non-CRUMBS device |
+| PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                                    |
+|            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                                    |
+| Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                                         |
 
 **Start here:** Learn message structure, encoding/decoding, basic request-reply patterns.
 
@@ -35,9 +36,10 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 
 **Key concepts:**
 
-- Handler registration with `crumbs_register_handler()`
+- Handler registration with `crumbs_register_handler()` for SET ops
+- Reply handler registration with `crumbs_register_reply_handler()` for GET ops
 - SET_REPLY pattern for querying data
-- `on_request` callback for GET operations
+- `on_request` callback as fallback for GET operations
 
 See [handlers_usage/README.md](../examples/handlers_usage/README.md) for detailed handler pattern documentation.
 
@@ -64,8 +66,9 @@ See [families_usage/README.md](../examples/families_usage/README.md) for overvie
 ## Learning Path
 
 1. **Start with Tier 1:** Understand protocol basics
-   - Flash [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/) and [simple_controller](../examples/core_usage/arduino/simple_controller/)
+   - Flash [hello_peripheral](../examples/core_usage/arduino/hello_peripheral/) and [hello_controller](../examples/core_usage/arduino/hello_controller/)
    - Study encoding/decoding, observe serial output
+   - Expand to [basic_peripheral](../examples/core_usage/arduino/basic_peripheral/) and [basic_controller](../examples/core_usage/arduino/basic_controller/) for multi-command patterns
 2. **Move to Tier 2:** Learn production patterns
    - Study [mock_peripheral](../examples/handlers_usage/platformio/mock_peripheral/) handler registration
    - Test [mock_controller](../examples/handlers_usage/platformio/mock_controller/) SET_REPLY queries
@@ -119,52 +122,7 @@ Instead of using a switch statement inside `on_message`, register individual han
 
 #### Arduino Peripheral with Handlers
 
-```cpp
-#include <crumbs.h>
-#include <crumbs_arduino.h>
-
-#define CMD_ECHO   0x01
-#define CMD_PRINT  0x02
-#define CMD_TOGGLE 0x03
-
-static crumbs_context_t ctx;
-
-void handler_echo(crumbs_context_t *ctx, uint8_t cmd,
-                  const uint8_t *data, uint8_t len, void *user) {
-    // Store received data for later retrieval
-    memcpy(g_echo_buffer, data, len);
-    g_echo_len = len;
-}
-
-void handler_print(crumbs_context_t *ctx, uint8_t cmd,
-                   const uint8_t *data, uint8_t len, void *user) {
-    // Print message to serial
-    for (uint8_t i = 0; i < len; i++) {
-        Serial.write(data[i]);
-    }
-    Serial.println();
-}
-
-void handler_toggle(crumbs_context_t *ctx, uint8_t cmd,
-                    const uint8_t *data, uint8_t len, void *user) {
-    // Toggle state
-    g_state = !g_state;
-}
-
-void setup() {
-    crumbs_arduino_init_peripheral(&ctx, 0x08);
-
-    // Register per-command handlers
-    crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);
-    crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);
-    crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);
-
-    // Set on_request callback for GET operations
-    crumbs_set_callbacks(&ctx, NULL, on_request, NULL);
-}
-
-void loop() { }
-```
+`cpp\n#include <crumbs.h>\n#include <crumbs_arduino.h>\n#include <crumbs_message_helpers.h>\n\n#define MY_TYPE_ID 0x10\n#define CMD_ECHO    0x01\n#define CMD_PRINT   0x02\n#define CMD_TOGGLE  0x03\n#define CMD_GET_ECHO 0x81  // GET: retrieve last echoed data\n\nstatic crumbs_context_t ctx;\n\nvoid handler_echo(crumbs_context_t *ctx, uint8_t cmd,\n                  const uint8_t *data, uint8_t len, void *user) {\n    memcpy(g_echo_buffer, data, len);\n    g_echo_len = len;\n}\n\nvoid handler_print(crumbs_context_t *ctx, uint8_t cmd,\n                   const uint8_t *data, uint8_t len, void *user) {\n    for (uint8_t i = 0; i < len; i++) Serial.write(data[i]);\n    Serial.println();\n}\n\nvoid handler_toggle(crumbs_context_t *ctx, uint8_t cmd,\n                    const uint8_t *data, uint8_t len, void *user) {\n    g_state = !g_state;\n}\n\nvoid reply_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {\n    (void)ctx; (void)user;\n    crumbs_build_version_reply(reply, MY_TYPE_ID, 1, 0, 0);\n}\n\nvoid reply_get_echo(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {\n    (void)ctx; (void)user;\n    crumbs_msg_init(reply, MY_TYPE_ID, CMD_GET_ECHO);\n    crumbs_msg_add_bytes(reply, g_echo_buffer, g_echo_len);\n}\n\nvoid setup() {\n    crumbs_arduino_init_peripheral(&ctx, 0x08);\n\n    // Register SET handlers\n    crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);\n    crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);\n    crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);\n\n    // Register GET reply handlers\n    crumbs_register_reply_handler(&ctx, 0x00,         reply_version,  NULL);\n    crumbs_register_reply_handler(&ctx, CMD_GET_ECHO, reply_get_echo, NULL);\n}\n\nvoid loop() { }\n`
 
 See [handlers_usage](../examples/handlers_usage/) for complete working examples.
 

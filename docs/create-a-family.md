@@ -93,7 +93,7 @@ static inline int therm_send_set_sample_rate(const crumbs_device_t *dev, uint8_t
 
 ## Step 4: Write the query functions
 
-One query function per GET command. It sends the SET_REPLY trigger that tells the peripheral which opcode to include in its next read response. Mark them `@internal` — they are called by the corresponding `_get_*` wrapper and should rarely be called directly.
+One query function per GET command. It sends the SET*REPLY trigger that tells the peripheral which opcode to include in its next read response. Mark them `@internal` — they are called by the corresponding `\_get*\*` wrapper and should rarely be called directly.
 
 ```c
 /** @internal Used by therm_get_temp(); prefer that for combined query+read. */
@@ -221,11 +221,13 @@ For `therm_get_temp` the multi-line parse step must first be extracted into a na
 (`therm_parse_temp`) and then passed to the macro, or written by hand as in Step 6.
 
 **What the macros cover:**
+
 - `CRUMBS_DEFINE_GET_OP` — standard 1:1 opcode→result GETs (no extra query parameters)
 - `CRUMBS_DEFINE_SEND_OP` — single-parameter SETs
 - `CRUMBS_DEFINE_SEND_OP_0` — zero-parameter SETs (e.g. a `clear` command)
 
 **What must still be written by hand:**
+
 - SET operations with 2+ parameters
 - Parameterized queries (e.g. "get history entry N") where the index must be packed into the query payload
 - Parse logic — result structs and parse functions are always hand-written
@@ -397,12 +399,12 @@ When both reply handlers and `on_request` are configured, reply handlers take pr
 
 ### Choosing the right mechanism
 
-| Mechanism | Use for | Notes |
-|-----------|---------|-------|
-| `crumbs_register_handler()` | SET operations | One per opcode; preferred for all incoming writes |
-| `crumbs_register_reply_handler()` | GET operations | One per opcode; preferred for all read replies |
-| `on_request` callback | GET operations (alternative) | Single switch; backward-compatible; used as fallback when no reply handler matches |
-| `on_message` callback | Advanced use only | Fires before handler table for every write; for logging/monitors, not device logic |
+| Mechanism                         | Use for                      | Notes                                                                              |
+| --------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| `crumbs_register_handler()`       | SET operations               | One per opcode; preferred for all incoming writes                                  |
+| `crumbs_register_reply_handler()` | GET operations               | One per opcode; preferred for all read replies                                     |
+| `on_request` callback             | GET operations (alternative) | Single switch; backward-compatible; used as fallback when no reply handler matches |
+| `on_message` callback             | Advanced use only            | Fires before handler table for every write; for logging/monitors, not device logic |
 
 `hello_peripheral.ino` uses `on_message` for brevity (one callback, no handler table). For a real
 family peripheral, use `crumbs_register_handler()` for each SET opcode and

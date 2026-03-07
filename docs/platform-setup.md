@@ -36,28 +36,40 @@ Create a new sketch:
 
 ```cpp
 #include <crumbs_arduino.h>
+#include <crumbs_message_helpers.h>
 
 #define I2C_ADDRESS 0x08
 
 crumbs_context_t ctx;
+static uint8_t g_led_state = 0;
 
-void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg) {
-    if (msg->data_len >= 1) {
-        digitalWrite(LED_BUILTIN, msg->data[0] ? HIGH : LOW);
-    }
+static void reply_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *u)
+{
+    (void)ctx; (void)u;
+    crumbs_build_version_reply(reply, 0x01, 1, 0, 0);  // type_id, major, minor, patch
 }
 
-void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
-    reply->type_id = 1;
-    reply->opcode = 0;
-    reply->data_len = 1;
-    reply->data[0] = digitalRead(LED_BUILTIN);
+static void reply_get_state(crumbs_context_t *ctx, crumbs_message_t *reply, void *u)
+{
+    (void)ctx; (void)u;
+    crumbs_msg_init(reply, 0x01, 0x80);
+    crumbs_msg_add_u8(reply, g_led_state);
+}
+
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
+{
+    if (msg->opcode == 0x01 && msg->data_len >= 1) {
+        g_led_state = msg->data[0];
+        digitalWrite(LED_BUILTIN, g_led_state ? HIGH : LOW);
+    }
 }
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     crumbs_arduino_init_peripheral(&ctx, I2C_ADDRESS);
-    crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
+    crumbs_set_callbacks(&ctx, on_message, NULL, NULL);
+    crumbs_register_reply_handler(&ctx, 0x00, reply_version,   NULL);  // version query
+    crumbs_register_reply_handler(&ctx, 0x80, reply_get_state, NULL);  // GET state
 }
 
 void loop() {
@@ -67,12 +79,14 @@ void loop() {
 
 **Upload:** Select board/port, upload, wire I²C + GND + pull-ups.
 
-**Always delay 10ms between send/read:**
+**Always delay 10 ms between send/read:**
 
 ```cpp
 crumbs_controller_send(&ctx, 0x08, &msg, crumbs_arduino_wire_write, NULL);
 delay(10);
-crumbs_arduino_read(NULL, 0x08, buf, sizeof(buf), 5000);
+
+crumbs_message_t reply;
+crumbs_controller_read(&ctx, 0x08, &reply, crumbs_arduino_read, NULL);
 ```
 
 ### First Program (Controller)
@@ -268,16 +282,12 @@ cmake --build build --parallel
 git clone https://github.com/FEASTorg/CRUMBS.git
 cd CRUMBS
 
-# Configure with Linux HAL
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-      -DCRUMBS_ENABLE_LINUX_HAL=ON \
-      -DCRUMBS_BUILD_EXAMPLES=ON
+# Configure and build (Linux preset enables the HAL and examples)
+cmake --preset linux
+cmake --build --preset linux
 
-# Build
-cmake --build build --parallel
-
-# Optional: System-wide install
-sudo cmake --install build --prefix /usr/local
+# Optional: system-wide install
+sudo cmake --install build-linux --prefix /usr/local
 ```
 
 ### I²C Device Permissions
@@ -550,11 +560,12 @@ sudo ./build/crumbs_simple_linux_controller scan strict
 Once your platform is set up and basic communication is working:
 
 1. **Work through examples** — Progressive tutorials in `examples/core_usage/`
-   - Start with `hello_peripheral/` (Arduino)
+   - Start with `hello_peripheral/` + `hello_controller/` (Arduino)
    - Or `simple_controller/` (Linux)
 
-2. **Learn handler dispatch** — Replace switch statements with per-command handlers
-   - See `examples/handlers_usage/`
+2. **Learn handler dispatch** — Register per-opcode handlers instead of switch statements
+   - SET ops: `crumbs_register_handler()` — see `examples/handlers_usage/`
+   - GET ops: `crumbs_register_reply_handler()` — see `examples/families_usage/lhwit_family/`
    - Read [API Reference: Handler Dispatch](api-reference.md#handler-dispatch)
 
 3. **Use message helpers** — Type-safe payload builders

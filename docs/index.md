@@ -33,27 +33,34 @@ crumbs_controller_send(&ctx, 0x08, &msg, crumbs_arduino_wire_write, NULL);
 ```c
 // Peripheral (Arduino HAL)
 #include <crumbs_arduino.h>
+#include <crumbs_message_helpers.h>
 
 crumbs_context_t ctx;
+static uint8_t g_state = 0;
 
-void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg) {
-    // Process incoming command
-    if (msg->data_len >= 1) {
-        digitalWrite(LED_BUILTIN, msg->data[0] ? HIGH : LOW);
-    }
+static void reply_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *u)
+{
+    (void)ctx; (void)u;
+    crumbs_build_version_reply(reply, 0x01, 1, 0, 0);
 }
 
-void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
-    // Build reply for I²C read
-    reply->type_id = 1;
-    reply->opcode = 0;
-    reply->data_len = 1;
-    reply->data[0] = digitalRead(LED_BUILTIN);
+static void reply_get_state(crumbs_context_t *ctx, crumbs_message_t *reply, void *u)
+{
+    (void)ctx; (void)u;
+    crumbs_msg_init(reply, 0x01, 0x80);
+    crumbs_msg_add_u8(reply, g_state);
+}
+
+void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg) {
+    if (msg->opcode == 0x01 && msg->data_len >= 1)
+        g_state = msg->data[0];
 }
 
 void setup() {
     crumbs_arduino_init_peripheral(&ctx, 0x08);
-    crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
+    crumbs_set_callbacks(&ctx, on_message, NULL, NULL);
+    crumbs_register_reply_handler(&ctx, 0x00, reply_version,   NULL);
+    crumbs_register_reply_handler(&ctx, 0x80, reply_get_state, NULL);
 }
 ```
 
@@ -61,11 +68,13 @@ void setup() {
 
 - **Variable-length payload** (0–27 bytes, 4–31 total frame)
 - **Controller/peripheral** (one controller, up to 112 devices)
-- **Handler dispatch** (per-opcode callbacks, O(n) lookup)
+- **Handler dispatch** (per-opcode SET handlers via `crumbs_register_handler`)
+- **Reply handler dispatch** (per-opcode GET handlers via `crumbs_register_reply_handler`)
 - **Message helpers** (type-safe: u8, u16, u32, i32, float)
-- **Event callbacks** (on_message, on_request)
+- **Event callbacks** (`on_message`, `on_request` fallback)
 - **CRC-8 integrity** (auto validation, error stats)
 - **Discovery** (scan for compatible devices)
+- **Bound-device handle** (`crumbs_device_t` groups transport fields per device)
 - **Platforms** (Arduino, PlatformIO, Linux)
 - **Zero allocation** (deterministic, RTOS-safe)
 
@@ -129,7 +138,6 @@ See [Architecture](architecture.md) for complete design documentation.
 
 ```c
 typedef struct {
-    uint8_t address;      // Device I²C address (not serialized)
     uint8_t type_id;      // Device/module type identifier
     uint8_t opcode;       // Command/query opcode
     uint8_t data_len;     // Payload length (0–27)
@@ -166,11 +174,24 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
                                   size_t out_buf_len,
                                   size_t *out_len);
 
-// Handler dispatch
+// Handler dispatch (SET ops)
 int crumbs_register_handler(crumbs_context_t *ctx,
                             uint8_t opcode,
                             crumbs_handler_fn fn,
                             void *user_data);
+
+// Reply handler dispatch (GET ops)
+int crumbs_register_reply_handler(crumbs_context_t *ctx,
+                                  uint8_t opcode,
+                                  crumbs_reply_fn fn,
+                                  void *user_data);
+
+// Controller read (symmetric counterpart to crumbs_controller_send)
+int crumbs_controller_read(crumbs_context_t *ctx,
+                           uint8_t target_addr,
+                           crumbs_message_t *out_msg,
+                           crumbs_i2c_read_fn read_fn,
+                           void *read_ctx);
 ```
 
 ### Message Helpers
