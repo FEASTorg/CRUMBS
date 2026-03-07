@@ -45,6 +45,14 @@ All notable changes to CRUMBS are documented in this file.
   - `CRUMBS_DEFINE_SEND_OP_0(family, name, type_id, opcode)` — zero-parameter variant (e.g. `display_send_clear`)
   - Multi-parameter SETs and parameterized GET queries must still be written as normal `static inline` functions; the lhwit_family headers serve as reference implementations
 
+- **`crumbs_register_reply_handler()`** (`src/crumbs.h`, `src/core/crumbs_core.c`)
+  - New per-opcode reply dispatch for peripheral GET ops — symmetric counterpart to `crumbs_register_handler()` for SET ops
+  - New typedef `crumbs_reply_fn`: `void (*)(crumbs_context_t*, crumbs_message_t*, void*)` — same shape as `crumbs_handler_fn` but for reply builders
+  - `crumbs_peripheral_build_reply()` updated to check the reply handler table first; falls through to `on_request` callback if no matching handler is registered (fully backward-compatible)
+  - Reply handler table added to `crumbs_context_s` using the same `CRUMBS_MAX_HANDLERS`-sized parallel arrays as the SET handler table
+  - `crumbs_init()` updated to zero `reply_handler_count`
+  - `test_reply_handler.c` added: 12 tests covering registration, dispatch, fall-through, priority, overwrite, unregister, table-full, and user_data forwarding
+
 ### Fixed
 
 - **`display/src/main.cpp` `on_request` default case** — missing `crumbs_msg_init` fallback added

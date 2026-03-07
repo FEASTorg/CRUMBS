@@ -127,6 +127,22 @@ extern "C"
         crumbs_message_t *msg);
 
     /**
+     * @brief Reply builder function type for per-opcode GET dispatch.
+     *
+     * Registered with crumbs_register_reply_handler() and called from
+     * crumbs_peripheral_build_reply() when ctx->requested_opcode matches.
+     * The handler must populate @p reply with the response data.
+     *
+     * @param ctx       Active CRUMBS context (peripheral role).
+     * @param reply     Message to fill with the reply data.
+     * @param user_data Opaque pointer registered with the handler.
+     */
+    typedef void (*crumbs_reply_fn)(
+        struct crumbs_context_s *ctx,
+        crumbs_message_t *reply,
+        void *user_data);
+
+    /**
      * @brief Command handler function type for dispatch-based message handling.
      *
      * Handlers are registered per opcode and called when a message with
@@ -187,6 +203,18 @@ extern "C"
         crumbs_handler_fn handlers[CRUMBS_MAX_HANDLERS]; /**< Handler functions. */
         void *handler_userdata[CRUMBS_MAX_HANDLERS];     /**< User data for each handler. */
                                                          /** @} */
+
+        /** @name Reply Handler Dispatch Table
+         *  Per-opcode reply-builder functions for peripheral GET ops.
+         *  Dispatched by crumbs_peripheral_build_reply() when ctx->requested_opcode
+         *  matches; on_request is called as fallback when no match is found.
+         *  Size controlled by CRUMBS_MAX_HANDLERS.
+         *  @{ */
+        uint8_t reply_handler_count;                              /**< Number of registered reply handlers. */
+        uint8_t reply_handler_opcode[CRUMBS_MAX_HANDLERS];        /**< Opcode for each reply handler slot. */
+        crumbs_reply_fn reply_handlers[CRUMBS_MAX_HANDLERS];      /**< Reply handler functions. */
+        void *reply_handler_userdata[CRUMBS_MAX_HANDLERS];        /**< User data for each reply handler. */
+                                                                  /** @} */
 #endif                                                   /* CRUMBS_MAX_HANDLERS > 0 */
     };
 
@@ -287,6 +315,28 @@ extern "C"
      */
     int crumbs_unregister_handler(crumbs_context_t *ctx,
                                   uint8_t opcode);
+
+    /**
+     * @brief Register a reply handler for a specific GET opcode.
+     *
+     * The handler is invoked by crumbs_peripheral_build_reply() when
+     * ctx->requested_opcode matches. It provides per-opcode dispatch for GET
+     * replies, symmetric with the crumbs_register_handler() pattern for SETs.
+     *
+     * When both a reply handler and an on_request callback are configured,
+     * the reply handler takes priority; on_request is called only when no
+     * matching reply handler is found (backward-compatible).
+     *
+     * @param ctx       Context to register on.
+     * @param opcode    GET opcode to handle (0-255).
+     * @param fn        Reply-builder function (NULL to unregister).
+     * @param user_data Opaque pointer passed to fn.
+     * @return 0 on success, -1 if ctx is NULL or handler table is full.
+     */
+    int crumbs_register_reply_handler(crumbs_context_t *ctx,
+                                      uint8_t opcode,
+                                      crumbs_reply_fn fn,
+                                      void *user_data);
 
     /** @} */
 
@@ -444,8 +494,12 @@ extern "C"
     /**
      * @brief Build an encoded reply frame for use inside an I2C request handler.
      *
-     * If no on_request callback is configured the function returns success with
-     * *out_len set to 0.
+     * Dispatches in order:
+     * 1. Per-opcode reply handler table (crumbs_register_reply_handler) for
+     *    ctx->requested_opcode — preferred for family peripherals.
+     * 2. on_request callback — called when no matching reply handler is found
+     *    (backward-compatible with existing code).
+     * 3. No reply configured — returns success with *out_len set to 0.
      *
      * @param ctx Active CRUMBS context (peripheral role).
      * @param out_buf Buffer to receive encoded frame.

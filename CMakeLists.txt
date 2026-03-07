@@ -130,6 +130,10 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_reply_flow tests/test_reply_flow.c)
     target_link_libraries(test_reply_flow PRIVATE crumbs)
     add_test(NAME reply_flow_test COMMAND test_reply_flow)
+
+    add_executable(test_reply_handler tests/test_reply_handler.c)
+    target_link_libraries(test_reply_handler PRIVATE crumbs)
+    add_test(NAME reply_handler_test COMMAND test_reply_handler)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -150,6 +154,7 @@ install(FILES
     src/crumbs_linux.h
     src/crumbs_message.h
     src/crumbs_message_helpers.h
+    src/crumbs_ops.h
     src/crumbs_version.h
     DESTINATION include/crumbs
 )

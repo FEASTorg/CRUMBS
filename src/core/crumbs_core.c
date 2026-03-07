@@ -68,6 +68,7 @@ void crumbs_init(crumbs_context_t *ctx,
      */
 #if CRUMBS_MAX_HANDLERS > 0
     ctx->handler_count = 0u;
+    ctx->reply_handler_count = 0u;
 #endif
 }
 
@@ -180,6 +181,76 @@ int crumbs_unregister_handler(crumbs_context_t *ctx,
                               uint8_t opcode)
 {
     return crumbs_register_handler(ctx, opcode, NULL, NULL);
+}
+
+/**
+ * @brief Register a reply handler for a specific GET opcode.
+ *
+ * Uses identical slot management logic to crumbs_register_handler.
+ */
+int crumbs_register_reply_handler(crumbs_context_t *ctx,
+                                  uint8_t opcode,
+                                  crumbs_reply_fn fn,
+                                  void *user_data)
+{
+#if CRUMBS_MAX_HANDLERS == 0
+    /* Handlers disabled */
+    (void)ctx;
+    (void)opcode;
+    (void)fn;
+    (void)user_data;
+    return -1;
+#else
+    if (!ctx)
+    {
+        return -1;
+    }
+
+    /* Check if opcode already registered (overwrite or unregister). */
+    for (uint8_t i = 0; i < ctx->reply_handler_count; i++)
+    {
+        if (ctx->reply_handler_opcode[i] == opcode)
+        {
+            if (fn == NULL)
+            {
+                /* Unregister: remove slot by swapping with last */
+                ctx->reply_handler_count--;
+                if (i < ctx->reply_handler_count)
+                {
+                    ctx->reply_handler_opcode[i]   = ctx->reply_handler_opcode[ctx->reply_handler_count];
+                    ctx->reply_handlers[i]         = ctx->reply_handlers[ctx->reply_handler_count];
+                    ctx->reply_handler_userdata[i] = ctx->reply_handler_userdata[ctx->reply_handler_count];
+                }
+            }
+            else
+            {
+                /* Overwrite existing */
+                ctx->reply_handlers[i]         = fn;
+                ctx->reply_handler_userdata[i] = user_data;
+            }
+            return 0;
+        }
+    }
+
+    /* Not found - add new handler if fn is non-NULL */
+    if (fn == NULL)
+    {
+        /* Nothing to unregister */
+        return 0;
+    }
+
+    if (ctx->reply_handler_count >= CRUMBS_MAX_HANDLERS)
+    {
+        /* Table full */
+        return -1;
+    }
+
+    uint8_t slot = ctx->reply_handler_count++;
+    ctx->reply_handler_opcode[slot]   = opcode;
+    ctx->reply_handlers[slot]         = fn;
+    ctx->reply_handler_userdata[slot] = user_data;
+    return 0;
+#endif
 }
 
 /**
@@ -491,7 +562,13 @@ int crumbs_peripheral_handle_receive(crumbs_context_t *ctx,
 }
 
 /**
- * @brief Build an encoded reply using the configured on_request callback.
+ * @brief Build an encoded reply using reply handlers or the on_request callback.
+ *
+ * Dispatch order:
+ *   1. Per-opcode reply handler table (crumbs_register_reply_handler) for
+ *      ctx->requested_opcode.
+ *   2. on_request callback as fallback (backward-compatible).
+ *   3. No reply configured — returns 0 with *out_len = 0.
  */
 int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
                                   uint8_t *out_buf,
@@ -509,19 +586,41 @@ int crumbs_peripheral_build_reply(crumbs_context_t *ctx,
         return -1;
     }
 
-    if (!ctx->on_request)
-    {
-        CRUMBS_DBG("reply: no on_request callback\n");
-        /* No reply configured. */
-        return 0;
-    }
-
     crumbs_message_t msg;
     memset(&msg, 0, sizeof(msg));
 
-    /* Allow application to fill in the reply. */
-    CRUMBS_DBG("reply: calling on_request\n");
-    ctx->on_request(ctx, &msg);
+    int dispatched = 0;
+
+#if CRUMBS_MAX_HANDLERS > 0
+    /* Check per-opcode reply handler table first. */
+    for (uint8_t i = 0; i < ctx->reply_handler_count; i++)
+    {
+        if (ctx->reply_handler_opcode[i] == ctx->requested_opcode)
+        {
+            crumbs_reply_fn handler = ctx->reply_handlers[i];
+            if (handler)
+            {
+                CRUMBS_DBG("reply: dispatch opcode 0x%02X via reply handler (slot %u)\n",
+                           ctx->requested_opcode, i);
+                handler(ctx, &msg, ctx->reply_handler_userdata[i]);
+                dispatched = 1;
+            }
+            break;
+        }
+    }
+#endif /* CRUMBS_MAX_HANDLERS > 0 */
+
+    if (!dispatched)
+    {
+        if (!ctx->on_request)
+        {
+            CRUMBS_DBG("reply: no reply handler or on_request callback\n");
+            return 0;
+        }
+
+        CRUMBS_DBG("reply: calling on_request\n");
+        ctx->on_request(ctx, &msg);
+    }
 
     size_t written = crumbs_encode_message(&msg, out_buf, out_buf_len);
     if (written == 0u)
