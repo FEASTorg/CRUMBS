@@ -44,6 +44,7 @@
  * ============================================================================ */
 
 static crumbs_context_t ctx;
+static crumbs_device_t  dev;
 static char cmd_buffer[MAX_CMD_LEN];
 static uint8_t cmd_len = 0;
 
@@ -69,81 +70,34 @@ static void print_help()
 }
 
 /**
- * @brief Query peripheral and print reply.
+ * @brief Query peripheral and print result using the combined _get_* API.
  */
 static int query_and_print(uint8_t query_op, const char *label)
 {
-    int rc;
-
-    /* Send query using helper function */
-    if (query_op == MOCK_OP_GET_ECHO)
-    {
-        rc = mock_query_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
-    }
-    else if (query_op == MOCK_OP_GET_STATUS)
-    {
-        rc = mock_query_status(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
-    }
-    else if (query_op == MOCK_OP_GET_INFO)
-    {
-        rc = mock_query_info(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
-    }
-    else
-    {
-        Serial.print("Error: Unknown query opcode 0x");
-        Serial.println(query_op, HEX);
-        return -1;
-    }
-
-    if (rc != 0)
-    {
-        Serial.print("Error: Failed to send query (");
-        Serial.print(rc);
-        Serial.println(")");
-        return -1;
-    }
-
-    delay(10); /* Give peripheral time to process */
-
-    /* Read reply */
-    uint8_t raw[32];
-    int n = crumbs_arduino_read(NULL, PERIPHERAL_ADDR, raw, sizeof(raw), 10000);
-    if (n < 0)
-    {
-        Serial.println("Error: No response from peripheral");
-        return -1;
-    }
-
-    /* Decode reply */
-    crumbs_message_t reply;
-    rc = crumbs_decode_message(raw, n, &reply, &ctx);
-    if (rc != 0)
-    {
-        Serial.print("Error: Failed to decode reply (");
-        Serial.print(rc);
-        Serial.println(")");
-        return -1;
-    }
-
-    /* Print reply */
     Serial.print(label);
     Serial.print(": ");
 
-    if (query_op == MOCK_OP_GET_INFO || query_op == MOCK_OP_GET_ECHO)
+    if (query_op == MOCK_OP_GET_ECHO)
     {
-        /* Print as string */
-        for (uint8_t i = 0; i < reply.data_len; i++)
+        mock_echo_result_t result;
+        int rc = mock_get_echo(&dev, &result);
+        if (rc != 0)
         {
-            if (reply.data[i] >= 32 && reply.data[i] < 127)
-            {
-                Serial.write(reply.data[i]);
-            }
+            Serial.print("Error: Failed to get echo (");
+            Serial.print(rc);
+            Serial.println(")");
+            return rc;
+        }
+        for (uint8_t i = 0; i < result.len; i++)
+        {
+            if (result.data[i] >= 32 && result.data[i] < 127)
+                Serial.write(result.data[i]);
             else
             {
                 Serial.print("<0x");
-                if (reply.data[i] < 0x10)
+                if (result.data[i] < 0x10)
                     Serial.print('0');
-                Serial.print(reply.data[i], HEX);
+                Serial.print(result.data[i], HEX);
                 Serial.print(">");
             }
         }
@@ -151,25 +105,52 @@ static int query_and_print(uint8_t query_op, const char *label)
     }
     else if (query_op == MOCK_OP_GET_STATUS)
     {
-        /* Print status: state + heartbeat period */
-        if (reply.data_len >= 3)
+        mock_status_result_t result;
+        int rc = mock_get_status(&dev, &result);
+        if (rc != 0)
         {
-            uint8_t state;
-            uint16_t period;
-            if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &state) == 0 &&
-                crumbs_msg_read_u16(reply.data, reply.data_len, 1, &period) == 0)
+            Serial.print("Error: Failed to get status (");
+            Serial.print(rc);
+            Serial.println(")");
+            return rc;
+        }
+        Serial.print("Heartbeat: ");
+        Serial.print(result.state ? "ENABLED" : "DISABLED");
+        Serial.print(", Period: ");
+        Serial.print(result.period_ms);
+        Serial.println(" ms");
+    }
+    else if (query_op == MOCK_OP_GET_INFO)
+    {
+        mock_info_result_t result;
+        int rc = mock_get_info(&dev, &result);
+        if (rc != 0)
+        {
+            Serial.print("Error: Failed to get info (");
+            Serial.print(rc);
+            Serial.println(")");
+            return rc;
+        }
+        for (uint8_t i = 0; i < result.len; i++)
+        {
+            if (result.info[i] >= 32 && result.info[i] < 127)
+                Serial.write((uint8_t)result.info[i]);
+            else
             {
-                Serial.print("Heartbeat: ");
-                Serial.print(state ? "ENABLED" : "DISABLED");
-                Serial.print(", Period: ");
-                Serial.print(period);
-                Serial.println(" ms");
+                Serial.print("<0x");
+                if ((uint8_t)result.info[i] < 0x10)
+                    Serial.print('0');
+                Serial.print((uint8_t)result.info[i], HEX);
+                Serial.print(">");
             }
         }
-        else
-        {
-            Serial.println("(invalid data)");
-        }
+        Serial.println();
+    }
+    else
+    {
+        Serial.print("Error: Unknown query opcode 0x");
+        Serial.println(query_op, HEX);
+        return -1;
     }
 
     return 0;
@@ -218,7 +199,7 @@ static void cmd_echo(const char *args)
     }
 
     /* Send using helper function */
-    int rc = mock_send_echo(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL, data, len);
+    int rc = mock_send_echo(&dev, data, len);
     if (rc != 0)
     {
         Serial.println("Error: Failed to send echo");
@@ -246,8 +227,7 @@ static void cmd_heartbeat(const char *args)
     }
 
     /* Send using helper function */
-    int rc = mock_send_heartbeat(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL,
-                                 (uint16_t)period);
+    int rc = mock_send_heartbeat(&dev, (uint16_t)period);
     if (rc != 0)
     {
         Serial.println("Error: Failed to send heartbeat command");
@@ -259,7 +239,7 @@ static void cmd_heartbeat(const char *args)
  */
 static void cmd_toggle()
 {
-    int rc = mock_send_toggle(&ctx, PERIPHERAL_ADDR, crumbs_arduino_wire_write, NULL);
+    int rc = mock_send_toggle(&dev);
     if (rc != 0)
     {
         Serial.println("Error: Failed to send toggle");
@@ -389,6 +369,14 @@ void setup()
 
     /* Initialize CRUMBS context */
     crumbs_init(&ctx, CRUMBS_ROLE_CONTROLLER, 0);
+
+    /* Build bound device handle for mock peripheral */
+    dev.ctx      = &ctx;
+    dev.addr     = PERIPHERAL_ADDR;
+    dev.write_fn = crumbs_arduino_wire_write;
+    dev.read_fn  = crumbs_arduino_read;
+    dev.delay_fn = crumbs_arduino_delay_us;
+    dev.io       = NULL;
 
     /* Initialize I2C as controller */
     Wire.begin();
