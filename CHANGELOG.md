@@ -4,7 +4,13 @@ All notable changes to CRUMBS are documented in this file.
 
 ---
 
-## [Unreleased] - Family Receiver API
+## [Unreleased]
+
+*No changes yet.*
+
+---
+
+## [0.11.0] - Family Receiver API
 
 ### Added
 
