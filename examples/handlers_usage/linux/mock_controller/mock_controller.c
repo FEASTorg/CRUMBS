@@ -50,12 +50,12 @@
 
 static void print_help(void);
 static void trim_whitespace(char *str);
-static int query_and_print(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw,
+static int query_and_print(crumbs_device_t *dev,
                            uint8_t query_op, const char *label);
-static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw);
-static int cmd_echo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
-static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
-static int cmd_toggle(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw);
+static int cmd_scan(crumbs_device_t *dev);
+static int cmd_echo(crumbs_device_t *dev, const char *args);
+static int cmd_heartbeat(crumbs_device_t *dev, const char *args);
+static int cmd_toggle(crumbs_device_t *dev);
 
 /* ============================================================================
  * Help Text
@@ -106,93 +106,72 @@ static void trim_whitespace(char *str)
 }
 
 /**
- * @brief Query peripheral using SET_REPLY and print result.
+ * @brief Query peripheral and print result using the combined _get_* API.
  */
-static int query_and_print(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw,
+static int query_and_print(crumbs_device_t *dev,
                            uint8_t query_op, const char *label)
 {
-    int rc;
-
-    /* Send query using helper function */
-    if (query_op == MOCK_OP_GET_ECHO)
-    {
-        rc = mock_query_echo(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw);
-    }
-    else if (query_op == MOCK_OP_GET_STATUS)
-    {
-        rc = mock_query_status(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw);
-    }
-    else if (query_op == MOCK_OP_GET_INFO)
-    {
-        rc = mock_query_info(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw);
-    }
-    else
-    {
-        fprintf(stderr, "Error: Unknown query opcode 0x%02X\n", query_op);
-        return -1;
-    }
-
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error: Failed to send query (%d)\n", rc);
-        return rc;
-    }
-
-    /* Read response */
-    crumbs_message_t reply;
-    rc = crumbs_linux_read_message(lw, PERIPHERAL_ADDR, ctx, &reply);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error: Failed to read response (%d)\n", rc);
-        return rc;
-    }
-
-    /* Print result based on query type */
     printf("%s: ", label);
 
-    if (query_op == MOCK_OP_GET_INFO || query_op == MOCK_OP_GET_ECHO)
+    if (query_op == MOCK_OP_GET_ECHO)
     {
-        /* Print as string with hex dump */
-        for (uint8_t i = 0; i < reply.data_len; i++)
+        mock_echo_result_t result;
+        int rc = mock_get_echo(dev, &result);
+        if (rc != 0)
         {
-            if (reply.data[i] >= 32 && reply.data[i] < 127)
-            {
-                putchar(reply.data[i]);
-            }
+            fprintf(stderr, "Error: Failed to get echo (%d)\n", rc);
+            return rc;
+        }
+        for (uint8_t i = 0; i < result.len; i++)
+        {
+            if (result.data[i] >= 32 && result.data[i] < 127)
+                putchar(result.data[i]);
             else
-            {
-                printf("<0x%02X>", reply.data[i]);
-            }
+                printf("<0x%02X>", result.data[i]);
         }
         printf("\n");
-
-        if (reply.data_len > 0)
+        if (result.len > 0)
         {
             printf("  Hex: ");
-            for (uint8_t i = 0; i < reply.data_len; i++)
-            {
-                printf("%02X ", reply.data[i]);
-            }
+            for (uint8_t i = 0; i < result.len; i++)
+                printf("%02X ", result.data[i]);
             printf("\n");
         }
     }
     else if (query_op == MOCK_OP_GET_STATUS)
     {
-        if (reply.data_len >= 3)
+        mock_status_result_t result;
+        int rc = mock_get_status(dev, &result);
+        if (rc != 0)
         {
-            uint8_t state;
-            uint16_t period;
-            if (crumbs_msg_read_u8(reply.data, reply.data_len, 0, &state) == 0 &&
-                crumbs_msg_read_u16(reply.data, reply.data_len, 1, &period) == 0)
-            {
-                printf("Heartbeat: %s, Period: %u ms\n",
-                       state ? "ENABLED" : "DISABLED", period);
-            }
+            fprintf(stderr, "Error: Failed to get status (%d)\n", rc);
+            return rc;
         }
-        else
+        printf("Heartbeat: %s, Period: %u ms\n",
+               result.state ? "ENABLED" : "DISABLED", result.period_ms);
+    }
+    else if (query_op == MOCK_OP_GET_INFO)
+    {
+        mock_info_result_t result;
+        int rc = mock_get_info(dev, &result);
+        if (rc != 0)
         {
-            printf("(invalid data)\n");
+            fprintf(stderr, "Error: Failed to get info (%d)\n", rc);
+            return rc;
         }
+        for (uint8_t i = 0; i < result.len; i++)
+        {
+            if (result.info[i] >= 32 && result.info[i] < 127)
+                putchar(result.info[i]);
+            else
+                printf("<0x%02X>", (uint8_t)result.info[i]);
+        }
+        printf("\n");
+    }
+    else
+    {
+        fprintf(stderr, "Error: Unknown query opcode 0x%02X\n", query_op);
+        return -1;
     }
 
     return 0;
@@ -202,13 +181,13 @@ static int query_and_print(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw,
  * Command: scan
  * ============================================================================ */
 
-static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
+static int cmd_scan(crumbs_device_t *dev)
 {
     printf("Scanning for CRUMBS devices (0x03-0x77)...\n");
 
     uint8_t found[128];
     int n = crumbs_linux_scan_for_crumbs(
-        ctx, lw, 0x03, 0x77, 0, /* non-strict */
+        dev->ctx, (crumbs_linux_i2c_t *)dev->io, 0x03, 0x77, 0, /* non-strict */
         found, sizeof(found), 25000);
 
     if (n < 0)
@@ -239,7 +218,7 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
  * Command: echo
  * ============================================================================ */
 
-static int cmd_echo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_echo(crumbs_device_t *dev, const char *args)
 {
     uint8_t data[27];
     uint8_t len = 0;
@@ -275,7 +254,7 @@ static int cmd_echo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *a
     }
 
     /* Send using helper function */
-    int rc = mock_send_echo(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw, data, len);
+    int rc = mock_send_echo(dev, data, len);
     if (rc == 0)
     {
         printf("OK: Sent echo data (%u bytes)\n", len);
@@ -291,7 +270,7 @@ static int cmd_echo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *a
  * Command: heartbeat
  * ============================================================================ */
 
-static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_heartbeat(crumbs_device_t *dev, const char *args)
 {
     if (!args || !*args)
     {
@@ -309,8 +288,7 @@ static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const ch
     }
 
     /* Send using helper function */
-    int rc = mock_send_heartbeat(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw,
-                                 (uint16_t)period);
+    int rc = mock_send_heartbeat(dev, (uint16_t)period);
     if (rc == 0)
     {
         printf("OK: Set heartbeat period to %lu ms\n", period);
@@ -326,10 +304,10 @@ static int cmd_heartbeat(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const ch
  * Command: toggle
  * ============================================================================ */
 
-static int cmd_toggle(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
+static int cmd_toggle(crumbs_device_t *dev)
 {
     /* Send using helper function */
-    int rc = mock_send_toggle(ctx, PERIPHERAL_ADDR, crumbs_linux_i2c_write, lw);
+    int rc = mock_send_toggle(dev);
     if (rc == 0)
     {
         printf("OK: Sent toggle command\n");
@@ -368,6 +346,16 @@ int main(int argc, char **argv)
         fprintf(stderr, "Try: sudo chmod 666 %s\n", i2c_device);
         return 1;
     }
+
+    /* Build bound device handle for mock peripheral */
+    crumbs_device_t dev = {
+        .ctx     = &ctx,
+        .addr    = PERIPHERAL_ADDR,
+        .write_fn = crumbs_linux_i2c_write,
+        .read_fn  = crumbs_linux_read,
+        .delay_fn = crumbs_linux_delay_us,
+        .io      = &lw
+    };
 
     print_help();
 
@@ -409,31 +397,31 @@ int main(int argc, char **argv)
         }
         else if (strcmp(line, "scan") == 0)
         {
-            cmd_scan(&ctx, &lw);
+            cmd_scan(&dev);
         }
         else if (strcmp(line, "echo") == 0)
         {
-            cmd_echo(&ctx, &lw, args);
+            cmd_echo(&dev, args);
         }
         else if (strcmp(line, "heartbeat") == 0)
         {
-            cmd_heartbeat(&ctx, &lw, args);
+            cmd_heartbeat(&dev, args);
         }
         else if (strcmp(line, "toggle") == 0)
         {
-            cmd_toggle(&ctx, &lw);
+            cmd_toggle(&dev);
         }
         else if (strcmp(line, "status") == 0)
         {
-            query_and_print(&ctx, &lw, MOCK_OP_GET_STATUS, "Status");
+            query_and_print(&dev, MOCK_OP_GET_STATUS, "Status");
         }
         else if (strcmp(line, "getecho") == 0)
         {
-            query_and_print(&ctx, &lw, MOCK_OP_GET_ECHO, "Echo data");
+            query_and_print(&dev, MOCK_OP_GET_ECHO, "Echo data");
         }
         else if (strcmp(line, "info") == 0)
         {
-            query_and_print(&ctx, &lw, MOCK_OP_GET_INFO, "Device info");
+            query_and_print(&dev, MOCK_OP_GET_INFO, "Device info");
         }
         else
         {
