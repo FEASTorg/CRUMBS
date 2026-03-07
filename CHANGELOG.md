@@ -68,6 +68,23 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_peripheral_handle_receive` no longer writes `msg.address = ctx->address`
   - `test_handle_receive_sets_address` removed from `tests/test_peripheral_flow.c` (tested a write with no corresponding read)
 
+- **`crumbs_device_t` bound-device handle** (`src/crumbs.h`)
+  - New POD struct `crumbs_device_t { ctx, addr, write_fn, read_fn, delay_fn, io }` that bundles all per-device transport state into one value
+  - All five ops headers updated: every wrapper function now accepts `const crumbs_device_t *dev` instead of the previous explicit `(ctx, addr, write_fn, [read_fn, delay_fn,] io)` parameter list
+    - `led_ops.h` — 3 send, 2 query (internal), 2 get
+    - `servo_ops.h` — 3 send, 2 query (internal), 2 get
+    - `calculator_ops.h` — 4 send, 3 query (internal), 3 get
+    - `display_ops.h` — 4 send, 1 query (internal), 1 get (build/parse helpers unchanged)
+    - `mock_ops.h` — 3 send, 3 query (internal), 3 get
+  - Call sites reduced from 4–7 arguments to 1–3 (e.g. `led_send_set_all(dev, mask)`)
+
+- **Example controllers redesigned around `crumbs_device_t`** (`examples/families_usage/`)
+  - `device_info_t` now embeds `crumbs_device_t dev`; populated once at startup (manual) or once compat passes (discovery)
+  - `resolve_device()` helper replaces the ~30-line `@addr`/index parsing block previously duplicated inside every `cmd_*` function (8 copies eliminated)
+  - `find_device()` and `check_device_compat()` removed; their logic is unified in `resolve_device()`
+  - All `cmd_*` signatures reduced to `(const crumbs_device_t *dev, const char *rest)`
+  - Dispatch in `main()` calls `resolve_device` then passes `&d->dev` to the appropriate `cmd_*`
+
 ---
 
 ## [Unreleased] - Code Quality

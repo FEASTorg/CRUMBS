@@ -44,13 +44,13 @@
  * Configuration
  * ============================================================================ */
 
-/* Device info with index for addressing */
+/* Device info with bound device handle */
 typedef struct
 {
-    uint8_t type_id;
-    uint8_t addr;
-    const char *name;
-    int index; /* Index among devices of same type */
+    uint8_t          type_id;
+    const char      *name;
+    int              index;  /* Index among devices of same type */
+    crumbs_device_t  dev;    /* Fully bound handle — populated at startup */
 } device_info_t;
 
 static device_info_t g_devices[16];
@@ -65,11 +65,12 @@ static int g_device_count = 0;
 static void print_help(void);
 static void cmd_list(void);
 static void trim_whitespace(char *str);
-static int find_device(uint8_t type_id, int index, uint8_t *addr_out);
-static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
-static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
-static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
-static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args);
+static int resolve_device(uint8_t type_id, const char *args,
+                          device_info_t **dev_out, const char **rest_out);
+static int cmd_calculator(const crumbs_device_t *dev, const char *rest);
+static int cmd_led(const crumbs_device_t *dev, const char *rest);
+static int cmd_servo(const crumbs_device_t *dev, const char *rest);
+static int cmd_display(const crumbs_device_t *dev, const char *rest);
 
 /* ============================================================================
  * Help
@@ -133,7 +134,7 @@ static void cmd_list(void)
     for (int i = 0; i < g_device_count; i++)
     {
         printf("[%d] %s at 0x%02X (Type 0x%02X, Index %d)\n",
-               i, g_devices[i].name, g_devices[i].addr,
+               i, g_devices[i].name, g_devices[i].dev.addr,
                g_devices[i].type_id, g_devices[i].index);
     }
     printf("\n");
@@ -144,28 +145,73 @@ static void cmd_list(void)
  * ============================================================================ */
 
 /**
- * @brief Find device address by type and index among devices of that type.
- * @param type_id  Device type ID
- * @param index    Index among devices of same type (0-based)
- * @param addr_out Output address
- * @return 0 on success, -1 if not found
+ * @brief Parse device selector and return the matching device_info_t.
+ *
+ * Accepts "@<hex_addr>" for direct address or "<idx>" for type-indexed lookup.
+ *
+ * @param type_id   Expected device type.
+ * @param args      Args string starting at the selector token.
+ * @param dev_out   Set to the matching device_info_t on success.
+ * @param rest_out  Set to the remainder of args after the selector (points to subcmd).
+ * @return 0 on success, -1 if not found or parse error.
  */
-static int find_device(uint8_t type_id, int index, uint8_t *addr_out)
+static int resolve_device(uint8_t type_id, const char *args,
+                          device_info_t **dev_out, const char **rest_out)
 {
-    int type_count = 0;
-    for (int i = 0; i < g_device_count; i++)
+    const char *cmd_start;
+
+    if (*args == '@')
     {
-        if (g_devices[i].type_id == type_id)
+        unsigned int addr_val;
+        if (sscanf(args, "@%i", &addr_val) != 1)
+            return -1;
+        uint8_t target = (uint8_t)addr_val;
+        cmd_start = strchr(args, ' ');
+        if (!cmd_start)
+            return -1;
+        cmd_start++;
+        for (int i = 0; i < g_device_count; i++)
         {
-            if (type_count == index)
+            if (g_devices[i].dev.addr == target)
             {
-                *addr_out = g_devices[i].addr;
+                *dev_out = &g_devices[i];
+                while (*cmd_start && isspace((unsigned char)*cmd_start))
+                    cmd_start++;
+                *rest_out = cmd_start;
                 return 0;
             }
-            type_count++;
         }
+        printf("Device at 0x%02X not found (run 'list' to see devices)\n", target);
+        return -1;
     }
-    return -1;
+    else
+    {
+        int idx;
+        if (sscanf(args, "%d", &idx) != 1)
+            return -1;
+        int type_count = 0;
+        cmd_start = strchr(args, ' ');
+        if (!cmd_start)
+            return -1;
+        cmd_start++;
+        for (int i = 0; i < g_device_count; i++)
+        {
+            if (g_devices[i].type_id == type_id)
+            {
+                if (type_count == idx)
+                {
+                    *dev_out = &g_devices[i];
+                    while (*cmd_start && isspace((unsigned char)*cmd_start))
+                        cmd_start++;
+                    *rest_out = cmd_start;
+                    return 0;
+                }
+                type_count++;
+            }
+        }
+        printf("Device #%d of type 0x%02X not found (run 'list' to see devices)\n", idx, type_id);
+        return -1;
+    }
 }
 static void trim_whitespace(char *str)
 {
@@ -191,66 +237,18 @@ static void trim_whitespace(char *str)
  * Calculator Commands
  * ============================================================================ */
 
-static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_calculator(const crumbs_device_t *dev, const char *rest)
 {
-    /* Parse device selector: either index or @address */
-    uint8_t addr = 0;
-    const char *cmd_start = args;
-
-    if (*args == '@')
-    {
-        /* Address selector: @0x10 */
-        unsigned int addr_val;
-        if (sscanf(args, "@%i", &addr_val) != 1)
-        {
-            printf("Usage: calculator @<addr> <cmd> or calculator <idx> <cmd>\\n");
-            return -1;
-        }
-        addr = (uint8_t)addr_val;
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command after address\\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-    else
-    {
-        /* Index selector: 0, 1, 2... */
-        int idx;
-        if (sscanf(args, "%d", &idx) != 1)
-        {
-            printf("Usage: calculator <idx> <cmd> or calculator @<addr> <cmd>\\n");
-            return -1;
-        }
-        if (find_device(CALC_TYPE_ID, idx, &addr) != 0)
-        {
-            printf("Calculator #%d not found (run 'list' to see devices)\\n", idx);
-            return -1;
-        }
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command after device index\\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-
-    while (*cmd_start && isspace((unsigned char)*cmd_start))
-        cmd_start++;
-
     char subcmd[32];
-    if (sscanf(cmd_start, "%31s", subcmd) != 1)
+    if (sscanf(rest, "%31s", subcmd) != 1)
     {
-        printf("Usage: calculator <idx|@addr> <add|sub|mul|div|result|history> [args...]\\n");
+        printf("Usage: calculator <idx|@addr> <add|sub|mul|div|result|history> [args...]\n");
         return -1;
     }
 
-    const char *rest = cmd_start + strlen(subcmd);
-    while (*rest && isspace((unsigned char)*rest))
-        rest++;
+    const char *op_rest = rest + strlen(subcmd);
+    while (*op_rest && isspace((unsigned char)*op_rest))
+        op_rest++;
 
     int rc;
 
@@ -258,25 +256,20 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         strcmp(subcmd, "mul") == 0 || strcmp(subcmd, "div") == 0)
     {
         uint32_t a, b;
-        if (sscanf(rest, "%u %u", &a, &b) != 2)
+        if (sscanf(op_rest, "%u %u", &a, &b) != 2)
         {
             printf("Usage: calculator <idx|@addr> %s <a> <b>\n", subcmd);
             return -1;
         }
 
-        /* CRUMBS Pattern: Using canonical helpers from calculator_ops.h
-         * calc_send_*() functions build and send messages using:
-         *   crumbs_msg_init() + crumbs_msg_add_u32() + crumbs_controller_send()
-         * All take: ctx, addr, write_fn, io_ctx, operation-specific params
-         */
         if (strcmp(subcmd, "add") == 0)
-            rc = calc_send_add(ctx, addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+            rc = calc_send_add(dev, a, b);
         else if (strcmp(subcmd, "sub") == 0)
-            rc = calc_send_sub(ctx, addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+            rc = calc_send_sub(dev, a, b);
         else if (strcmp(subcmd, "mul") == 0)
-            rc = calc_send_mul(ctx, addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+            rc = calc_send_mul(dev, a, b);
         else
-            rc = calc_send_div(ctx, addr, crumbs_linux_i2c_write, (void *)lw, a, b);
+            rc = calc_send_div(dev, a, b);
 
         if (rc != 0)
         {
@@ -285,14 +278,13 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         }
 
         printf("OK: %s(%u, %u) sent to 0x%02X. Use 'calculator result' to get answer.\n",
-               subcmd, a, b, addr);
+               subcmd, a, b, dev->addr);
         return 0;
     }
     else if (strcmp(subcmd, "result") == 0)
     {
         calc_result_t res;
-        rc = calc_get_result(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                             crumbs_linux_delay_us, (void *)lw, &res);
+        rc = calc_get_result(dev, &res);
         if (rc != 0)
         {
             fprintf(stderr, "ERROR: calc_get_result failed (%d)\n", rc);
@@ -304,8 +296,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
     else if (strcmp(subcmd, "history") == 0)
     {
         calc_hist_meta_t meta;
-        rc = calc_get_hist_meta(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                                crumbs_linux_delay_us, (void *)lw, &meta);
+        rc = calc_get_hist_meta(dev, &meta);
         if (rc != 0)
             return rc;
 
@@ -314,8 +305,7 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
         for (uint8_t i = 0; i < meta.count; i++)
         {
             calc_hist_entry_t entry;
-            rc = calc_get_hist_entry(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                                     crumbs_linux_delay_us, (void *)lw, i, &entry);
+            rc = calc_get_hist_entry(dev, i, &entry);
             if (rc != 0)
                 continue;
             printf("  [%u] %s(%u, %u) = %u\n", i, entry.op, entry.a, entry.b, entry.result);
@@ -331,119 +321,72 @@ static int cmd_calculator(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const c
  * LED Commands
  * ============================================================================ */
 
-static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_led(const crumbs_device_t *dev, const char *rest)
 {
-    /* Parse device selector */
-    uint8_t addr = 0;
-    const char *cmd_start = args;
-
-    if (*args == '@')
-    {
-        unsigned int addr_val;
-        if (sscanf(args, "@%i", &addr_val) != 1)
-        {
-            printf("Usage: led @<addr> <cmd> or led <idx> <cmd>\n");
-            return -1;
-        }
-        addr = (uint8_t)addr_val;
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-    else
-    {
-        int idx;
-        if (sscanf(args, "%d", &idx) != 1)
-        {
-            printf("Usage: led <idx> <cmd>\n");
-            return -1;
-        }
-        if (find_device(LED_TYPE_ID, idx, &addr) != 0)
-        {
-            printf("LED #%d not found\n", idx);
-            return -1;
-        }
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-
-    while (*cmd_start && isspace((unsigned char)*cmd_start))
-        cmd_start++;
-
     char subcmd[32];
-    if (sscanf(cmd_start, "%31s", subcmd) != 1)
+    if (sscanf(rest, "%31s", subcmd) != 1)
     {
         printf("Usage: led <idx|@addr> <set_all|set_one|blink|get_state|get_blink> [args...]\n");
         return -1;
     }
 
-    const char *rest = cmd_start + strlen(subcmd);
-    while (*rest && isspace((unsigned char)*rest))
-        rest++;
+    const char *op_rest = rest + strlen(subcmd);
+    while (*op_rest && isspace((unsigned char)*op_rest))
+        op_rest++;
 
     int rc;
 
     if (strcmp(subcmd, "set_all") == 0)
     {
         unsigned int mask;
-        if (sscanf(rest, "%i", &mask) != 1)
+        if (sscanf(op_rest, "%i", &mask) != 1)
         {
             printf("Usage: led set_all <mask>\n");
             return -1;
         }
 
-        rc = led_send_set_all(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)mask);
+        rc = led_send_set_all(dev, (uint8_t)mask);
         if (rc == 0)
-            printf("OK: LEDs at 0x%02X set to 0x%02X\n", addr, (uint8_t)mask);
+            printf("OK: LEDs at 0x%02X set to 0x%02X\n", dev->addr, (uint8_t)mask);
         return rc;
     }
     else if (strcmp(subcmd, "set_one") == 0)
     {
         unsigned int idx, state;
-        if (sscanf(rest, "%u %u", &idx, &state) != 2)
+        if (sscanf(op_rest, "%u %u", &idx, &state) != 2)
         {
             printf("Usage: led set_one <idx> <state>\n");
             return -1;
         }
 
-        rc = led_send_set_one(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)idx, (uint8_t)state);
+        rc = led_send_set_one(dev, (uint8_t)idx, (uint8_t)state);
         if (rc == 0)
-            printf("OK: LED %u at 0x%02X set to %s\n", idx, addr, state ? "ON" : "OFF");
+            printf("OK: LED %u at 0x%02X set to %s\n", idx, dev->addr, state ? "ON" : "OFF");
         return rc;
     }
     else if (strcmp(subcmd, "blink") == 0)
     {
         unsigned int idx, enable;
         uint16_t period_ms;
-        if (sscanf(rest, "%u %u %hu", &idx, &enable, &period_ms) != 3)
+        if (sscanf(op_rest, "%u %u %hu", &idx, &enable, &period_ms) != 3)
         {
             printf("Usage: led blink <idx> <enable> <period_ms>\n");
             return -1;
         }
 
-        rc = led_send_blink(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)idx, (uint8_t)enable, period_ms);
+        rc = led_send_blink(dev, (uint8_t)idx, (uint8_t)enable, period_ms);
         if (rc == 0)
-            printf("OK: LED %u at 0x%02X blink %s\n", idx, addr, enable ? "enabled" : "disabled");
+            printf("OK: LED %u at 0x%02X blink %s\n", idx, dev->addr, enable ? "enabled" : "disabled");
         return rc;
     }
     else if (strcmp(subcmd, "get_state") == 0)
     {
         led_state_result_t res;
-        rc = led_get_state(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                           crumbs_linux_delay_us, (void *)lw, &res);
+        rc = led_get_state(dev, &res);
         if (rc != 0)
             return rc;
 
-        printf("LED state at 0x%02X: 0x%02X (", addr, res.states);
+        printf("LED state at 0x%02X: 0x%02X (", dev->addr, res.states);
         for (int i = 3; i >= 0; i--)
             printf("%d", (res.states >> i) & 1);
         printf(")\n");
@@ -454,8 +397,7 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
     else if (strcmp(subcmd, "get_blink") == 0)
     {
         led_blink_result_t res;
-        rc = led_get_blink(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                           crumbs_linux_delay_us, (void *)lw, &res);
+        rc = led_get_blink(dev, &res);
         if (rc != 0)
             return rc;
 
@@ -473,130 +415,82 @@ static int cmd_led(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *ar
  * Servo Commands
  * ============================================================================ */
 
-static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_servo(const crumbs_device_t *dev, const char *rest)
 {
-    /* Parse device selector */
-    uint8_t addr = 0;
-    const char *cmd_start = args;
-
-    if (*args == '@')
-    {
-        unsigned int addr_val;
-        if (sscanf(args, "@%i", &addr_val) != 1)
-        {
-            printf("Usage: servo @<addr> <cmd> or servo <idx> <cmd>\n");
-            return -1;
-        }
-        addr = (uint8_t)addr_val;
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-    else
-    {
-        int idx;
-        if (sscanf(args, "%d", &idx) != 1)
-        {
-            printf("Usage: servo <idx> <cmd>\n");
-            return -1;
-        }
-        if (find_device(SERVO_TYPE_ID, idx, &addr) != 0)
-        {
-            printf("Servo #%d not found\n", idx);
-            return -1;
-        }
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-
-    while (*cmd_start && isspace((unsigned char)*cmd_start))
-        cmd_start++;
-
     char subcmd[32];
-    if (sscanf(cmd_start, "%31s", subcmd) != 1)
+    if (sscanf(rest, "%31s", subcmd) != 1)
     {
         printf("Usage: servo <idx|@addr> <set_pos|set_speed|sweep|get_pos|get_speed> [args...]\n");
         return -1;
     }
 
-    const char *rest = cmd_start + strlen(subcmd);
-    while (*rest && isspace((unsigned char)*rest))
-        rest++;
+    const char *op_rest = rest + strlen(subcmd);
+    while (*op_rest && isspace((unsigned char)*op_rest))
+        op_rest++;
 
     int rc;
 
     if (strcmp(subcmd, "set_pos") == 0)
     {
         unsigned int idx, angle;
-        if (sscanf(rest, "%u %u", &idx, &angle) != 2)
+        if (sscanf(op_rest, "%u %u", &idx, &angle) != 2)
         {
             printf("Usage: servo set_pos <idx> <angle>\n");
             return -1;
         }
 
-        rc = servo_send_set_pos(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)idx, (uint8_t)angle);
+        rc = servo_send_set_pos(dev, (uint8_t)idx, (uint8_t)angle);
         if (rc == 0)
-            printf("OK: Servo %u at 0x%02X position set to %udeg\n", idx, addr, angle);
+            printf("OK: Servo %u at 0x%02X position set to %udeg\n", idx, dev->addr, angle);
         return rc;
     }
     else if (strcmp(subcmd, "set_speed") == 0)
     {
         unsigned int idx, speed;
-        if (sscanf(rest, "%u %u", &idx, &speed) != 2)
+        if (sscanf(op_rest, "%u %u", &idx, &speed) != 2)
         {
             printf("Usage: servo set_speed <idx> <speed>\n");
             return -1;
         }
 
-        rc = servo_send_set_speed(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)idx, (uint8_t)speed);
+        rc = servo_send_set_speed(dev, (uint8_t)idx, (uint8_t)speed);
         if (rc == 0)
-            printf("OK: Servo %u at 0x%02X speed set to %u\n", idx, addr, speed);
+            printf("OK: Servo %u at 0x%02X speed set to %u\n", idx, dev->addr, speed);
         return rc;
     }
     else if (strcmp(subcmd, "sweep") == 0)
     {
         unsigned int idx, enable, min_pos, max_pos, step;
-        if (sscanf(rest, "%u %u %u %u %u", &idx, &enable, &min_pos, &max_pos, &step) != 5)
+        if (sscanf(op_rest, "%u %u %u %u %u", &idx, &enable, &min_pos, &max_pos, &step) != 5)
         {
             printf("Usage: servo sweep <idx> <enable> <min> <max> <step>\n");
             return -1;
         }
 
-        rc = servo_send_sweep(ctx, addr, crumbs_linux_i2c_write, (void *)lw,
-                              (uint8_t)idx, (uint8_t)enable, (uint8_t)min_pos, (uint8_t)max_pos, (uint8_t)step);
+        rc = servo_send_sweep(dev, (uint8_t)idx, (uint8_t)enable,
+                              (uint8_t)min_pos, (uint8_t)max_pos, (uint8_t)step);
         if (rc == 0)
-            printf("OK: Servo %u at 0x%02X sweep %s\n", idx, addr, enable ? "enabled" : "disabled");
+            printf("OK: Servo %u at 0x%02X sweep %s\n", idx, dev->addr, enable ? "enabled" : "disabled");
         return rc;
     }
     else if (strcmp(subcmd, "get_pos") == 0)
     {
         servo_pos_result_t res;
-        rc = servo_get_pos(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                           crumbs_linux_delay_us, (void *)lw, &res);
+        rc = servo_get_pos(dev, &res);
         if (rc != 0)
             return rc;
 
-        printf("Servo positions at 0x%02X: [0]=%udeg, [1]=%udeg\n", addr, res.pos[0], res.pos[1]);
+        printf("Servo positions at 0x%02X: [0]=%udeg, [1]=%udeg\n", dev->addr, res.pos[0], res.pos[1]);
         return 0;
     }
     else if (strcmp(subcmd, "get_speed") == 0)
     {
         servo_speed_result_t res;
-        rc = servo_get_speed(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                             crumbs_linux_delay_us, (void *)lw, &res);
+        rc = servo_get_speed(dev, &res);
         if (rc != 0)
             return rc;
 
-        printf("Servo speeds at 0x%02X: [0]=%u, [1]=%u\n", addr, res.speed[0], res.speed[1]);
+        printf("Servo speeds at 0x%02X: [0]=%u, [1]=%u\n", dev->addr, res.speed[0], res.speed[1]);
         return 0;
     }
 
@@ -608,71 +502,25 @@ static int cmd_servo(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *
  * Display Command
  * ============================================================================ */
 
-static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char *args)
+static int cmd_display(const crumbs_device_t *dev, const char *rest)
 {
-    uint8_t addr;
-    const char *cmd_start;
-
-    /* Parse device selector: @addr or index */
-    if (*args == '@')
-    {
-        unsigned int addr_val;
-        if (sscanf(args, "@%i", &addr_val) != 1)
-        {
-            printf("Usage: display @<addr> <cmd> or display <idx> <cmd>\n");
-            return -1;
-        }
-        addr = (uint8_t)addr_val;
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-    else
-    {
-        int idx;
-        if (sscanf(args, "%d", &idx) != 1)
-        {
-            printf("Usage: display <idx> <cmd>\n");
-            return -1;
-        }
-        if (find_device(DISPLAY_TYPE_ID, idx, &addr) != 0)
-        {
-            printf("Display #%d not found\n", idx);
-            return -1;
-        }
-        cmd_start = strchr(args, ' ');
-        if (!cmd_start)
-        {
-            printf("Missing command\n");
-            return -1;
-        }
-        cmd_start++;
-    }
-
-    while (*cmd_start && isspace((unsigned char)*cmd_start))
-        cmd_start++;
-
     char subcmd[32];
-    if (sscanf(cmd_start, "%31s", subcmd) != 1)
+    if (sscanf(rest, "%31s", subcmd) != 1)
     {
         printf("Usage: display <idx|@addr> <set_number|set_brightness|clear|get_value> [args...]\n");
         return -1;
     }
 
-    const char *rest = cmd_start + strlen(subcmd);
-    while (*rest && isspace((unsigned char)*rest))
-        rest++;
+    const char *op_rest = rest + strlen(subcmd);
+    while (*op_rest && isspace((unsigned char)*op_rest))
+        op_rest++;
 
     int rc;
 
     if (strcmp(subcmd, "set_number") == 0)
     {
         unsigned int number, decimal_pos;
-        if (sscanf(rest, "%u %u", &number, &decimal_pos) != 2)
+        if (sscanf(op_rest, "%u %u", &number, &decimal_pos) != 2)
         {
             printf("Usage: display set_number <number> <decimal_pos>\n");
             printf("  number: 0-9999\n");
@@ -680,8 +528,7 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
             return -1;
         }
 
-        rc = display_send_set_number(ctx, addr, crumbs_linux_i2c_write, (void *)lw,
-                                     (uint16_t)number, (uint8_t)decimal_pos);
+        rc = display_send_set_number(dev, (uint16_t)number, (uint8_t)decimal_pos);
         if (rc == 0)
             printf("OK: Display showing %u (decimal pos %u)\n", number, decimal_pos);
         return rc;
@@ -689,21 +536,21 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
     else if (strcmp(subcmd, "set_brightness") == 0)
     {
         unsigned int level;
-        if (sscanf(rest, "%u", &level) != 1)
+        if (sscanf(op_rest, "%u", &level) != 1)
         {
             printf("Usage: display set_brightness <level>\n");
             printf("  level: 0-10 (0=off, 10=brightest)\n");
             return -1;
         }
 
-        rc = display_send_set_brightness(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)level);
+        rc = display_send_set_brightness(dev, (uint8_t)level);
         if (rc == 0)
             printf("OK: Brightness set to %u\n", level);
         return rc;
     }
     else if (strcmp(subcmd, "clear") == 0)
     {
-        rc = display_send_clear(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
+        rc = display_send_clear(dev);
         if (rc == 0)
             printf("OK: Display cleared\n");
         return rc;
@@ -711,8 +558,7 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
     else if (strcmp(subcmd, "get_value") == 0)
     {
         display_value_result_t res;
-        rc = display_get_value(ctx, addr, crumbs_linux_i2c_write, crumbs_linux_read,
-                               crumbs_linux_delay_us, (void *)lw, &res);
+        rc = display_get_value(dev, &res);
         if (rc != 0)
             return rc;
 
@@ -754,9 +600,14 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < DEVICE_CONFIG_COUNT && g_device_count < 16; i++)
     {
         device_info_t *dev = &g_devices[g_device_count];
-        dev->type_id = DEVICE_CONFIG[i].type_id;
-        dev->addr = DEVICE_CONFIG[i].addr;
-        dev->index = type_counts[dev->type_id]++;
+        dev->type_id      = DEVICE_CONFIG[i].type_id;
+        dev->index        = type_counts[dev->type_id]++;
+        dev->dev.ctx      = &ctx;
+        dev->dev.addr     = DEVICE_CONFIG[i].addr;
+        dev->dev.write_fn = crumbs_linux_i2c_write;
+        dev->dev.read_fn  = crumbs_linux_read;
+        dev->dev.delay_fn = crumbs_linux_delay_us;
+        dev->dev.io       = (void *)&lw;
 
         if (dev->type_id == CALC_TYPE_ID)
             dev->name = "Calculator";
@@ -809,13 +660,33 @@ int main(int argc, char *argv[])
             break;
         }
         else if (strcmp(cmd, "calculator") == 0)
-            cmd_calculator(&ctx, &lw, args);
+        {
+            device_info_t *d;
+            const char *rest;
+            if (resolve_device(CALC_TYPE_ID, args, &d, &rest) == 0)
+                cmd_calculator(&d->dev, rest);
+        }
         else if (strcmp(cmd, "led") == 0)
-            cmd_led(&ctx, &lw, args);
+        {
+            device_info_t *d;
+            const char *rest;
+            if (resolve_device(LED_TYPE_ID, args, &d, &rest) == 0)
+                cmd_led(&d->dev, rest);
+        }
         else if (strcmp(cmd, "servo") == 0)
-            cmd_servo(&ctx, &lw, args);
+        {
+            device_info_t *d;
+            const char *rest;
+            if (resolve_device(SERVO_TYPE_ID, args, &d, &rest) == 0)
+                cmd_servo(&d->dev, rest);
+        }
         else if (strcmp(cmd, "display") == 0)
-            cmd_display(&ctx, &lw, args);
+        {
+            device_info_t *d;
+            const char *rest;
+            if (resolve_device(DISPLAY_TYPE_ID, args, &d, &rest) == 0)
+                cmd_display(&d->dev, rest);
+        }
         else
             printf("Unknown command: %s (type 'help')\n", cmd);
     }
