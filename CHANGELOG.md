@@ -37,7 +37,13 @@ All notable changes to CRUMBS are documented in this file.
 
 - **`docs/create-a-family.md`** — new guide for authoring custom CRUMBS families
   - Eight-step walkthrough using a toy thermometer peripheral as a running example
-  - Covers: type ID selection, ops header structure, SET/SET*REPLY op pairs, result structs, `\_get*\*` pattern, Linux and Arduino usage, helper reference tables, and a completeness checklist
+  - Covers: type ID selection, ops header structure, SET/SET_REPLY op pairs, result structs, `_get_*` pattern, Linux and Arduino usage, helper reference tables, and a completeness checklist
+
+- **`src/crumbs_ops.h`** — new helper macro header for family ops-header authors
+  - `CRUMBS_DEFINE_GET_OP(family, name, type_id, opcode, result_t, parse_fn)` — generates the `_query_*` (internal) + `_get_*` (public) function pair for a standard 1:1 opcode→result GET
+  - `CRUMBS_DEFINE_SEND_OP(family, name, type_id, opcode, param_decl, pack_stmt)` — generates a `_send_*` wrapper for a single-parameter SET
+  - `CRUMBS_DEFINE_SEND_OP_0(family, name, type_id, opcode)` — zero-parameter variant (e.g. `display_send_clear`)
+  - Multi-parameter SETs and parameterized GET queries must still be written as normal `static inline` functions; the lhwit_family headers serve as reference implementations
 
 ### Fixed
 
@@ -48,6 +54,14 @@ All notable changes to CRUMBS are documented in this file.
   - Zero runtime cost on the happy path; two comparisons per GET on any error path
 
 ### Changed
+
+- **`docs/create-a-family.md` updated to use `crumbs_device_t` and document macro usage**
+  - All function signatures in Steps 3, 4, 6 converted from individual `(ctx, addr, write_fn, read_fn, delay_fn, io)` parameters to `const crumbs_device_t *dev`
+  - New Step 7 showing `CRUMBS_DEFINE_GET_OP` / `CRUMBS_DEFINE_SEND_OP` applied to the thermometer running example; documents what the macros cover and what must still be written by hand
+  - Linux (Step 8) and Arduino (Step 9) usage examples updated to construct a `crumbs_device_t` and pass `&dev`
+  - Identity check (`reply.type_id` + `reply.opcode`) added to the Step 6 `_get_*` example
+  - `_query_*` functions marked `@internal` in Step 4; `@internal` rationale added to section intro
+  - Checklist updated to include identity check and macro usage items
 
 - **Example controllers updated to use `_get_*` wrappers** (`examples/families_usage/`)
   - `controller_manual/main.c`: replaced all manual `query + crumbs_linux_read_message` blocks with `_get_*` calls; removed now-unused `crumbs_message_t reply` declarations; added `get_blink` and `get_speed` commands
