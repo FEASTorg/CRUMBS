@@ -53,6 +53,14 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_init()` updated to zero `reply_handler_count`
   - `test_reply_handler.c` added: 12 tests covering registration, dispatch, fall-through, priority, overwrite, unregister, table-full, and user_data forwarding
 
+### Changed (continued)
+
+- **`lhwit_family` peripheral examples converted to `crumbs_register_reply_handler()`**
+  - `led/src/main.cpp`: `on_request` switch replaced with three static reply handler functions (`reply_handler_version`, `reply_handler_get_state`, `reply_handler_get_blink`) registered individually
+  - `servo/src/main.cpp`: same pattern — three handlers (`reply_handler_version`, `reply_handler_get_pos`, `reply_handler_get_speed`)
+  - `display/src/main.cpp`: two handlers (`reply_handler_version`, `reply_handler_get_value`); `Serial` debug output moved into the handler functions
+  - `calculator/src/main.cpp`: three common GETs registered individually (`reply_handler_version`, `reply_handler_get_result`, `reply_handler_get_hist_meta`); the 12 `CALC_OP_GET_HIST_0..11` opcodes retained as an `on_request_hist` fallback to avoid exceeding `CRUMBS_MAX_HANDLERS` (4 SET + 15 GET = 19 > default limit of 16); inline comment explains the trade-off and illustrates the mixed-model pattern
+
 ### Fixed
 
 - **`display/src/main.cpp` `on_request` default case** — missing `crumbs_msg_init` fallback added
