@@ -106,7 +106,13 @@ extern "C"
 #define DISPLAY_OP_GET_VALUE 0x80
 
     /* ============================================================================
-     * Helper Functions: Message Construction
+     * Low-Level Message Builders
+     *
+     * These functions construct a crumbs_message_t in-place for callers that need
+     * to inspect or modify a message before sending it manually with
+     * crumbs_controller_send(). For standard fire-and-forget usage prefer the
+     * display_send_*() wrappers in the "Controller Side: Command Senders" section
+     * below, which match the pattern used by all other lhwit_family ops headers.
      * ============================================================================ */
 
     /**
@@ -228,6 +234,103 @@ extern "C"
     }
 
     /* ============================================================================
+     * Controller Side: Command Senders
+     *
+     * Direct-send wrappers matching the led_send_*() / servo_send_*() pattern.
+     * Each function builds and sends a message in a single call.
+     * ============================================================================ */
+
+    /**
+     * @brief Display a number with optional decimal point.
+     *
+     * @param ctx         CRUMBS controller context.
+     * @param addr        I2C address of display peripheral.
+     * @param write_fn    I2C write function.
+     * @param io          I2C context.
+     * @param number      Number to display (0-9999).
+     * @param decimal_pos Decimal point digit (0=none, 1=leftmost, 4=rightmost).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_send_set_number(crumbs_context_t *ctx,
+                                              uint8_t addr,
+                                              crumbs_i2c_write_fn write_fn,
+                                              void *io,
+                                              uint16_t number,
+                                              uint8_t decimal_pos)
+    {
+        crumbs_message_t msg;
+        crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_NUMBER);
+        crumbs_msg_add_u16(&msg, number);
+        crumbs_msg_add_u8(&msg, decimal_pos);
+        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /**
+     * @brief Set custom segment patterns for all 4 digits.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of display peripheral.
+     * @param write_fn I2C write function.
+     * @param io       I2C context.
+     * @param segments Array of 4 segment patterns (digit 0-3).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_send_set_segments(crumbs_context_t *ctx,
+                                                uint8_t addr,
+                                                crumbs_i2c_write_fn write_fn,
+                                                void *io,
+                                                const uint8_t segments[4])
+    {
+        crumbs_message_t msg;
+        int i;
+        crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_SEGMENTS);
+        for (i = 0; i < 4; i++)
+            crumbs_msg_add_u8(&msg, segments[i]);
+        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /**
+     * @brief Set display brightness.
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of display peripheral.
+     * @param write_fn I2C write function.
+     * @param io       I2C context.
+     * @param level    Brightness level (0=off, 1-10=dimmest to brightest).
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_send_set_brightness(crumbs_context_t *ctx,
+                                                  uint8_t addr,
+                                                  crumbs_i2c_write_fn write_fn,
+                                                  void *io,
+                                                  uint8_t level)
+    {
+        crumbs_message_t msg;
+        crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_SET_BRIGHTNESS);
+        crumbs_msg_add_u8(&msg, level);
+        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /**
+     * @brief Clear the display (all segments off).
+     *
+     * @param ctx      CRUMBS controller context.
+     * @param addr     I2C address of display peripheral.
+     * @param write_fn I2C write function.
+     * @param io       I2C context.
+     * @return 0 on success, non-zero on error.
+     */
+    static inline int display_send_clear(crumbs_context_t *ctx,
+                                         uint8_t addr,
+                                         crumbs_i2c_write_fn write_fn,
+                                         void *io)
+    {
+        crumbs_message_t msg;
+        crumbs_msg_init(&msg, DISPLAY_TYPE_ID, DISPLAY_OP_CLEAR);
+        return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    }
+
+    /* ============================================================================
      * Controller Side: Query Sender + Combined Query + Read (Receiver API)
      * ============================================================================ */
 
@@ -258,9 +361,9 @@ extern "C"
      */
     typedef struct
     {
-        uint16_t number;      /**< Currently displayed number (0-9999). */
-        uint8_t  decimal_pos; /**< Decimal position (0=none, 1=leftmost, 4=rightmost). */
-        uint8_t  brightness;  /**< Brightness level (0-10). */
+        uint16_t number;     /**< Currently displayed number (0-9999). */
+        uint8_t decimal_pos; /**< Decimal position (0=none, 1=leftmost, 4=rightmost). */
+        uint8_t brightness;  /**< Brightness level (0-10). */
     } display_value_result_t;
 
     /**

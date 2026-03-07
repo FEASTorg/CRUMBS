@@ -255,17 +255,13 @@ Controls 4-digit 7-segment display (5641AS or compatible) with multiplexing.
 #include "display_ops.h"
 
 // Display "123.4" (decimal on digit 3)
-crumbs_message_t msg;
-display_build_set_number(&msg, 1234, 3);
-crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+display_send_set_number(&ctx, 0x40, write_fn, io_ctx, 1234, 3);
 
 // Display "12.34" (decimal on digit 2)
-display_build_set_number(&msg, 1234, 2);
-crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+display_send_set_number(&ctx, 0x40, write_fn, io_ctx, 1234, 2);
 
 // Clear display
-display_build_clear(&msg);
-crumbs_controller_send(&ctx, 0x40, &msg, write_fn, io_ctx);
+display_send_clear(&ctx, 0x40, write_fn, io_ctx);
 ```
 
 ## Controllers

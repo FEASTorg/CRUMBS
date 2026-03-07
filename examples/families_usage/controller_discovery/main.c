@@ -877,7 +877,6 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
         rest++;
 
     int rc;
-    crumbs_message_t msg;
 
     if (strcmp(subcmd, "set_number") == 0)
     {
@@ -890,11 +889,8 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
             return -1;
         }
 
-        rc = display_build_set_number(&msg, (uint16_t)number, (uint8_t)decimal_pos);
-        if (rc != 0)
-            return rc;
-
-        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        rc = display_send_set_number(ctx, addr, crumbs_linux_i2c_write, (void *)lw,
+                                     (uint16_t)number, (uint8_t)decimal_pos);
         if (rc == 0)
             printf("OK: Display showing %u (decimal pos %u)\n", number, decimal_pos);
         return rc;
@@ -909,22 +905,14 @@ static int cmd_display(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw, const char
             return -1;
         }
 
-        rc = display_build_set_brightness(&msg, (uint8_t)level);
-        if (rc != 0)
-            return rc;
-
-        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        rc = display_send_set_brightness(ctx, addr, crumbs_linux_i2c_write, (void *)lw, (uint8_t)level);
         if (rc == 0)
             printf("OK: Brightness set to %u\n", level);
         return rc;
     }
     else if (strcmp(subcmd, "clear") == 0)
     {
-        rc = display_build_clear(&msg);
-        if (rc != 0)
-            return rc;
-
-        rc = crumbs_controller_send(ctx, addr, &msg, crumbs_linux_i2c_write, (void *)lw);
+        rc = display_send_clear(ctx, addr, crumbs_linux_i2c_write, (void *)lw);
         if (rc == 0)
             printf("OK: Display cleared\n");
         return rc;

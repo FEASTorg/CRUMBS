@@ -57,6 +57,12 @@ All notable changes to CRUMBS are documented in this file.
   - `test_controller_read_ok`: verifies `crumbs_controller_read` decodes a valid frame
   - `test_controller_read_short`: verifies `-1` is returned for undersized reads
 
+- **`display_ops.h` aligned with all other lhwit_family ops headers** (`examples/families_usage/lhwit_family/display_ops.h`)
+  - Added `display_send_set_number()`, `display_send_set_segments()`, `display_send_set_brightness()`, and `display_send_clear()` — direct-send wrappers matching the `led_send_*()` / `servo_send_*()` pattern used by every other ops header
+  - The existing `display_build_*` functions are retained but the section header now documents them as low-level message builders for callers that need to inspect or modify a message before sending manually; `display_send_*` is the preferred interface for all standard usage
+  - `controller_manual/main.c` and `controller_discovery/main.c` updated to call `display_send_*` directly; now-unused `crumbs_message_t msg` declaration removed from `cmd_display` in both files
+  - `lhwit_family/README.md` usage example updated to the single-call `display_send_*` pattern
+
 ---
 
 ## [Unreleased] - Code Quality
