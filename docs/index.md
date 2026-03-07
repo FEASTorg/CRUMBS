@@ -97,6 +97,7 @@ void setup() {
 | [API Reference](api-reference.md) | Complete C API, handler dispatch, message helpers, platform HALs |
 | [Architecture](architecture.md)   | Design philosophy, stakeholder roles, system architecture        |
 | [LHWIT Family](lhwit-family.md)   | Reference implementation (LEDs, servos, calculator, display)     |
+| [Create a Family](create-a-family.md) | Step-by-step guide for authoring custom device families      |
 
 ### Developer
 
@@ -224,7 +225,7 @@ Historical and technical deep-dive documents are in [archive/](archive/):
 
 ---
 
-**Version**: 0.10.3  
+**Version**: 0.11.0  
 **Author**: Cameron K. Brooks  
 **Dependencies**: Wire library (Arduino), linux-wire (Linux HAL)  
 **License**: GPL-3.0-or-later

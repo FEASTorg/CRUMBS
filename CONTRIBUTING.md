@@ -57,7 +57,7 @@ cmake --build build --parallel
 ```bash
 cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DCRUMBS_BUILD_TESTS=ON
+    -DCRUMBS_ENABLE_TESTS=ON
 
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
@@ -84,7 +84,7 @@ CRUMBS is designed to work seamlessly with Arduino IDE and PlatformIO:
 ```ini
 # platformio.ini
 lib_deps =
-    cameronbrooks11/CRUMBS@^0.10.3
+    cameronbrooks11/CRUMBS@^0.11.0
 ```
 
 Or for local development (see [Local Development](#local-development-with-platformio) below).
@@ -99,7 +99,7 @@ CRUMBS includes comprehensive unit tests for core functionality:
 
 ```bash
 # Build with tests enabled
-cmake -S . -B build -DCRUMBS_BUILD_TESTS=ON
+cmake -S . -B build -DCRUMBS_ENABLE_TESTS=ON
 cmake --build build
 
 # Run all tests
@@ -122,6 +122,7 @@ ctest --test-dir build --output-on-failure
 - `test_reply_flow` — SET_REPLY pattern
 - `test_set_reply` — Request opcode handling
 - `test_scan_fake` — Scanner logic (simulated I²C)
+- `test_reply_handler` — Reply handler registration, dispatch, and fall-through
 
 ### Integration Tests
 
@@ -206,6 +207,7 @@ User-facing documentation lives in `docs/`:
 - `architecture.md` — Design and concepts
 - `platform-setup.md` — Installation guides
 - `examples.md` — Learning path
+- `create-a-family.md` — Guide for custom device families
 
 When changing public APIs:
 
@@ -227,7 +229,7 @@ When developing changes to CRUMBS itself, test locally before publishing:
    ```ini
    # Change from registry version
    lib_deps =
-       cameronbrooks11/CRUMBS@^0.10.3
+       cameronbrooks11/CRUMBS@^0.11.0
 
    # To local symlink
    lib_deps =
@@ -247,7 +249,7 @@ When developing changes to CRUMBS itself, test locally before publishing:
 
    ```ini
    lib_deps =
-       cameronbrooks11/CRUMBS@^0.10.3
+       cameronbrooks11/CRUMBS@^0.11.0
    ```
 
 **Path explanation:**
@@ -486,8 +488,8 @@ python scripts/generate_crc8.py  # --no-stage to skip
 3. **Tag release:**
 
    ```bash
-   git tag -a v0.10.3 -m "Release v0.10.3"
-   git push origin v0.10.3
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
    ```
 
 4. **Publish to registries:**

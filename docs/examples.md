@@ -112,7 +112,7 @@ Send commands via serial interface and request data from peripherals:
 request=8                    // Request data from address 8
 ```
 
-See [simple_controller](../examples/core_usage/arduino/simple_controller/) and [simple_peripheral](../examples/core_usage/arduino/simple_peripheral/) for complete examples.
+See [simple_controller](../examples/core_usage/platformio/simple_controller/) and [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/) for complete examples.
 
 ---
 
@@ -122,7 +122,65 @@ Instead of using a switch statement inside `on_message`, register individual han
 
 #### Arduino Peripheral with Handlers
 
-`cpp\n#include <crumbs.h>\n#include <crumbs_arduino.h>\n#include <crumbs_message_helpers.h>\n\n#define MY_TYPE_ID 0x10\n#define CMD_ECHO    0x01\n#define CMD_PRINT   0x02\n#define CMD_TOGGLE  0x03\n#define CMD_GET_ECHO 0x81  // GET: retrieve last echoed data\n\nstatic crumbs_context_t ctx;\n\nvoid handler_echo(crumbs_context_t *ctx, uint8_t cmd,\n                  const uint8_t *data, uint8_t len, void *user) {\n    memcpy(g_echo_buffer, data, len);\n    g_echo_len = len;\n}\n\nvoid handler_print(crumbs_context_t *ctx, uint8_t cmd,\n                   const uint8_t *data, uint8_t len, void *user) {\n    for (uint8_t i = 0; i < len; i++) Serial.write(data[i]);\n    Serial.println();\n}\n\nvoid handler_toggle(crumbs_context_t *ctx, uint8_t cmd,\n                    const uint8_t *data, uint8_t len, void *user) {\n    g_state = !g_state;\n}\n\nvoid reply_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {\n    (void)ctx; (void)user;\n    crumbs_build_version_reply(reply, MY_TYPE_ID, 1, 0, 0);\n}\n\nvoid reply_get_echo(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {\n    (void)ctx; (void)user;\n    crumbs_msg_init(reply, MY_TYPE_ID, CMD_GET_ECHO);\n    crumbs_msg_add_bytes(reply, g_echo_buffer, g_echo_len);\n}\n\nvoid setup() {\n    crumbs_arduino_init_peripheral(&ctx, 0x08);\n\n    // Register SET handlers\n    crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);\n    crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);\n    crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);\n\n    // Register GET reply handlers\n    crumbs_register_reply_handler(&ctx, 0x00,         reply_version,  NULL);\n    crumbs_register_reply_handler(&ctx, CMD_GET_ECHO, reply_get_echo, NULL);\n}\n\nvoid loop() { }\n`
+```cpp
+#include <crumbs.h>
+#include <crumbs_arduino.h>
+#include <crumbs_message_helpers.h>
+
+#define MY_TYPE_ID   0x10
+#define CMD_ECHO     0x01
+#define CMD_PRINT    0x02
+#define CMD_TOGGLE   0x03
+#define CMD_GET_ECHO 0x81  // GET: retrieve last echoed data
+
+static crumbs_context_t ctx;
+static uint8_t g_echo_buffer[27];
+static uint8_t g_echo_len = 0;
+static uint8_t g_state    = 0;
+
+void handler_echo(crumbs_context_t *ctx, uint8_t cmd,
+                  const uint8_t *data, uint8_t len, void *user) {
+    memcpy(g_echo_buffer, data, len);
+    g_echo_len = len;
+}
+
+void handler_print(crumbs_context_t *ctx, uint8_t cmd,
+                   const uint8_t *data, uint8_t len, void *user) {
+    for (uint8_t i = 0; i < len; i++) Serial.write(data[i]);
+    Serial.println();
+}
+
+void handler_toggle(crumbs_context_t *ctx, uint8_t cmd,
+                    const uint8_t *data, uint8_t len, void *user) {
+    g_state = !g_state;
+}
+
+void reply_version(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {
+    (void)ctx; (void)user;
+    crumbs_build_version_reply(reply, MY_TYPE_ID, 1, 0, 0);
+}
+
+void reply_get_echo(crumbs_context_t *ctx, crumbs_message_t *reply, void *user) {
+    (void)ctx; (void)user;
+    crumbs_msg_init(reply, MY_TYPE_ID, CMD_GET_ECHO);
+    crumbs_msg_add_bytes(reply, g_echo_buffer, g_echo_len);
+}
+
+void setup() {
+    crumbs_arduino_init_peripheral(&ctx, 0x08);
+
+    // Register SET handlers
+    crumbs_register_handler(&ctx, CMD_ECHO,   handler_echo,   NULL);
+    crumbs_register_handler(&ctx, CMD_PRINT,  handler_print,  NULL);
+    crumbs_register_handler(&ctx, CMD_TOGGLE, handler_toggle, NULL);
+
+    // Register GET reply handlers
+    crumbs_register_reply_handler(&ctx, 0x00,         reply_version,  NULL);
+    crumbs_register_reply_handler(&ctx, CMD_GET_ECHO, reply_get_echo, NULL);
+}
+
+void loop() { }
+```
 
 See [handlers_usage](../examples/handlers_usage/) for complete working examples.
 
@@ -332,9 +390,8 @@ For protocol-aware discovery (find devices that actually speak CRUMBS) use the c
 Linux examples use CMake for building. Example structure:
 
 ```bash
-mkdir build && cd build
-cmake .. -DCRUMBS_BUILD_IN_TREE=ON
-make
+cmake --preset linux
+cmake --build --preset linux
 ```
 
 See [simple_controller](../examples/core_usage/linux/simple_controller/) for a complete CMake example.

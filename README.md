@@ -21,9 +21,12 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 
 - **Variable-Length Message Format**: 4–31 byte frames with opaque byte payloads (0–27 bytes)
 - **Controller/Peripheral Architecture**: One controller, multiple addressable devices
-- **Per-Command Handler Dispatch**: Register handlers for specific command types
+- **Per-Command Handler Dispatch**: Register SET handlers with `crumbs_register_handler()` per opcode
+- **Reply Handler Dispatch**: Register GET handlers with `crumbs_register_reply_handler()` per opcode
+- **Family Receiver API**: `_get_*` wrappers (query + delay + read + parse) in ops headers
+- **Bound Device Handle**: `crumbs_device_t` bundles context, address, and I/O per device
 - **Message Builder/Reader Helpers**: Type-safe payload construction via `crumbs_message_helpers.h`
-- **Event-Driven Communication**: Callback-based message handling
+- **Event-Driven Communication**: Callback-based message handling (`on_message`, `on_request`)
 - **CRC-8 Protection**: Integrity check on every message
 - **CRUMBS-aware Discovery**: Core scanner helper to find devices that speak CRUMBS
 
@@ -84,6 +87,7 @@ Documentation is available in the [docs](docs/) directory:
 - [API Reference](docs/api-reference.md) — Complete C API, handlers, message helpers, platform HALs
 - [Protocol Specification](docs/protocol.md) — Wire format, versioning, CRC-8
 - [Architecture](docs/architecture.md) — Design philosophy and system architecture
+- [Create a Family](docs/create-a-family.md) — Guide to authoring custom device families
 
 **Developer:**
 

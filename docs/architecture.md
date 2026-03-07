@@ -223,13 +223,13 @@ void on_request(crumbs_context_t *ctx, crumbs_message_t *reply) {
 
 ```c
 // Request sensor data (opcode 0x10)
-crumbs_message_t req;
+crumbs_message_t req, reply;
 crumbs_msg_init(&req, 0, CRUMBS_CMD_SET_REPLY);  // 0xFE
 crumbs_msg_add_u8(&req, 0x10);  // target opcode
 crumbs_controller_send(&ctx, addr, &req, write_fn, io_ctx);
 
-// Read response
-crumbs_linux_read_message(&bus, addr, &ctx, &reply);
+// Read response (portable, validates CRC)
+crumbs_controller_read(&ctx, addr, &reply, read_fn, io_ctx);
 ```
 
 ### Multiple Module Instances
