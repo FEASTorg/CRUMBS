@@ -88,6 +88,15 @@ typedef struct crumbs_linux_i2c_s
     /**
      * @brief Read a CRUMBS reply message from a peripheral.
      *
+     * @deprecated Prefer crumbs_controller_read() with crumbs_linux_read() for
+     *             portable code:
+     *             @code
+     *             crumbs_controller_read(ctx, addr, &msg, crumbs_linux_read, (void *)lw);
+     *             @endcode
+     *             This HAL wrapper predates the platform-agnostic read API and is
+     *             retained for compatibility. The one legitimate remaining use is a
+     *             raw bus scan before any crumbs_device_t handles are available.
+     *
      * This is analogous to Arduino's `Wire.requestFrom()` + `crumbs_decode_message`.
      * It performs:
      *

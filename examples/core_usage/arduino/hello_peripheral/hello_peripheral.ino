@@ -27,6 +27,16 @@ void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 void setup()
 {
     Serial.begin(115200);
+
+    /* Guard: catches CRUMBS_MAX_HANDLERS mismatch between sketch and library.
+     * If this fires, define CRUMBS_MAX_HANDLERS in build_flags (platformio.ini
+     * or boards.txt), not in the sketch itself. See crumbs.h for details. */
+    if (sizeof(crumbs_context_t) != crumbs_context_size())
+    {
+        Serial.println(F("FATAL: CRUMBS_MAX_HANDLERS mismatch! See crumbs.h."));
+        while (1);
+    }
+
     crumbs_arduino_init_peripheral(&ctx, 0x08);
     crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
     Serial.println("Hello peripheral at 0x08");

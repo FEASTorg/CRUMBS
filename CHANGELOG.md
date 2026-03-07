@@ -68,6 +68,18 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_peripheral_handle_receive` no longer writes `msg.address = ctx->address`
   - `test_handle_receive_sets_address` removed from `tests/test_peripheral_flow.c` (tested a write with no corresponding read)
 
+- **`crumbs_linux_read_message` marked deprecated** (`src/crumbs_linux.h`)
+  - Prefer `crumbs_controller_read(ctx, addr, &msg, crumbs_linux_read, io)` for
+    portable code; `crumbs_linux_read_message` is retained for compatibility
+  - Added explanatory comment at the one surviving call site in
+    `controller_discovery/main.c` (raw bus scan before device handles exist)
+
+- **`crumbs_context_size()` guard added to `hello_peripheral`**
+  (`examples/core_usage/arduino/hello_peripheral/hello_peripheral.ino`)
+  - Catches silent `CRUMBS_MAX_HANDLERS` mismatch between sketch and library
+  - Halts with `FATAL: CRUMBS_MAX_HANDLERS mismatch!` on Serial if sizes diverge;
+    zero cost on correctly configured projects
+
 - **`crumbs_device_t` bound-device handle** (`src/crumbs.h`)
   - New POD struct `crumbs_device_t { ctx, addr, write_fn, read_fn, delay_fn, io }` that bundles all per-device transport state into one value
   - All five ops headers updated: every wrapper function now accepts `const crumbs_device_t *dev` instead of the previous explicit `(ctx, addr, write_fn, [read_fn, delay_fn,] io)` parameter list

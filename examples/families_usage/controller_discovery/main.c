@@ -354,6 +354,9 @@ static int cmd_scan(crumbs_context_t *ctx, crumbs_linux_i2c_t *lw)
         crumbs_linux_i2c_write(lw, dev->dev.addr, buf, len);
         usleep(10000); /* Give peripheral time to prepare reply */
 
+        /* Raw HAL read: crumbs_device_t is not populated until compat passes,
+         * so crumbs_controller_read via a device handle is not available here.
+         * This is the one legitimate surviving use of crumbs_linux_read_message. */
         int rc = crumbs_linux_read_message(lw, dev->dev.addr, ctx, &reply);
         if (rc != 0)
         {
