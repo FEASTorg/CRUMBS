@@ -18,6 +18,8 @@ An ops header is a **single C header** containing:
 6. `static inline` combined get functions (`*_get_*`) — query + delay + read + parse in one call
 
 All functions are `static inline` so the header is self-contained — no `.c` file is needed.
+All of them take a `const crumbs_device_t *dev` as their first argument — a bound device handle
+that bundles the context, address, and platform I/O callbacks (see `src/crumbs_i2c.h`).
 
 ---
 
@@ -74,23 +76,16 @@ One sender per SET command. Use `crumbs_msg_init` + `crumbs_msg_add_*` helpers t
 ```c
 /**
  * @brief Set thermometer sample rate.
- * @param ctx      Controller context.
- * @param addr     I2C address of thermometer peripheral.
- * @param write_fn I2C write function (e.g. crumbs_linux_i2c_write).
- * @param io       I2C context (e.g. &linux_i2c handle, or NULL for Arduino Wire).
- * @param rate     Samples per second (1–10).
+ * @param dev  Bound device handle.
+ * @param rate Samples per second (1–10).
  * @return 0 on success.
  */
-static inline int therm_send_set_sample_rate(crumbs_context_t *ctx,
-                                             uint8_t addr,
-                                             crumbs_i2c_write_fn write_fn,
-                                             void *io,
-                                             uint8_t rate)
+static inline int therm_send_set_sample_rate(const crumbs_device_t *dev, uint8_t rate)
 {
     crumbs_message_t msg;
     crumbs_msg_init(&msg, THERM_TYPE_ID, THERM_OP_SET_SAMPLE_RATE);
     crumbs_msg_add_u8(&msg, rate);
-    return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
 }
 ```
 
@@ -98,33 +93,25 @@ static inline int therm_send_set_sample_rate(crumbs_context_t *ctx,
 
 ## Step 4: Write the query functions
 
-One query function per GET command. It sends the SET_REPLY trigger that tells the peripheral which opcode to include in its next read response.
+One query function per GET command. It sends the SET_REPLY trigger that tells the peripheral which opcode to include in its next read response. Mark them `@internal` — they are called by the corresponding `_get_*` wrapper and should rarely be called directly.
 
 ```c
-/**
- * @brief Request current temperatures (both channels).
- * Peripheral will stage a reply on the next I2C read.
- */
-static inline int therm_query_temp(crumbs_context_t *ctx,
-                                   uint8_t addr,
-                                   crumbs_i2c_write_fn write_fn,
-                                   void *io)
+/** @internal Used by therm_get_temp(); prefer that for combined query+read. */
+static inline int therm_query_temp(const crumbs_device_t *dev)
 {
     crumbs_message_t msg;
     crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);   /* type_id=0 is fine for SET_REPLY */
     crumbs_msg_add_u8(&msg, THERM_OP_GET_TEMP);
-    return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
 }
 
-static inline int therm_query_sample_rate(crumbs_context_t *ctx,
-                                          uint8_t addr,
-                                          crumbs_i2c_write_fn write_fn,
-                                          void *io)
+/** @internal Used by therm_get_sample_rate(); prefer that for combined query+read. */
+static inline int therm_query_sample_rate(const crumbs_device_t *dev)
 {
     crumbs_message_t msg;
     crumbs_msg_init(&msg, 0, CRUMBS_CMD_SET_REPLY);
     crumbs_msg_add_u8(&msg, THERM_OP_GET_SAMPLE_RATE);
-    return crumbs_controller_send(ctx, addr, &msg, write_fn, io);
+    return crumbs_controller_send(dev->ctx, dev->addr, &msg, dev->write_fn, dev->io);
 }
 ```
 
@@ -166,38 +153,29 @@ This is the key abstraction. Each `_get_*` function performs the full three-step
 ```c
 /**
  * @brief Read both temperature channels from the thermometer.
- *
- * @param ctx      Controller context.
- * @param addr     I2C address of thermometer peripheral.
- * @param write_fn I2C write function.
- * @param read_fn  I2C read function (e.g. crumbs_linux_read).
- * @param delay_fn Platform microsecond delay (e.g. crumbs_linux_delay_us).
- * @param io       I2C context.
- * @param out      Output struct (must not be NULL).
+ * @param dev Bound device handle.
+ * @param out Output struct (must not be NULL).
  * @return 0 on success, non-zero on error.
  */
-static inline int therm_get_temp(crumbs_context_t *ctx,
-                                 uint8_t addr,
-                                 crumbs_i2c_write_fn write_fn,
-                                 crumbs_i2c_read_fn read_fn,
-                                 crumbs_delay_fn delay_fn,
-                                 void *io,
-                                 therm_temp_result_t *out)
+static inline int therm_get_temp(const crumbs_device_t *dev, therm_temp_result_t *out)
 {
     crumbs_message_t reply;
     int rc;
     if (!out)
         return -1;
 
-    rc = therm_query_temp(ctx, addr, write_fn, io);
+    rc = therm_query_temp(dev);
     if (rc != 0)
         return rc;
 
-    delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
+    dev->delay_fn(CRUMBS_DEFAULT_QUERY_DELAY_US);
 
-    rc = crumbs_controller_read(ctx, addr, &reply, read_fn, io);
+    rc = crumbs_controller_read(dev->ctx, dev->addr, &reply, dev->read_fn, dev->io);
     if (rc != 0)
         return rc;
+
+    if (reply.type_id != THERM_TYPE_ID || reply.opcode != THERM_OP_GET_TEMP)
+        return -1;
 
     /* Parse [ch0:i16][ch1:i16] using crumbs_msg_read_u16 then cast */
     uint16_t raw0, raw1;
@@ -219,7 +197,45 @@ static inline int therm_get_temp(crumbs_context_t *ctx,
 
 ---
 
-## Step 7: Use the ops header on Linux
+## Step 7: Reduce boilerplate with `crumbs_ops.h` (optional)
+
+The `_query_*` + `_get_*` pair and single-parameter `_send_*` functions are entirely deterministic.
+`src/crumbs_ops.h` provides macros that generate the identical code from a single line:
+
+```c
+#include "crumbs_ops.h"
+
+/* Replaces therm_query_sample_rate + therm_get_sample_rate (~22 lines) */
+CRUMBS_DEFINE_GET_OP(therm, sample_rate,
+                     THERM_TYPE_ID, THERM_OP_GET_SAMPLE_RATE,
+                     therm_sample_rate_result_t, therm_parse_sample_rate)
+
+/* Replaces therm_send_set_sample_rate (~6 lines) */
+CRUMBS_DEFINE_SEND_OP(therm, set_sample_rate,
+                      THERM_TYPE_ID, THERM_OP_SET_SAMPLE_RATE,
+                      uint8_t rate,
+                      crumbs_msg_add_u8(&_m, rate))
+```
+
+For `therm_get_temp` the multi-line parse step must first be extracted into a named function
+(`therm_parse_temp`) and then passed to the macro, or written by hand as in Step 6.
+
+**What the macros cover:**
+- `CRUMBS_DEFINE_GET_OP` — standard 1:1 opcode→result GETs (no extra query parameters)
+- `CRUMBS_DEFINE_SEND_OP` — single-parameter SETs
+- `CRUMBS_DEFINE_SEND_OP_0` — zero-parameter SETs (e.g. a `clear` command)
+
+**What must still be written by hand:**
+- SET operations with 2+ parameters
+- Parameterized queries (e.g. "get history entry N") where the index must be packed into the query payload
+- Parse logic — result structs and parse functions are always hand-written
+
+The existing lhwit_family ops headers (`led_ops.h`, `servo_ops.h`, etc.) are concrete
+reference implementations showing both covered and uncovered cases.
+
+---
+
+## Step 8: Use the ops header on Linux
 
 ```c
 #include "crumbs_linux.h"
@@ -229,17 +245,21 @@ crumbs_context_t ctx;
 crumbs_linux_i2c_t lw;
 crumbs_linux_init_controller(&ctx, &lw, "/dev/i2c-1", 0);
 
+crumbs_device_t dev = {
+    .ctx      = &ctx,
+    .addr     = THERM_ADDR,
+    .write_fn = crumbs_linux_i2c_write,
+    .read_fn  = crumbs_linux_read,
+    .delay_fn = crumbs_linux_delay_us,
+    .io       = &lw,
+};
+
 /* SET: configure sample rate */
-therm_send_set_sample_rate(&ctx, THERM_ADDR,
-                           crumbs_linux_i2c_write, &lw, 5);
+therm_send_set_sample_rate(&dev, 5);
 
 /* GET: read temperatures */
 therm_temp_result_t temps;
-int rc = therm_get_temp(&ctx, THERM_ADDR,
-                        crumbs_linux_i2c_write,
-                        crumbs_linux_read,
-                        crumbs_linux_delay_us,
-                        &lw, &temps);
+int rc = therm_get_temp(&dev, &temps);
 if (rc == 0) {
     printf("Ch0: %.2f C\n", temps.temp_ch0 / 100.0);
     printf("Ch1: %.2f C\n", temps.temp_ch1 / 100.0);
@@ -250,7 +270,7 @@ crumbs_linux_close(&lw);
 
 ---
 
-## Step 8: Use the ops header on Arduino
+## Step 9: Use the ops header on Arduino
 
 ```cpp
 #include "crumbs_arduino.h"
@@ -259,19 +279,25 @@ crumbs_linux_close(&lw);
 crumbs_context_t ctx;
 crumbs_arduino_init_controller(&ctx);
 
+crumbs_device_t dev = {
+    .ctx      = &ctx,
+    .addr     = THERM_ADDR,
+    .write_fn = crumbs_arduino_wire_write,
+    .read_fn  = crumbs_arduino_read,
+    .delay_fn = crumbs_arduino_delay_us,
+    .io       = NULL,
+};
+
 therm_temp_result_t temps;
-int rc = therm_get_temp(&ctx, THERM_ADDR,
-                        crumbs_arduino_wire_write,
-                        crumbs_arduino_read,
-                        crumbs_arduino_delay_us,
-                        NULL, &temps);
+int rc = therm_get_temp(&dev, &temps);
 if (rc == 0) {
     Serial.print("Ch0: ");
     Serial.println(temps.temp_ch0 / 100.0);
 }
 ```
 
-The ops header is identical on both platforms. Only the function pointers (`write_fn`, `read_fn`, `delay_fn`) and the `io` context differ.
+The ops header is identical on both platforms. Bundle the platform-specific callbacks into a
+`crumbs_device_t` device handle; call sites then reduce to a single `&dev` argument.
 
 ---
 
@@ -308,8 +334,9 @@ Maximum payload is `CRUMBS_MAX_PAYLOAD` bytes (27). All multi-byte values are li
 - [ ] One `*_send_*` function per SET operation
 - [ ] One `*_query_*` function per GET operation (sends SET_REPLY)
 - [ ] One `*_result_t` struct per GET operation
-- [ ] One `*_get_*` function per GET operation (query + delay + read + parse)
+- [ ] One `*_get_*` function per GET operation (query + delay + read + parse + identity check)
 - [ ] All `_get_*` functions return 0 on success, non-zero on error
+- [ ] `CRUMBS_DEFINE_GET_OP` / `CRUMBS_DEFINE_SEND_OP` used for 1:1 ops (or equivalent hand-written)
 - [ ] Header guard (`#ifndef / #define / #endif`) in place
 - [ ] `#ifdef __cplusplus extern "C"` wrapper present for C++ compatibility
 - [ ] Works with both Linux and Arduino function pointer combinations
