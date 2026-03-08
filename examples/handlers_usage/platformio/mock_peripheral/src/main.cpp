@@ -31,6 +31,11 @@
 #include <crumbs_arduino.h>
 #include <crumbs_message_helpers.h>
 
+/* LED_BUILTIN is not defined on all boards (e.g. bare ESP32 dev modules) */
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 /* Include contract header (from parent directory) */
 #include "mock_ops.h"
 

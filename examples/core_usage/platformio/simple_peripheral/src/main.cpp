@@ -6,6 +6,11 @@
 #include <Arduino.h>
 #include <crumbs_arduino.h>
 
+/* LED_BUILTIN is not defined on all boards (e.g. bare ESP32 dev modules) */
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 crumbs_context_t per_ctx;
 
 static void on_message(crumbs_context_t *ctx, const crumbs_message_t *m)
