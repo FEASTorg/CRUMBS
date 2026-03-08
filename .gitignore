@@ -61,3 +61,6 @@ working/
 # Old files
 _reference/
 _archive/
+
+# Logs
+*.log
