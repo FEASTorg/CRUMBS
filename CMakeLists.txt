@@ -78,6 +78,23 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     target_include_directories(crumbs_mock_controller PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/handlers_usage
     )
+
+    add_executable(crumbs_controller_discovery
+        examples/families_usage/controller_discovery/main.c
+    )
+    target_link_libraries(crumbs_controller_discovery PRIVATE crumbs)
+    target_include_directories(crumbs_controller_discovery PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/families_usage
+    )
+
+    add_executable(crumbs_controller_manual
+        examples/families_usage/controller_manual/main.c
+    )
+    target_link_libraries(crumbs_controller_manual PRIVATE crumbs)
+    target_include_directories(crumbs_controller_manual PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/families_usage/controller_manual
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/families_usage
+    )
 endif()
 
 # -----------------------------------------------------------------------------
