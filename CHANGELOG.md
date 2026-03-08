@@ -6,7 +6,24 @@ All notable changes to CRUMBS are documented in this file.
 
 ## [Unreleased]
 
-*No changes yet.*
+### Fixed
+
+- **`examples/handlers_usage/linux/mock_controller/mock_controller.c`** — updated all
+  `mock_query_*` / `mock_send_*` call sites to the `crumbs_device_t *dev` API introduced in
+  0.11.0; replaced deprecated `crumbs_linux_read_message` + manual parse with `mock_get_*()`
+  combined helpers. Fixes Linux CI compile failure.
+
+- **`examples/handlers_usage/platformio/mock_controller/src/main.cpp`** — same migration for
+  the Arduino/PlatformIO mock controller: added `crumbs_device_t dev` global, rewrote
+  `query_and_print()` to use `mock_get_*()`, updated `cmd_echo / cmd_heartbeat / cmd_toggle`
+  to pass `&dev`. Fixes PlatformIO CI compile failure.
+
+### Changed
+
+- Post-release docs sweep (`0649205`): corrected stale `0.10.3` version references in all
+  eight `platformio.ini` examples, `CONTRIBUTING.md`, `docs/index.md`, and
+  `docs/api-reference.md`; fixed hardcoded `MINOR`/`PATCH` values in `test_version.c`.
+- README badge layout revised; `.gitignore` extended with `*.log` pattern.
 
 ---
 
