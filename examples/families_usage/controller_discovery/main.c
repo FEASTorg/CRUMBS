@@ -22,6 +22,8 @@
  *   > servo set_pos 0 90
  */
 
+#define _DEFAULT_SOURCE  /* expose usleep() under -std=c11 */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
