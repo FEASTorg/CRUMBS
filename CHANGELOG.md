@@ -25,6 +25,11 @@ All notable changes to CRUMBS are documented in this file.
   `query_and_print()` to use `mock_get_*()`, updated `cmd_echo / cmd_heartbeat / cmd_toggle`
   to pass `&dev`. Fixes PlatformIO CI compile failure.
 
+- **`LED_BUILTIN` fallback for ESP32** — added `#ifndef LED_BUILTIN / #define LED_BUILTIN 2`
+  guards to `simple_peripheral/src/main.cpp` and `mock_peripheral/src/main.cpp`; the
+  `espressif32` platform does not define `LED_BUILTIN` for `esp32dev`, causing a compile error
+  on ESP32 CI builds. GPIO 2 is the standard onboard LED for ESP32 DevKit boards.
+
 ### Changed
 
 - Post-release docs sweep (`0649205`): corrected stale `0.10.3` version references in all
