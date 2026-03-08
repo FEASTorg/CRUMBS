@@ -169,3 +169,28 @@ jobs:
 
       - name: Build display peripheral (families_usage)
         run: pio run -d examples/families_usage/lhwit_family/display -e nanoatmega328new
+
+      # ESP32 build validation
+      - name: Build simple_controller (core_usage, ESP32)
+        run: pio run -d examples/core_usage/platformio/simple_controller -e esp32dev
+
+      - name: Build simple_peripheral (core_usage, ESP32)
+        run: pio run -d examples/core_usage/platformio/simple_peripheral -e esp32dev
+
+      - name: Build mock_controller (handlers_usage, ESP32)
+        run: pio run -d examples/handlers_usage/platformio/mock_controller -e esp32dev
+
+      - name: Build mock_peripheral (handlers_usage, ESP32)
+        run: pio run -d examples/handlers_usage/platformio/mock_peripheral -e esp32dev
+
+      - name: Build calculator peripheral (families_usage, ESP32)
+        run: pio run -d examples/families_usage/lhwit_family/calculator -e esp32dev
+
+      - name: Build LED peripheral (families_usage, ESP32)
+        run: pio run -d examples/families_usage/lhwit_family/led -e esp32dev
+
+      - name: Build servo peripheral (families_usage, ESP32)
+        run: pio run -d examples/families_usage/lhwit_family/servo -e esp32dev
+
+      - name: Build display peripheral (families_usage, ESP32)
+        run: pio run -d examples/families_usage/lhwit_family/display -e esp32dev

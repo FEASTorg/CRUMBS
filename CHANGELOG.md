@@ -6,6 +6,13 @@ All notable changes to CRUMBS are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **ESP32 CI build validation** — `[env:esp32dev]` added to all eight example `platformio.ini`
+  files; eight matching `esp32dev` build steps added to the `platformio` CI job. Validates that
+  all examples compile cleanly for ESP32 (espressif32 platform, Arduino framework).
+- `docs/platform-setup.md` — added ESP32 `platformio.ini` snippet with I²C pin note.
+
 ### Fixed
 
 - **`examples/handlers_usage/linux/mock_controller/mock_controller.c`** — updated all

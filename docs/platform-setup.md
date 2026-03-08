@@ -151,20 +151,37 @@ void loop() {
 
 PlatformIO can automatically fetch CRUMBS as a library dependency.
 
-**Example platformio.ini:**
+**Example platformio.ini (Arduino Nano):**
 
 ```ini
-[env:uno]
+[env:nanoatmega328new]
 platform = atmelavr
-board = uno
+board = nanoatmega328new
 framework = arduino
 
 lib_deps =
-    CRUMBS
+    cameronbrooks11/CRUMBS@^0.11.0
 
 build_flags =
-    -DCRUMBS_MAX_HANDLERS=8  # Optional: reduce handler table size
+    -DCRUMBS_MAX_HANDLERS=8  ; optional: reduce handler table size
 ```
+
+**Example platformio.ini (ESP32):**
+
+```ini
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+lib_deps =
+    cameronbrooks11/CRUMBS@^0.11.0
+
+build_flags =
+    -DCRUMBS_MAX_HANDLERS=8  ; optional
+```
+
+> **ESP32 I²C pins:** GPIO 21 (SDA), GPIO 22 (SCL) by default. Use `Wire.begin(sda, scl)` to override.
 
 **To install and build:**
 
