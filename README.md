@@ -61,7 +61,7 @@ lib_deps = cameronbrooks11/CRUMBS@^0.11.0
 
 **Linux/Native:** CMake build (see [CONTRIBUTING.md](CONTRIBUTING.md))
 
-No external dependencies.
+Arduino and PlatformIO builds use the CRUMBS core with no extra dependencies. Linux HAL builds require `linux-wire` for I2C bus access.
 
 ## Hardware Requirements
 
@@ -118,3 +118,4 @@ Details: [platform-setup.md](docs/platform-setup.md)
 ## License
 
 GPL-3.0 - see [LICENSE](LICENSE) file for details.
+

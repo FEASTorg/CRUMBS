@@ -292,6 +292,34 @@ cmake -S . -B build -DCRUMBS_ENABLE_LINUX_HAL=ON \
 cmake --build build --parallel
 ```
 
+#### Long-term CMake Integration Pattern
+
+The canonical CMake dependency contract for Linux HAL consumers is the namespaced target `linux_wire::linux_wire`.
+
+Supported integration modes:
+
+- **Installed package**: `find_package(linux_wire CONFIG REQUIRED)` provides `linux_wire::linux_wire` directly.
+- **Sibling source ingestion**: add `linux-wire` before `CRUMBS` in the parent build. If a raw build-tree target named `linux_wire` already exists, `CRUMBS` creates a local bridge target named `linux_wire::linux_wire` and links against that.
+
+This preserves one canonical target name for `CRUMBS` while still supporting active multi-repo development.
+
+Parent-build example:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+project(my_linux_stack C CXX)
+
+set(LINUX_WIRE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CRUMBS_ENABLE_LINUX_HAL ON CACHE BOOL "" FORCE)
+set(CRUMBS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CRUMBS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(../linux-wire linux_wire_subbuild)
+add_subdirectory(../CRUMBS crumbs_subbuild)
+```
+
+Avoid linking exported or installable CRUMBS targets directly to a raw `linux_wire` target. That breaks CMake export generation. The bridge or installed-package path is the stable pattern.
+
 ### Install CRUMBS
 
 ```bash
@@ -603,3 +631,4 @@ Once your platform is set up and basic communication is working:
 - [Protocol Specification](protocol.md) — Wire format and versioning
 - [Examples](examples.md) — Working code for all platforms
 - [Architecture](architecture.md) — Design decisions and internals
+

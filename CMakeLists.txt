@@ -57,7 +57,17 @@ target_include_directories(crumbs
 # -----------------------------------------------------------------------------
 
 if(CRUMBS_ENABLE_LINUX_HAL)
-    find_package(linux_wire CONFIG REQUIRED)
+    if(NOT TARGET linux_wire::linux_wire)
+        if(TARGET linux_wire)
+            add_library(linux_wire::linux_wire INTERFACE IMPORTED)
+            set_target_properties(linux_wire::linux_wire PROPERTIES
+                INTERFACE_LINK_LIBRARIES linux_wire
+            )
+        else()
+            find_package(linux_wire CONFIG REQUIRED)
+        endif()
+    endif()
+
     target_link_libraries(crumbs PUBLIC linux_wire::linux_wire)
 endif()
 
@@ -211,3 +221,4 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/crumbsConfigVersion.cmake"
     DESTINATION ${config_install_dir}
 )
+
