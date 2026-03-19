@@ -254,6 +254,80 @@ int crumbs_linux_read(void *user_ctx,
     return (int)total;
 }
 
+int crumbs_linux_write_then_read(void *user_ctx,
+                                 uint8_t addr,
+                                 const uint8_t *tx,
+                                 size_t tx_len,
+                                 uint8_t *rx,
+                                 size_t rx_len,
+                                 uint32_t timeout_us,
+                                 int require_repeated_start)
+{
+    if (!user_ctx || (tx_len > 0u && !tx) || (rx_len > 0u && !rx))
+        return -1;
+
+    crumbs_linux_i2c_t *i2c = (crumbs_linux_i2c_t *)user_ctx;
+    lw_i2c_bus *bus = &i2c->bus;
+    if (bus->fd < 0)
+        return -1;
+
+    if (timeout_us > 0u)
+        lw_set_timeout(bus, timeout_us);
+
+    /* Write-only path (no read phase requested). */
+    if (rx_len == 0u)
+    {
+        if (tx_len == 0u)
+            return 0;
+
+        if (lw_set_slave(bus, addr) != 0)
+            return -2;
+
+        ssize_t w = lw_write(bus, tx, tx_len, 1);
+        if (w < 0)
+            return -3;
+        if ((size_t)w != tx_len)
+            return -4;
+        return 0;
+    }
+
+    if (require_repeated_start)
+    {
+        ssize_t n = lw_ioctl_read(bus, addr, tx, tx_len, rx, rx_len, 0);
+        if (n < 0)
+            return -3;
+        return (int)n;
+    }
+
+    if (tx_len > 0u)
+    {
+        if (lw_set_slave(bus, addr) != 0)
+            return -2;
+
+        ssize_t w = lw_write(bus, tx, tx_len, 1);
+        if (w < 0)
+            return -3;
+        if ((size_t)w != tx_len)
+            return -4;
+    }
+
+    if (lw_set_slave(bus, addr) != 0)
+        return -2;
+
+    size_t total = 0u;
+    while (total < rx_len)
+    {
+        ssize_t r = lw_read(bus, rx + total, rx_len - total);
+        if (r < 0)
+            return -3;
+        if (r == 0)
+            break;
+        total += (size_t)r;
+    }
+
+    return (int)total;
+}
+
 uint32_t crumbs_linux_millis(void)
 {
     struct timespec ts;
@@ -395,6 +469,26 @@ int crumbs_linux_read(void *user_ctx,
     (void)buffer;
     (void)len;
     (void)timeout_us;
+    return -1;
+}
+
+int crumbs_linux_write_then_read(void *user_ctx,
+                                 uint8_t addr,
+                                 const uint8_t *tx,
+                                 size_t tx_len,
+                                 uint8_t *rx,
+                                 size_t rx_len,
+                                 uint32_t timeout_us,
+                                 int require_repeated_start)
+{
+    (void)user_ctx;
+    (void)addr;
+    (void)tx;
+    (void)tx_len;
+    (void)rx;
+    (void)rx_len;
+    (void)timeout_us;
+    (void)require_repeated_start;
     return -1;
 }
 

@@ -134,6 +134,31 @@ typedef struct crumbs_linux_i2c_s
                           uint32_t timeout_us);
 
     /**
+     * @brief Combined write-then-read helper for Linux backends.
+     *
+     * For repeated-start-required transactions this uses linux-wire's
+     * I2C_RDWR combined transfer path (`lw_ioctl_read`).
+     *
+     * @param user_ctx                Pointer to crumbs_linux_i2c_t handle.
+     * @param addr                    7-bit I2C target address.
+     * @param tx                      Write-phase bytes (may be NULL if tx_len==0).
+     * @param tx_len                  Number of write-phase bytes.
+     * @param rx                      Read buffer (may be NULL if rx_len==0).
+     * @param rx_len                  Number of bytes to read.
+     * @param timeout_us              Timeout hint in microseconds.
+     * @param require_repeated_start  Non-zero requires a combined transaction.
+     * @return Number of bytes read (>=0) or negative on error.
+     */
+    int crumbs_linux_write_then_read(void *user_ctx,
+                                     uint8_t addr,
+                                     const uint8_t *tx,
+                                     size_t tx_len,
+                                     uint8_t *rx,
+                                     size_t rx_len,
+                                     uint32_t timeout_us,
+                                     int require_repeated_start);
+
+    /**
      * @brief Scan for I2C devices on the bus for addresses in [start_addr, end_addr].
      *
      * The scanner supports two modes:

@@ -14,6 +14,14 @@
 #define CRUMBS_DEFAULT_TWI_FREQ 100000UL
 #endif
 
+#ifndef CRUMBS_ARDUINO_WIRE_BUFFER_LEN
+#ifdef BUFFER_LENGTH
+#define CRUMBS_ARDUINO_WIRE_BUFFER_LEN ((size_t)BUFFER_LENGTH)
+#else
+#define CRUMBS_ARDUINO_WIRE_BUFFER_LEN ((size_t)32u)
+#endif
+#endif
+
 // Single global CRUMBS context pointer used by the Wire callbacks (single-bus pattern).
 static crumbs_context_t *g_crumbs_ctx = nullptr;
 
@@ -318,6 +326,72 @@ extern "C" int crumbs_arduino_read(void *user_ctx,
     }
 
     return (int)idx; /* number of bytes read (may be less than requested) */
+}
+
+extern "C" int crumbs_arduino_write_then_read(void *user_ctx,
+                                              uint8_t addr,
+                                              const uint8_t *tx,
+                                              size_t tx_len,
+                                              uint8_t *rx,
+                                              size_t rx_len,
+                                              uint32_t timeout_us,
+                                              int require_repeated_start)
+{
+    TwoWire *wire = &Wire;
+    if (user_ctx != nullptr)
+        wire = static_cast<TwoWire *>(user_ctx);
+
+    if ((tx_len > 0 && tx == nullptr) || (rx_len > 0 && rx == nullptr))
+        return -1;
+
+    if (tx_len > CRUMBS_ARDUINO_WIRE_BUFFER_LEN || rx_len > CRUMBS_ARDUINO_WIRE_BUFFER_LEN)
+        return -6;
+
+    if (rx_len == 0u)
+    {
+        if (tx_len == 0u)
+            return 0;
+        int wrc = crumbs_arduino_wire_write(wire, addr, tx, tx_len);
+        if (wrc != 0)
+            return -2;
+        return 0;
+    }
+
+    if (tx_len > 0u)
+    {
+        wire->beginTransmission(addr);
+        size_t written = wire->write(tx, tx_len);
+        uint8_t err = wire->endTransmission(require_repeated_start ? 0 : 1);
+        if (err != 0 || written != tx_len)
+            return -2;
+    }
+
+#if ARDUINO >= 100
+    (void)wire->requestFrom((int)addr, (int)rx_len);
+#else
+    (void)wire->requestFrom((int)addr, (int)rx_len);
+#endif
+
+    unsigned long start = micros();
+    size_t idx = 0u;
+    while (idx < rx_len)
+    {
+        if (wire->available())
+        {
+            rx[idx++] = static_cast<uint8_t>(wire->read());
+            continue;
+        }
+
+        if (timeout_us == 0u)
+            break;
+
+        if ((unsigned long)(micros() - start) >= timeout_us)
+            break;
+
+        delayMicroseconds(50);
+    }
+
+    return (int)idx;
 }
 
 /**
