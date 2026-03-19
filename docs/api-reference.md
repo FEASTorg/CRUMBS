@@ -829,11 +829,14 @@ Platform-independent bus scanner for CRUMBS-compatible devices.
 **Parameters:**
 
 - `start_addr`/`end_addr` — Inclusive probe range (0x08–0x77 typical)
-- `strict` — Non-zero: request data-phase read (strong detection). Zero: ACK probe only.
+- `strict` — Non-zero: read-only scan (no probe writes).
+- `strict == 0` — Attempts read first; if no valid CRUMBS frame and `ctx`+`write_fn` are available, sends a small probe frame and reads again.
 - `write_fn`/`read_fn` — Platform primitives
 - `found` — Output array for discovered addresses
 - `max_found` — Size of found array
 - `timeout_us` — Read timeout per device
+
+On mixed buses (CRUMBS + non-CRUMBS sensors), avoid broad range scanning and use constrained candidate address lists.
 
 **Returns:** Number of devices found, or negative on error
 
