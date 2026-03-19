@@ -850,6 +850,69 @@ int count = crumbs_controller_scan_for_crumbs(
     devices, 10, 10000);
 ```
 
+### Candidate-Address Scanner
+
+```c
+int crumbs_controller_scan_for_crumbs_candidates(
+    const crumbs_context_t *ctx,
+    const uint8_t *candidates,
+    size_t candidate_count,
+    int strict,
+    crumbs_i2c_write_fn write_fn,
+    crumbs_i2c_read_fn read_fn,
+    void *io_ctx,
+    uint8_t *found,
+    uint8_t *types,
+    size_t max_found,
+    uint32_t timeout_us);
+```
+
+Use this helper on mixed buses. It probes only the explicit addresses in `candidates` (deduplicated), avoiding full-range scans.
+
+---
+
+## Raw I2C Device Helpers
+
+```c
+typedef int (*crumbs_i2c_write_read_fn)(
+    void *user_ctx, uint8_t addr,
+    const uint8_t *tx, size_t tx_len,
+    uint8_t *rx, size_t rx_len,
+    uint32_t timeout_us,
+    int require_repeated_start);
+```
+
+`crumbs_i2c_write_read_fn` performs a combined write-then-read transaction. Return value is bytes read (`>=0`) or negative on error.
+
+Helper APIs bound to `crumbs_device_t`:
+
+```c
+int crumbs_i2c_dev_write(...);
+int crumbs_i2c_dev_read(...);
+int crumbs_i2c_dev_write_then_read(...);
+int crumbs_i2c_dev_read_reg_ex(...);
+int crumbs_i2c_dev_write_reg_ex(...);
+int crumbs_i2c_dev_read_reg_u8(...);
+int crumbs_i2c_dev_write_reg_u8(...);
+int crumbs_i2c_dev_read_reg_u16be(...);
+int crumbs_i2c_dev_write_reg_u16be(...);
+```
+
+Standard helper error codes:
+
+- `CRUMBS_I2C_DEV_E_INVALID` (`-1`)
+- `CRUMBS_I2C_DEV_E_WRITE` (`-2`)
+- `CRUMBS_I2C_DEV_E_READ` (`-3`)
+- `CRUMBS_I2C_DEV_E_SHORT_READ` (`-4`)
+- `CRUMBS_I2C_DEV_E_NO_REPEATED_START` (`-5`)
+- `CRUMBS_I2C_DEV_E_SIZE` (`-6`)
+
+`crumbs_i2c_dev_write_then_read` fallback behavior:
+
+- if `write_read_fn` is provided, it is used,
+- if it is NULL and `require_repeated_start == 0`, fallback is `dev->write_fn` + `dev->read_fn`,
+- if it is NULL and `require_repeated_start != 0`, returns `CRUMBS_I2C_DEV_E_NO_REPEATED_START`.
+
 ---
 
 ## Return Values and Error Codes

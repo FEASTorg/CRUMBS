@@ -8,7 +8,7 @@ CRUMBS is a lightweight I²C messaging protocol enabling controllers (e.g., sing
 
 **Key Principle**: CRUMBS is the transport layer. Module families define the application layer.
 
-**Key Constraint**: A single I²C bus uses one module family. The controller is compiled with that family's headers and only understands those type_ids and opcodes.
+**Key Constraint**: A single CRUMBS controller instance uses one module-family vocabulary (type_ids/opcodes). A physical I²C bus may also host non-CRUMBS peripherals, but CRUMBS discovery should then use constrained candidate-address scans rather than broad range probing.
 
 ### Design Goals
 
@@ -101,7 +101,7 @@ The same headers are used by peripheral firmware to implement handlers.
 - Self-documenting: Headers define the complete vocabulary
 - Version control: Headers can be versioned with the family
 
-**Trade-off:** Controllers cannot communicate with modules from different families (different vocabulary). One bus = one family.
+**Trade-off:** A controller cannot speak multiple CRUMBS vocabularies at once. This is a vocabulary constraint, not a hard prohibition on non-CRUMBS devices sharing the same physical bus.
 
 ### Physical Deployment
 
@@ -159,6 +159,8 @@ for (int i = 0; i < count; i++) {
 
 - **Strict mode** (`strict=1`): Read-only probes, safer for sensitive devices
 - **Non-strict mode** (`strict=0`): May send probe write to stimulate response
+
+On mixed buses (CRUMBS + non-CRUMBS), avoid broad address-range scans and prefer explicit candidate address lists.
 
 **Runtime device map example:**
 

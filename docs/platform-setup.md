@@ -578,6 +578,17 @@ void setup() {
 void loop() {}
 ```
 
+If your physical bus also includes non-CRUMBS peripherals, avoid broad range scans and use an explicit candidate list:
+
+```c
+uint8_t candidates[] = {0x10, 0x12, 0x20};
+uint8_t found[8], types[8];
+int count = crumbs_controller_scan_for_crumbs_candidates(
+    &ctx, candidates, sizeof(candidates), 1,
+    crumbs_arduino_wire_write, crumbs_arduino_read, NULL,
+    found, types, 8, 10000);
+```
+
 ### I²C Bus Scanner (Linux)
 
 ```bash
@@ -597,6 +608,8 @@ sudo ./build/crumbs_simple_linux_controller scan
 # Strict mode (safer, read-only)
 sudo ./build/crumbs_simple_linux_controller scan strict
 ```
+
+For mixed buses, prefer candidate-address scanning in application code instead of broad `0x08..0x77` sweeps.
 
 ---
 
