@@ -477,6 +477,149 @@ extern "C"
                                                      uint32_t timeout_us);
 
     /**
+     * @brief Probe an explicit candidate address list for CRUMBS-capable devices.
+     *
+     * This variant avoids broad range scans and only probes the addresses in
+     * @p candidates, which is useful on mixed buses that include non-CRUMBS
+     * peripherals.
+     *
+     * @param ctx Controller context (may be NULL for strict mode; required for probe writes).
+     * @param candidates Input list of candidate 7-bit addresses.
+     * @param candidate_count Number of entries in @p candidates.
+     * @param strict Non-zero for strict read-only; 0 to also try probe writes.
+     * @param write_fn Write function for probe writes (may be NULL if strict).
+     * @param read_fn Read function to use for reading frames.
+     * @param io_ctx Opaque I/O context forwarded to read/write callbacks.
+     * @param found Output buffer to receive discovered addresses.
+     * @param types Output buffer for discovered type_id values (parallel to @p found), may be NULL.
+     * @param max_found Capacity of @p found (and @p types when provided).
+     * @param timeout_us Read timeout hint in microseconds.
+     * @return Number of discovered devices (>=0) or negative on error.
+     */
+    int crumbs_controller_scan_for_crumbs_candidates(const crumbs_context_t *ctx,
+                                                     const uint8_t *candidates,
+                                                     size_t candidate_count,
+                                                     int strict,
+                                                     crumbs_i2c_write_fn write_fn,
+                                                     crumbs_i2c_read_fn read_fn,
+                                                     void *io_ctx,
+                                                     uint8_t *found,
+                                                     uint8_t *types,
+                                                     size_t max_found,
+                                                     uint32_t timeout_us);
+
+    /** @name Raw I2C helper error codes
+     *  Return codes used by crumbs_i2c_dev_* helpers.
+     *  @{ */
+#define CRUMBS_I2C_DEV_OK 0
+#define CRUMBS_I2C_DEV_E_INVALID -1
+#define CRUMBS_I2C_DEV_E_WRITE -2
+#define CRUMBS_I2C_DEV_E_READ -3
+#define CRUMBS_I2C_DEV_E_SHORT_READ -4
+#define CRUMBS_I2C_DEV_E_NO_REPEATED_START -5
+#define CRUMBS_I2C_DEV_E_SIZE -6
+    /** @} */
+
+    /**
+     * @brief Raw I2C write helper bound to a crumbs_device_t transport.
+     *
+     * @return CRUMBS_I2C_DEV_OK on success or a negative CRUMBS_I2C_DEV_E_* code.
+     */
+    int crumbs_i2c_dev_write(const crumbs_device_t *dev,
+                             const uint8_t *data,
+                             size_t len);
+
+    /**
+     * @brief Raw I2C read helper bound to a crumbs_device_t transport.
+     *
+     * @return CRUMBS_I2C_DEV_OK on success or a negative CRUMBS_I2C_DEV_E_* code.
+     */
+    int crumbs_i2c_dev_read(const crumbs_device_t *dev,
+                            uint8_t *data,
+                            size_t len,
+                            uint32_t timeout_us);
+
+    /**
+     * @brief Raw combined write-then-read helper bound to a crumbs_device_t transport.
+     *
+     * If @p write_read_fn is NULL and @p require_repeated_start is zero, this
+     * helper falls back to dev->write_fn + dev->read_fn.
+     *
+     * @return CRUMBS_I2C_DEV_OK on success or a negative CRUMBS_I2C_DEV_E_* code.
+     */
+    int crumbs_i2c_dev_write_then_read(const crumbs_device_t *dev,
+                                       const uint8_t *tx,
+                                       size_t tx_len,
+                                       uint8_t *rx,
+                                       size_t rx_len,
+                                       uint32_t timeout_us,
+                                       int require_repeated_start,
+                                       crumbs_i2c_write_read_fn write_read_fn);
+
+    /**
+     * @brief Read bytes from a register/address sequence of arbitrary length.
+     *
+     * @return CRUMBS_I2C_DEV_OK on success or a negative CRUMBS_I2C_DEV_E_* code.
+     */
+    int crumbs_i2c_dev_read_reg_ex(const crumbs_device_t *dev,
+                                   const uint8_t *reg,
+                                   size_t reg_len,
+                                   uint8_t *out,
+                                   size_t out_len,
+                                   uint32_t timeout_us,
+                                   int require_repeated_start,
+                                   crumbs_i2c_write_read_fn write_read_fn);
+
+    /**
+     * @brief Write bytes to a register/address sequence of arbitrary length.
+     *
+     * @return CRUMBS_I2C_DEV_OK on success or a negative CRUMBS_I2C_DEV_E_* code.
+     */
+    int crumbs_i2c_dev_write_reg_ex(const crumbs_device_t *dev,
+                                    const uint8_t *reg,
+                                    size_t reg_len,
+                                    const uint8_t *data,
+                                    size_t data_len);
+
+    /**
+     * @brief Convenience wrapper for 8-bit register reads.
+     */
+    int crumbs_i2c_dev_read_reg_u8(const crumbs_device_t *dev,
+                                   uint8_t reg,
+                                   uint8_t *out,
+                                   size_t out_len,
+                                   uint32_t timeout_us,
+                                   int require_repeated_start,
+                                   crumbs_i2c_write_read_fn write_read_fn);
+
+    /**
+     * @brief Convenience wrapper for 8-bit register writes.
+     */
+    int crumbs_i2c_dev_write_reg_u8(const crumbs_device_t *dev,
+                                    uint8_t reg,
+                                    const uint8_t *data,
+                                    size_t data_len);
+
+    /**
+     * @brief Convenience wrapper for big-endian 16-bit register reads.
+     */
+    int crumbs_i2c_dev_read_reg_u16be(const crumbs_device_t *dev,
+                                      uint16_t reg,
+                                      uint8_t *out,
+                                      size_t out_len,
+                                      uint32_t timeout_us,
+                                      int require_repeated_start,
+                                      crumbs_i2c_write_read_fn write_read_fn);
+
+    /**
+     * @brief Convenience wrapper for big-endian 16-bit register writes.
+     */
+    int crumbs_i2c_dev_write_reg_u16be(const crumbs_device_t *dev,
+                                       uint16_t reg,
+                                       const uint8_t *data,
+                                       size_t data_len);
+
+    /**
      * @brief Process raw bytes received by a peripheral HAL.
      *
      * HALs should pass the raw frame bytes into this function so the core can

@@ -120,6 +120,33 @@ extern "C"
         uint32_t timeout_us);
 
     /**
+     * @brief Combined I2C write-then-read primitive with optional repeated-start requirement.
+     *
+     * This callback is intended for register-style transactions where a write phase
+     * (typically register/address bytes) is followed by a read phase.
+     *
+     * @param user_ctx                Opaque implementation pointer.
+     * @param addr                    7-bit I2C target address.
+     * @param tx                      Bytes for write phase (may be NULL if tx_len==0).
+     * @param tx_len                  Number of bytes in @p tx.
+     * @param rx                      Output buffer for read phase (may be NULL if rx_len==0).
+     * @param rx_len                  Number of bytes requested in read phase.
+     * @param timeout_us              Timeout hint in microseconds.
+     * @param require_repeated_start  Non-zero requires atomic combined transfer
+     *                                without STOP between write/read phases.
+     * @return Number of bytes read (>=0) on success, negative on error.
+     */
+    typedef int (*crumbs_i2c_write_read_fn)(
+        void *user_ctx,
+        uint8_t addr,
+        const uint8_t *tx,
+        size_t tx_len,
+        uint8_t *rx,
+        size_t rx_len,
+        uint32_t timeout_us,
+        int require_repeated_start);
+
+    /**
      * @brief Platform millisecond timer function signature.
      *
      * Implementations should return monotonic milliseconds since boot.

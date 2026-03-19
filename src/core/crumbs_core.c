@@ -752,6 +752,61 @@ int crumbs_controller_scan_for_crumbs(const crumbs_context_t *ctx,
                                                         max_found, timeout_us);
 }
 
+/**
+ * @brief Probe an explicit candidate address list for CRUMBS-capable devices.
+ *
+ * This helper is intended for mixed-bus setups where broad range scans are
+ * undesirable. Duplicate candidate addresses are ignored.
+ */
+int crumbs_controller_scan_for_crumbs_candidates(const crumbs_context_t *ctx,
+                                                 const uint8_t *candidates,
+                                                 size_t candidate_count,
+                                                 int strict,
+                                                 crumbs_i2c_write_fn write_fn,
+                                                 crumbs_i2c_read_fn read_fn,
+                                                 void *io_ctx,
+                                                 uint8_t *found,
+                                                 uint8_t *types,
+                                                 size_t max_found,
+                                                 uint32_t timeout_us)
+{
+    if (!candidates || candidate_count == 0u || !read_fn || !found || max_found == 0u)
+    {
+        return -1;
+    }
+
+    uint8_t seen[128];
+    memset(seen, 0, sizeof(seen));
+
+    size_t total = 0u;
+    for (size_t i = 0; i < candidate_count && total < max_found; ++i)
+    {
+        uint8_t addr = candidates[i];
+        if (addr > 0x7Fu)
+        {
+            return -1;
+        }
+
+        if (seen[addr] != 0u)
+        {
+            continue;
+        }
+        seen[addr] = 1u;
+
+        int n = crumbs_controller_scan_for_crumbs_with_types(
+            ctx, addr, addr, strict, write_fn, read_fn, io_ctx,
+            &found[total], types ? &types[total] : NULL, max_found - total, timeout_us);
+        if (n < 0)
+        {
+            return n;
+        }
+
+        total += (size_t)n;
+    }
+
+    return (int)total;
+}
+
 /* ---- CRC stats helpers ------------------------------------------------- */
 
 /**
