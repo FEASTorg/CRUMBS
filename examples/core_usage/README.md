@@ -21,6 +21,7 @@
 | [basic_peripheral/](arduino/basic_peripheral/)                     | Basic peripheral with multiple commands           |
 | [basic_controller/](arduino/basic_controller/)                     | Basic controller with key commands                |
 | [advanced_controller/](arduino/advanced_controller/)               | Advanced controller with CSV parsing and scanning |
+| [mixed_bus_controller/](arduino/mixed_bus_controller/)             | CRUMBS + raw sensor access on one bus             |
 | [basic_peripheral_noncrumbs/](arduino/basic_peripheral_noncrumbs/) | Raw I²C peripheral (no CRUMBS) for comparison     |
 
 **Quick Start:** Upload [hello_peripheral](arduino/hello_peripheral/) and [hello_controller](arduino/hello_controller/) to see CRUMBS working in 15 minutes.
@@ -60,6 +61,7 @@ pio run --target upload
 | Example                                        | Description                               |
 | ---------------------------------------------- | ----------------------------------------- |
 | [simple_controller/](linux/simple_controller/) | Linux controller using linux-wire library |
+| [mixed_bus_controller/](linux/mixed_bus_controller/) | Mixed-bus validator for CRUMBS + sensor |
 
 ### Getting Started (Linux)
 
@@ -67,9 +69,49 @@ pio run --target upload
 cd examples/core_usage/linux/simple_controller
 make
 ./simple_controller /dev/i2c-1
+
+cd ../mixed_bus_controller
+cmake -S . -B build -DCRUMBS_BUILD_IN_TREE=ON
+cmake --build build
+./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21 strict
 ```
 
 **Note:** Requires [linux-wire](https://github.com/AnotherDaniel/linux-wire) library installed.
+
+### Mixed-Bus Validation Path (Pre-Release)
+
+Use this sequence to validate the new raw-I2C helper APIs end-to-end before release:
+
+1. `scan` known CRUMBS addresses only:
+
+```bash
+./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21,0x30 strict
+```
+
+2. read sensor register with repeated-start:
+
+```bash
+./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
+```
+
+3. read u16-addressed register device:
+
+```bash
+./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u16 0x40 0x0100 6 repeat
+```
+
+4. optional generic preamble read/write using `-ex` APIs:
+
+```bash
+./build/crumbs_mixed_bus_controller /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat
+./build/crumbs_mixed_bus_controller /dev/i2c-1 write-ex 0x1E 0x20,0x09 0x10,0x00
+```
+
+5. optional sensor register write:
+
+```bash
+./build/crumbs_mixed_bus_controller /dev/i2c-1 write-u8 0x76 0xF4 0x27
+```
 
 ---
 
