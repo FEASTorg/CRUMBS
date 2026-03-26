@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 static const uint32_t SERIAL_BAUD = 115200;
+static const uint32_t HEARTBEAT_INTERVAL_MS = 500;
 static const uint32_t SENSOR_READ_TIMEOUT_US = 10000;
 static const uint32_t LOOP_DELAY_MS = 2000;
 

@@ -10,6 +10,20 @@ static crumbs_device_t g_sensor = {
     crumbs_arduino_read,
     crumbs_arduino_delay_us,
     NULL};
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
+static uint32_t last_sensor_poll_ms = 0;
+
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
 
 static void print_hex_u8(uint8_t v)
 {
@@ -21,6 +35,8 @@ static void print_hex_u8(uint8_t v)
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
     while (!Serial)
     {
     }
@@ -31,6 +47,13 @@ void setup()
 
 void loop()
 {
+    heartbeat_tick();
+    if ((uint32_t)(millis() - last_sensor_poll_ms) < LOOP_DELAY_MS)
+    {
+        return;
+    }
+    last_sensor_poll_ms = millis();
+
     uint8_t found[8];
     uint8_t types[8];
 
@@ -89,5 +112,4 @@ void loop()
     }
     Serial.println();
 
-    delay(LOOP_DELAY_MS);
 }

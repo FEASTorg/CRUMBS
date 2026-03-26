@@ -10,6 +10,19 @@
 crumbs_context_t ctx;
 uint8_t stored_data[STORED_DATA_CAPACITY];
 uint8_t stored_len = 0;
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
+
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
 
 void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 {
@@ -69,6 +82,8 @@ void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
     crumbs_arduino_init_peripheral(&ctx, DEVICE_ADDR);
     crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
     Serial.print("Basic peripheral ready at 0x");
@@ -77,5 +92,7 @@ void setup()
 
 void loop()
 {
-    // All processing in callbacks
+    // All processing in callbacks.
+    heartbeat_tick();
+    delay(1);
 }

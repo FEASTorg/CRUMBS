@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 static const uint32_t SERIAL_BAUD = 115200;
+static const uint32_t HEARTBEAT_INTERVAL_MS = 500;
 
 static const uint8_t TARGET_ADDR = 0x08;
 static const uint8_t TARGET_TYPE_ID = 0x01;
@@ -23,4 +24,3 @@ static const char CMD_KEY_STORE = 's';
 static const char CMD_KEY_CLEAR = 'c';
 static const char CMD_KEY_QUERY_VERSION = 'v';
 static const char CMD_KEY_QUERY_STORED = 'd';
-

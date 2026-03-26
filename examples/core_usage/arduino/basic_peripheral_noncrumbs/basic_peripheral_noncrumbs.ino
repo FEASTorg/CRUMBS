@@ -19,6 +19,20 @@
 #include <Wire.h>
 #include "config.h"
 
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
+
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
+
 void onReceiveHandler(int numBytes)
 {
     // Drain and count bytes (we intentionally do not interpret them as CRUMBS)
@@ -42,6 +56,8 @@ void onRequestHandler()
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
     while (!Serial)
         ; // wait for serial monitor on some boards
 
@@ -56,5 +72,6 @@ void setup()
 void loop()
 {
     // Nothing to do here - interrupts drive I2C callbacks.
-    delay(LOOP_DELAY_MS);
+    heartbeat_tick();
+    delay(1);
 }

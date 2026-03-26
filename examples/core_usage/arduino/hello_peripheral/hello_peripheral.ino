@@ -9,6 +9,19 @@
 
 crumbs_context_t ctx;
 uint8_t counter = 0;
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
+
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
 
 /* NOTE: hello_peripheral uses on_message for brevity (one callback, no handler table).
  * For a real family peripheral, use crumbs_register_handler() for each SET opcode instead.
@@ -31,6 +44,8 @@ void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 
     /* Guard: catches CRUMBS_MAX_HANDLERS mismatch between sketch and library.
      * If this fires, define CRUMBS_MAX_HANDLERS in build_flags (platformio.ini
@@ -47,4 +62,8 @@ void setup()
     Serial.println(DEVICE_ADDR, HEX);
 }
 
-void loop() {}
+void loop()
+{
+    heartbeat_tick();
+    delay(1);
+}
