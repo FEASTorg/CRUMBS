@@ -23,7 +23,7 @@ static void print_usage(const char *prog)
             "\n"
             "Examples:\n"
             "  %s /dev/i2c-1 scan 0x20,0x21,0x30 strict\n"
-            "  %s /dev/i2c-1 read-u8 0x76 0xD0 1 repeat\n"
+            "  %s /dev/i2c-1 read-u8 0x76 0xD0 1 repeat  # BMP/BME280 chip-id\n"
             "  %s /dev/i2c-1 read-u16 0x40 0x0100 6 repeat\n"
             "  %s /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat\n"
             "  %s /dev/i2c-1 write-u8 0x76 0xF4 0x27\n",

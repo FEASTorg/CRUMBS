@@ -12,6 +12,15 @@ This example is intended for **pre-release validation** on a real bus with:
 1. one or more CRUMBS devices,
 2. one off-the-shelf I2C sensor.
 
+Recommended register-based reference sensor for validation:
+
+- BMP280/BME280 at `0x76` (or `0x77`)
+- chip-ID register `0xD0`
+- expected ID `0x58` (BMP280) or `0x60` (BME280)
+- Bosch datasheets:
+  - https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp280-ds001.pdf
+  - https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
+
 ## Build
 
 ```bash
@@ -37,7 +46,7 @@ cmake --build build
 # Scan only known CRUMBS addresses
 ./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21,0x30 strict
 
-# Read sensor WHOAMI register (u8 register address)
+# Read BMP/BME280 chip-ID register (u8 register address)
 ./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
 
 # Read 6 bytes using u16 register address

@@ -1,12 +1,6 @@
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-
-// Configure for your hardware setup.
-#define SENSOR_ADDR 0x76
-#define SENSOR_WHOAMI_REG 0xD0
-
-// Only probe known CRUMBS addresses on mixed buses.
-static const uint8_t kCrumbsCandidates[] = {0x20, 0x21, 0x30};
+#include "mixed_bus_config.h"
 
 static crumbs_context_t g_ctx;
 static crumbs_device_t g_sensor = {
@@ -64,11 +58,11 @@ void loop()
         Serial.println();
     }
 
-    uint8_t whoami = 0;
+    uint8_t chip_id = 0;
     int rc = crumbs_i2c_dev_read_reg_u8(
         &g_sensor,
-        SENSOR_WHOAMI_REG,
-        &whoami,
+        SENSOR_CHIP_ID_REG,
+        &chip_id,
         1,
         10000,
         1, /* require repeated-start */
@@ -78,11 +72,22 @@ void loop()
     Serial.print(rc);
     if (rc == CRUMBS_I2C_DEV_OK)
     {
-        Serial.print(" WHOAMI=0x");
-        print_hex_u8(whoami);
+        Serial.print(" CHIP_ID=0x");
+        print_hex_u8(chip_id);
+        if (chip_id == BMP280_CHIP_ID)
+        {
+            Serial.print(" (BMP280)");
+        }
+        else if (chip_id == BME280_CHIP_ID)
+        {
+            Serial.print(" (BME280)");
+        }
+        else
+        {
+            Serial.print(" (unexpected ID)");
+        }
     }
     Serial.println();
 
     delay(2000);
 }
-

@@ -88,11 +88,14 @@ Use this sequence to validate the new raw-I2C helper APIs end-to-end before rele
 ./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21,0x30 strict
 ```
 
-2. read sensor register with repeated-start:
+2. read sensor chip-ID register with repeated-start:
 
 ```bash
 ./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
 ```
+
+For BMP/BME280, expected chip ID from that command is:
+- `0x58` (BMP280) or `0x60` (BME280)
 
 3. read u16-addressed register device:
 
