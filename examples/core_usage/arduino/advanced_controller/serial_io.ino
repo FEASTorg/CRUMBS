@@ -1,3 +1,5 @@
+#include "config.h"
+
 namespace
 {
     uint32_t lastCrcReport = 0;
@@ -62,7 +64,7 @@ void handleSerialInput()
             Wire.requestFrom((int)targetAddress, (int)numBytes);
 
             // Allow some time for the peripheral to send the response
-            delay(50);
+            delay(REQUEST_READ_DELAY_MS);
 
             uint8_t responseBuffer[CRUMBS_MESSAGE_MAX_SIZE];
             int index = 0;
@@ -124,15 +126,15 @@ void handleSerialInput()
             uint8_t found[32];
             int n = crumbs_controller_scan_for_crumbs(
                 &crumbsController,
-                0x03,
-                0x77,
+                SCAN_START_ADDR,
+                SCAN_END_ADDR,
                 strictMode ? 1 : 0,
                 crumbs_arduino_wire_write,
                 crumbs_arduino_read,
                 NULL,
                 found,
                 sizeof(found),
-                50000 /* timeout_us */
+                SCAN_TIMEOUT_US
             );
 
             if (n < 0)

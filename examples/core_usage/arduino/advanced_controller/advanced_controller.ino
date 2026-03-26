@@ -7,21 +7,19 @@
 #include <crumbs_arduino.h>
 
 #include <Wire.h>
+#include "config.h"
 
 // Instantiate CRUMBS as Controller, set to true for Controller mode
 static crumbs_context_t crumbsController; // C struct
 
-//  Maximum expected input length for serial commands.
-#define MAX_INPUT_LENGTH 60
-
 // Initializes the Controller device, sets up serial communication, and provides usage instructions.
 void setup()
 {
-    Serial.begin(115200); /**< Initialize serial communication at 115200 baud rate */
+    Serial.begin(SERIAL_BAUD); /**< Initialize serial communication at configured baud rate */
 
     while (!Serial)
     {
-        delay(10); // Wait for Serial Monitor to open
+        delay(SERIAL_WAIT_MS); // Wait for Serial Monitor to open
     }
 
     crumbs_arduino_init_controller(&crumbsController);

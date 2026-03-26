@@ -17,9 +17,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-
-// Choose address 69 decimal (0x45)
-#define NONCRUMBS_ADDR 69
+#include "config.h"
 
 void onReceiveHandler(int numBytes)
 {
@@ -38,13 +36,12 @@ void onRequestHandler()
 {
     // Respond with a short, non-CRUMBS payload (e.g., a simple text token)
     // This is intentionally not 31 bytes and does not contain a valid CRC.
-    const char *payload = "NOCRUMBS"; // 8 bytes
-    Wire.write((const uint8_t *)payload, strlen(payload));
+    Wire.write((const uint8_t *)NONCRUMBS_PAYLOAD, strlen(NONCRUMBS_PAYLOAD));
 }
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD);
     while (!Serial)
         ; // wait for serial monitor on some boards
 
@@ -59,5 +56,5 @@ void setup()
 void loop()
 {
     // Nothing to do here - interrupts drive I2C callbacks.
-    delay(1000);
+    delay(LOOP_DELAY_MS);
 }

@@ -1,6 +1,6 @@
 #include <crumbs.h>
 #include <crumbs_arduino.h>
-#include "mixed_bus_config.h"
+#include "config.h"
 
 static crumbs_context_t g_ctx;
 static crumbs_device_t g_sensor = {
@@ -20,7 +20,7 @@ static void print_hex_u8(uint8_t v)
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD);
     while (!Serial)
     {
     }
@@ -64,7 +64,7 @@ void loop()
         SENSOR_CHIP_ID_REG,
         &chip_id,
         1,
-        10000,
+        SENSOR_READ_TIMEOUT_US,
         1, /* require repeated-start */
         crumbs_arduino_write_then_read);
 
@@ -89,5 +89,5 @@ void loop()
     }
     Serial.println();
 
-    delay(2000);
+    delay(LOOP_DELAY_MS);
 }

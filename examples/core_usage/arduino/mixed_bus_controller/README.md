@@ -22,7 +22,7 @@ Default target sensor profile:
 
 ## Setup
 
-Edit `mixed_bus_config.h`:
+Edit `config.h`:
 
 - `SENSOR_ADDR`
 - `SENSOR_CHIP_ID_REG`

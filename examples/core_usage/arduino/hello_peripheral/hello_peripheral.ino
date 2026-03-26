@@ -5,6 +5,7 @@
 
 #include <crumbs.h>
 #include <crumbs_arduino.h>
+#include "config.h"
 
 crumbs_context_t ctx;
 uint8_t counter = 0;
@@ -21,15 +22,15 @@ void on_message(crumbs_context_t *ctx, const crumbs_message_t *msg)
 
 void on_request(crumbs_context_t *ctx, crumbs_message_t *reply)
 {
-    reply->type_id = 1;
-    reply->opcode = 0;
+    reply->type_id = DEVICE_TYPE_ID;
+    reply->opcode = DEFAULT_REPLY_OPCODE;
     reply->data_len = 1;
     reply->data[0] = counter;
 }
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD);
 
     /* Guard: catches CRUMBS_MAX_HANDLERS mismatch between sketch and library.
      * If this fires, define CRUMBS_MAX_HANDLERS in build_flags (platformio.ini
@@ -40,9 +41,10 @@ void setup()
         while (1);
     }
 
-    crumbs_arduino_init_peripheral(&ctx, 0x08);
+    crumbs_arduino_init_peripheral(&ctx, DEVICE_ADDR);
     crumbs_set_callbacks(&ctx, on_message, on_request, NULL);
-    Serial.println("Hello peripheral at 0x08");
+    Serial.print("Hello peripheral at 0x");
+    Serial.println(DEVICE_ADDR, HEX);
 }
 
 void loop() {}
