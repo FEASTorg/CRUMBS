@@ -45,9 +45,9 @@ Examples organized by complexity. **Test I²C bus with [scanner](https://playgro
 
 | Platform   | Tier 1         | Tier 2         | Tier 3                              |
 | ---------- | -------------- | -------------- | ----------------------------------- |
-| Arduino    | ✓ 5 examples   | —              | —                                   |
+| Arduino    | ✓ 7 examples   | —              | —                                   |
 | PlatformIO | ✓ 2 examples   | ✓ 2 examples   | ✓ 4 peripherals (LHWIT family)      |
-| Linux      | ✓ 1 controller | ✓ 1 controller | ✓ 2 controllers (discovery, manual) |
+| Linux      | ✓ 2 controllers | ✓ 1 controller | ✓ 2 controllers (discovery, manual) |
 
 ---
 

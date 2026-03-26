@@ -30,6 +30,7 @@ include(CMakePackageConfigHelpers)
 
 set(CRUMBS_CORE_SOURCES
     src/core/crumbs_core.c
+    src/core/crumbs_i2c_helpers.c
     src/crc/crumbs_crc.c
     src/crc/crc8_nibble.c
 )
@@ -81,6 +82,11 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
 
+    add_executable(crumbs_mixed_bus_controller
+        examples/core_usage/linux/mixed_bus_controller/main.c
+    )
+    target_link_libraries(crumbs_mixed_bus_controller PRIVATE crumbs)
+
     add_executable(crumbs_mock_controller
         examples/handlers_usage/linux/mock_controller/mock_controller.c
     )
@@ -121,6 +127,10 @@ if(CRUMBS_ENABLE_TESTS)
     add_executable(test_scan_fake tests/test_scan_fake.c)
     target_link_libraries(test_scan_fake PRIVATE crumbs)
     add_test(NAME scan_fake_test COMMAND test_scan_fake)
+
+    add_executable(test_i2c_helpers tests/test_i2c_helpers.c)
+    target_link_libraries(test_i2c_helpers PRIVATE crumbs)
+    add_test(NAME i2c_helpers_test COMMAND test_i2c_helpers)
 
     add_executable(test_crc_failure tests/test_crc_failure.c)
     target_link_libraries(test_crc_failure PRIVATE crumbs)

@@ -17,9 +17,21 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include "config.h"
 
-// Choose address 69 decimal (0x45)
-#define NONCRUMBS_ADDR 69
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
+
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
 
 void onReceiveHandler(int numBytes)
 {
@@ -38,13 +50,14 @@ void onRequestHandler()
 {
     // Respond with a short, non-CRUMBS payload (e.g., a simple text token)
     // This is intentionally not 31 bytes and does not contain a valid CRC.
-    const char *payload = "NOCRUMBS"; // 8 bytes
-    Wire.write((const uint8_t *)payload, strlen(payload));
+    Wire.write((const uint8_t *)NONCRUMBS_PAYLOAD, strlen(NONCRUMBS_PAYLOAD));
 }
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
     while (!Serial)
         ; // wait for serial monitor on some boards
 
@@ -59,5 +72,6 @@ void setup()
 void loop()
 {
     // Nothing to do here - interrupts drive I2C callbacks.
-    delay(1000);
+    heartbeat_tick();
+    delay(1);
 }

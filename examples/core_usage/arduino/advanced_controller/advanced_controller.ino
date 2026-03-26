@@ -7,21 +7,34 @@
 #include <crumbs_arduino.h>
 
 #include <Wire.h>
+#include "config.h"
 
 // Instantiate CRUMBS as Controller, set to true for Controller mode
 static crumbs_context_t crumbsController; // C struct
+static uint32_t last_heartbeat_ms = 0;
+static bool led_state = false;
 
-//  Maximum expected input length for serial commands.
-#define MAX_INPUT_LENGTH 60
+static void heartbeat_tick()
+{
+    const uint32_t now = millis();
+    if ((uint32_t)(now - last_heartbeat_ms) < HEARTBEAT_INTERVAL_MS)
+        return;
+
+    last_heartbeat_ms = now;
+    led_state = !led_state;
+    digitalWrite(LED_BUILTIN, led_state ? HIGH : LOW);
+}
 
 // Initializes the Controller device, sets up serial communication, and provides usage instructions.
 void setup()
 {
-    Serial.begin(115200); /**< Initialize serial communication at 115200 baud rate */
+    Serial.begin(SERIAL_BAUD); /**< Initialize serial communication at configured baud rate */
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 
     while (!Serial)
     {
-        delay(10); // Wait for Serial Monitor to open
+        delay(SERIAL_WAIT_MS); // Wait for Serial Monitor to open
     }
 
     crumbs_arduino_init_controller(&crumbsController);
@@ -38,6 +51,7 @@ void setup()
 // Main loop that listens for serial input, parses commands, and sends crumbs_message_ts to the specified Slice.
 void loop()
 {
+    heartbeat_tick();
     // Listen for serial input to send commands or request data
     handleSerialInput();
 }

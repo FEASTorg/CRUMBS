@@ -95,6 +95,32 @@ extern "C"
                             uint32_t timeout_us);
 
     /**
+     * @brief Combined write-then-read helper using Arduino TwoWire.
+     *
+     * When @p require_repeated_start is non-zero this performs:
+     *   endTransmission(false) + requestFrom(...)
+     * for an atomic register-style transaction.
+     *
+     * @param user_ctx                Pointer to TwoWire instance or NULL to use &Wire.
+     * @param addr                    7-bit I2C target address.
+     * @param tx                      Write-phase bytes (may be NULL if tx_len==0).
+     * @param tx_len                  Number of write-phase bytes.
+     * @param rx                      Read buffer (may be NULL if rx_len==0).
+     * @param rx_len                  Number of bytes to read.
+     * @param timeout_us              Timeout hint in microseconds.
+     * @param require_repeated_start  Non-zero requires combined no-STOP behavior.
+     * @return Number of bytes read (>=0) or negative on error.
+     */
+    int crumbs_arduino_write_then_read(void *user_ctx,
+                                       uint8_t addr,
+                                       const uint8_t *tx,
+                                       size_t tx_len,
+                                       uint8_t *rx,
+                                       size_t rx_len,
+                                       uint32_t timeout_us,
+                                       int require_repeated_start);
+
+    /**
      * @brief Arduino platform millisecond timer.
      * @return Milliseconds since boot.
      */
