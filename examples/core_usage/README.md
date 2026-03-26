@@ -21,10 +21,12 @@
 | [basic_peripheral/](arduino/basic_peripheral/)                     | Basic peripheral with multiple commands           |
 | [basic_controller/](arduino/basic_controller/)                     | Basic controller with key commands                |
 | [advanced_controller/](arduino/advanced_controller/)               | Advanced controller with CSV parsing and scanning |
-| [mixed_bus_controller/](arduino/mixed_bus_controller/)             | CRUMBS + raw sensor access on one bus             |
+| [mixed_bus_controller/](arduino/mixed_bus_controller/)             | CRUMBS (`basic_peripheral`) + raw sensor access on one bus |
 | [basic_peripheral_noncrumbs/](arduino/basic_peripheral_noncrumbs/) | Raw I²C peripheral (no CRUMBS) for comparison     |
 
 **Quick Start:** Upload [hello_peripheral](arduino/hello_peripheral/) and [hello_controller](arduino/hello_controller/) to see CRUMBS working in 15 minutes.
+
+For mixed-bus validation, run `basic_peripheral` on unique addresses (default full profile: `0x08`, `0x09`, `0x0A`).
 
 ### Getting Started (Arduino)
 
