@@ -41,9 +41,9 @@ int main(void)
         return 1;
     }
 
-    if (CRUMBS_VERSION_MINOR != 11)
+    if (CRUMBS_VERSION_MINOR != 12)
     {
-        fprintf(stderr, "FAIL: Expected MINOR=11, got %d\n", CRUMBS_VERSION_MINOR);
+        fprintf(stderr, "FAIL: Expected MINOR=12, got %d\n", CRUMBS_VERSION_MINOR);
         return 1;
     }
 
@@ -65,9 +65,9 @@ int main(void)
     }
 
     /* Test 4: Version string matches expected format */
-    if (strcmp(CRUMBS_VERSION_STRING, "0.11.0") != 0)
+    if (strcmp(CRUMBS_VERSION_STRING, "0.12.0") != 0)
     {
-        fprintf(stderr, "FAIL: Expected version string '0.11.0', got '%s'\n",
+        fprintf(stderr, "FAIL: Expected version string '0.12.0', got '%s'\n",
                 CRUMBS_VERSION_STRING);
         return 1;
     }

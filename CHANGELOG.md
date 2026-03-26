@@ -8,34 +8,56 @@ All notable changes to CRUMBS are documented in this file.
 
 ### Added
 
-- **ESP32 CI build validation** — `[env:esp32dev]` added to all eight example `platformio.ini`
-  files; eight matching `esp32dev` build steps added to the `platformio` CI job. Validates that
-  all examples compile cleanly for ESP32 (espressif32 platform, Arduino framework).
-- `docs/platform-setup.md` — added ESP32 `platformio.ini` snippet with I²C pin note.
+- **Raw I2C helper APIs** (`src/crumbs.h`, `src/core/crumbs_i2c_helpers.c`)
+  - `crumbs_i2c_dev_write`, `crumbs_i2c_dev_read`, `crumbs_i2c_dev_write_then_read`
+  - register helpers: `read_reg_ex` / `write_reg_ex`, plus `u8` and `u16be` wrappers
+  - standardized `CRUMBS_I2C_DEV_E_*` return codes
+- **Candidate-address CRUMBS scanner**
+  - `crumbs_controller_scan_for_crumbs_candidates(...)` for mixed-bus safe probing without broad sweeps
+- **HAL combined transfer support**
+  - `crumbs_linux_write_then_read(...)`
+  - `crumbs_arduino_write_then_read(...)`
+- **Mixed-bus validation examples**
+  - Linux: `examples/core_usage/linux/mixed_bus_controller/`
+  - Arduino: `examples/core_usage/arduino/mixed_bus_controller/`
+  - includes CRUMBS candidate scanning + non-CRUMBS sensor register I/O flow
+- **Coverage for new helpers**
+  - `tests/test_i2c_helpers.c`
+- **Core Arduino example consistency**
+  - added simple `LED_BUILTIN` heartbeat across core Arduino examples
+  - standardized `config.h` usage in core Arduino examples
+- **ESP32 CI build validation**
+  - `[env:esp32dev]` coverage added across PlatformIO examples and CI workflow steps
+- `docs/platform-setup.md` ESP32 PlatformIO snippet with I2C pin guidance
 
 ### Fixed
 
-- **`examples/handlers_usage/linux/mock_controller/mock_controller.c`** — updated all
-  `mock_query_*` / `mock_send_*` call sites to the `crumbs_device_t *dev` API introduced in
-  0.11.0; replaced deprecated `crumbs_linux_read_message` + manual parse with `mock_get_*()`
-  combined helpers. Fixes Linux CI compile failure.
-
-- **`examples/handlers_usage/platformio/mock_controller/src/main.cpp`** — same migration for
-  the Arduino/PlatformIO mock controller: added `crumbs_device_t dev` global, rewrote
-  `query_and_print()` to use `mock_get_*()`, updated `cmd_echo / cmd_heartbeat / cmd_toggle`
-  to pass `&dev`. Fixes PlatformIO CI compile failure.
-
-- **`LED_BUILTIN` fallback for ESP32** — added `#ifndef LED_BUILTIN / #define LED_BUILTIN 2`
-  guards to `simple_peripheral/src/main.cpp` and `mock_peripheral/src/main.cpp`; the
-  `espressif32` platform does not define `LED_BUILTIN` for `esp32dev`, causing a compile error
-  on ESP32 CI builds. GPIO 2 is the standard onboard LED for ESP32 DevKit boards.
+- Linux mixed-bus controller parser and CLI path issues for `read-ex`/`write-ex` handling
+- Linux HAL portability by defining `_DEFAULT_SOURCE` for `usleep()` under `-std=c11`
+- handlers_usage mock controller examples updated to `crumbs_device_t` APIs and query helpers (Linux + PlatformIO), resolving CI compile failures
+- `LED_BUILTIN` fallback for ESP32 examples (`#ifndef LED_BUILTIN ... #define LED_BUILTIN 2`)
+- API reference scan behavior documentation corrections
 
 ### Changed
 
-- Post-release docs sweep (`0649205`): corrected stale `0.10.3` version references in all
-  eight `platformio.ini` examples, `CONTRIBUTING.md`, `docs/index.md`, and
-  `docs/api-reference.md`; fixed hardcoded `MINOR`/`PATCH` values in `test_version.c`.
-- README badge layout revised; `.gitignore` extended with `*.log` pattern.
+- **Mixed-bus Arduino controller flow** (`examples/core_usage/arduino/mixed_bus_controller/`)
+  - startup validation pass + periodic status pass (default 5s)
+  - CRUMBS query reply printout for discovered devices
+  - BMP/BME chip-id + raw sample byte printout per configured sensor
+- **Core docs and examples updated for mixed-bus usage**
+  - explicit min/max topology guidance
+  - unique address guidance for CRUMBS peripherals
+  - candidate-address scanning pattern documented
+- **License posture aligned to AGPL**
+  - repository license is GNU AGPL v3
+  - metadata/docs references updated to AGPL-3.0-or-later
+- **Repository line ending policy added**
+  - `.gitattributes` now enforces LF for text and CRLF for Windows scripts to reduce cross-platform churn
+- **Code quality**
+  - read-helper bounds checks use explicit `size_t` casts in `crumbs_message_helpers.h` to avoid conversion/sign-compare warning noise
+- Post-0.11.0 version/docs sweep:
+  - stale version references corrected across examples/docs
+  - README badge/layout cleanup and `.gitignore` log pattern expansion
 
 ---
 
@@ -181,18 +203,6 @@ All notable changes to CRUMBS are documented in this file.
   - `find_device()` and `check_device_compat()` removed; their logic is unified in `resolve_device()`
   - All `cmd_*` signatures reduced to `(const crumbs_device_t *dev, const char *rest)`
   - Dispatch in `main()` calls `resolve_device` then passes `&d->dev` to the appropriate `cmd_*`
-
----
-
-## [Unreleased] - Code Quality
-
-### Changed
-
-- **Read helper bounds checks now use explicit `size_t` casts** (`crumbs_message_helpers.h`)
-  - `crumbs_msg_read_u16`, `crumbs_msg_read_u32`, `crumbs_msg_read_float`, `crumbs_msg_read_bytes`
-  - Arithmetic in bounds checks now cast to `size_t` before addition, matching the existing style of the `add_*` helpers
-  - Eliminates potential `-Wconversion`/`-Wsign-compare` warnings (particularly the `read_float` case where `int` was previously compared against `size_t` from `sizeof`)
-  - No functional change — semantics were already correct due to C integer promotion rules
 
 ---
 

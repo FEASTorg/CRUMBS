@@ -13,7 +13,7 @@ CRUMBS (Communications Router and Unified Message Broker System) is a small, por
 [![Language](https://img.shields.io/badge/language-C%20%7C%20C%2B%2B-00599C)](./)
 [![CMake](https://img.shields.io/badge/build-CMake-064F8C)](https://cmake.org/)
 
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](./LICENSE)
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](./LICENSE)
 [![PlatformIO Registry](https://badges.registry.platformio.org/packages/cameronbrooks11/library/CRUMBS.svg)](https://registry.platformio.org/libraries/cameronbrooks11/CRUMBS)
 
 ## Features
@@ -54,7 +54,7 @@ Upload [hello examples](examples/core_usage/arduino/hello_peripheral/) to two Ar
 
 ```ini
 [env]
-lib_deps = cameronbrooks11/CRUMBS@^0.11.0
+lib_deps = cameronbrooks11/CRUMBS@^0.12.0
 ```
 
 **Arduino IDE:** Tools → Manage Libraries → "CRUMBS" → Install, or copy to `~/Arduino/libraries/`
@@ -117,5 +117,5 @@ Details: [platform-setup.md](docs/platform-setup.md)
 
 ## License
 
-GPL-3.0 - see [LICENSE](LICENSE) file for details.
+AGPL-3.0-or-later - see [LICENSE](LICENSE) file for details.
 

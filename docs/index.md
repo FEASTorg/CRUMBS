@@ -225,7 +225,7 @@ Historical and technical deep-dive documents are in [archive/](archive/):
 
 ---
 
-**Version**: 0.11.0  
+**Version**: 0.12.0  
 **Author**: Cameron K. Brooks  
 **Dependencies**: Wire library (Arduino), linux-wire (Linux HAL)  
-**License**: GPL-3.0-or-later
+**License**: AGPL-3.0-or-later
