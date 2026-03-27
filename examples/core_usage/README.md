@@ -22,6 +22,7 @@
 | [basic_controller/](arduino/basic_controller/)                     | Basic controller with key commands                |
 | [advanced_controller/](arduino/advanced_controller/)               | Advanced controller with CSV parsing and scanning |
 | [mixed_bus_controller/](arduino/mixed_bus_controller/)             | CRUMBS (`basic_peripheral`) + raw sensor access on one bus |
+| [mixed_bus_controller_vendor/](arduino/mixed_bus_controller_vendor/) | CRUMBS + EZO (`ezo-driver`) + SparkFun BMP/BME280 on one bus |
 | [basic_peripheral_noncrumbs/](arduino/basic_peripheral_noncrumbs/) | Raw I²C peripheral (no CRUMBS) for comparison     |
 
 **Quick Start:** Upload [hello_peripheral](arduino/hello_peripheral/) and [hello_controller](arduino/hello_controller/) to see CRUMBS working in 15 minutes.

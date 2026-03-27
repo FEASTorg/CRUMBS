@@ -17,6 +17,7 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 |            | [basic_controller](../examples/core_usage/arduino/basic_controller/) — key command interface                 |
 |            | [advanced_controller](../examples/core_usage/arduino/advanced_controller/) — production patterns             |
 |            | [mixed_bus_controller](../examples/core_usage/arduino/mixed_bus_controller/) — CRUMBS + raw sensor validation |
+|            | [mixed_bus_controller_vendor](../examples/core_usage/arduino/mixed_bus_controller_vendor/) — CRUMBS + vendor libs on one bus |
 |            | [basic_peripheral_noncrumbs](../examples/core_usage/arduino/basic_peripheral_noncrumbs/) — non-CRUMBS device |
 | PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                                    |
 |            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                                    |
@@ -88,7 +89,7 @@ See [families_usage/README.md](../examples/families_usage/README.md) for overvie
 
 | Platform   | Peripheral Examples           | Controller Examples           |
 | ---------- | ----------------------------- | ----------------------------- |
-| Arduino    | 3 Core                        | 4 Core                        |
+| Arduino    | 3 Core                        | 5 Core                        |
 | PlatformIO | 1 Core + 1 Handler + 3 Family | 1 Core + 1 Handler            |
 | Linux      | —                             | 2 Core + 1 Handler + 2 Family |
 
