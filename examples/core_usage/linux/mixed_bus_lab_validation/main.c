@@ -255,7 +255,6 @@ int main(int argc, char **argv)
     crumbs_linux_i2c_t bus;
     uint8_t found[MAX_FOUND];
     uint8_t types[MAX_FOUND];
-    bool crumbs_present[sizeof(kCrumbsCandidates) / sizeof(kCrumbsCandidates[0])];
     bool overall_ok = true;
     int rc;
     int n;
@@ -287,8 +286,6 @@ int main(int argc, char **argv)
 
     memset(found, 0, sizeof(found));
     memset(types, 0, sizeof(types));
-    memset(crumbs_present, 0, sizeof(crumbs_present));
-
     n = crumbs_controller_scan_for_crumbs_candidates(&ctx,
                                                      kCrumbsCandidates,
                                                      sizeof(kCrumbsCandidates) / sizeof(kCrumbsCandidates[0]),
@@ -310,28 +307,19 @@ int main(int argc, char **argv)
     printf("CRUMBS scan result: %d\n", n);
     for (i = 0u; i < (size_t)n; ++i)
     {
-        size_t j;
         printf("  addr=0x%02X type=0x%02X\n", found[i], types[i]);
-        for (j = 0u; j < (sizeof(kCrumbsCandidates) / sizeof(kCrumbsCandidates[0])); ++j)
-        {
-            if (found[i] == kCrumbsCandidates[j])
-            {
-                crumbs_present[j] = true;
-                break;
-            }
-        }
-
-        if (!query_default_reply(&ctx, &bus, found[i]))
-        {
-            overall_ok = false;
-        }
     }
 
+    /*
+     * Validation is based on direct query/reply at expected addresses.
+     * Scan output is informational only because some devices may not
+     * participate in strict read-only scan behavior.
+     */
     for (i = 0u; i < (sizeof(kCrumbsCandidates) / sizeof(kCrumbsCandidates[0])); ++i)
     {
-        if (!crumbs_present[i])
+        if (!query_default_reply(&ctx, &bus, kCrumbsCandidates[i]))
         {
-            printf("CRUMBS missing expected addr=0x%02X\n", kCrumbsCandidates[i]);
+            printf("CRUMBS validation failed at expected addr=0x%02X\n", kCrumbsCandidates[i]);
             overall_ok = false;
         }
     }

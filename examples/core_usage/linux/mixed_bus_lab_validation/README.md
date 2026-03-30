@@ -12,8 +12,8 @@ This example is intentionally topology-specific so you can validate your full be
 
 Single pass, then exits:
 
-1. Scans only the expected CRUMBS addresses with protocol-aware scan.
-2. Sends a default `SET_REPLY` query to each discovered CRUMBS device and prints reply data.
+1. Scans only the expected CRUMBS addresses with protocol-aware scan (informational).
+2. Sends a default `SET_REPLY` query to each expected CRUMBS device and prints reply data.
 3. Sends `R` command to EZO pH and DO sensors, waits, reads response frame, prints status + text payload.
 4. Optionally probes Bosch candidates (`0x76`, `0x77`) for chip ID register (`0xD0`) and prints one raw sample read (`0xF7`, 6 bytes) when present.
 
@@ -38,10 +38,9 @@ Device path is optional; default is `/dev/i2c-1`.
 
 ## Pass Criteria
 
-1. All expected CRUMBS addresses are found: `0x0A`, `0x14`, `0x15`.
-2. CRUMBS default query/reply succeeds for discovered devices.
-3. EZO pH and DO return status byte `0x01` (`SUCCESS`).
-4. Optional: if a Bosch sensor is connected, at least one reports chip ID `0x58` (BMP280) or `0x60` (BME280). If none are connected, the example logs a skip message and can still pass.
+1. CRUMBS default query/reply succeeds for all expected addresses: `0x0A`, `0x14`, `0x15`.
+2. EZO pH and DO return status byte `0x01` (`SUCCESS`).
+3. Optional: if a Bosch sensor is connected, at least one reports chip ID `0x58` (BMP280) or `0x60` (BME280). If none are connected, the example logs a skip message and can still pass.
 
 ## Notes
 
