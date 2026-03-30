@@ -206,6 +206,10 @@ static bool test_bosch_candidate(crumbs_context_t *ctx,
     dev.delay_fn = crumbs_linux_delay_us;
     dev.io = (void *)bus;
 
+#if defined(__linux__)
+    /* Optional probe: suppress expected low-level I/O errors for missing addrs. */
+    lw_set_error_logging(&bus->bus, 0);
+#endif
     rc_chip = crumbs_i2c_dev_read_reg_u8(&dev,
                                          0xD0u,
                                          &chip_id,
@@ -213,10 +217,13 @@ static bool test_bosch_candidate(crumbs_context_t *ctx,
                                          BUS_TIMEOUT_US,
                                          1,
                                          crumbs_linux_write_then_read);
+#if defined(__linux__)
+    lw_set_error_logging(&bus->bus, 1);
+#endif
 
     if (rc_chip != CRUMBS_I2C_DEV_OK)
     {
-        printf("Bosch addr=0x%02X chip_id read failed rc=%d\n", addr, rc_chip);
+        printf("Bosch addr=0x%02X not present (chip_id rc=%d)\n", addr, rc_chip);
         return false;
     }
 

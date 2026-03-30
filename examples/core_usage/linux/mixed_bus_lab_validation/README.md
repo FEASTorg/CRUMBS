@@ -16,6 +16,7 @@ Single pass, then exits:
 2. Sends a default `SET_REPLY` query to each expected CRUMBS device and prints reply data.
 3. Sends `R` command to EZO pH and DO sensors, waits, reads response frame, prints status + text payload.
 4. Optionally probes Bosch candidates (`0x76`, `0x77`) for chip ID register (`0xD0`) and prints one raw sample read (`0xF7`, 6 bytes) when present.
+   Missing optional Bosch addresses are reported as `not present`.
 
 Exit code is non-zero on validation failure.
 
