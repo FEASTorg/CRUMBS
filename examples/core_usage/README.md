@@ -65,18 +65,20 @@ pio run --target upload
 | ---------------------------------------------- | ----------------------------------------- |
 | [simple_controller/](linux/simple_controller/) | Linux controller using linux-wire library |
 | [mixed_bus_controller/](linux/mixed_bus_controller/) | Mixed-bus validator for CRUMBS + sensor |
+| [mixed_bus_lab_controller/](linux/mixed_bus_lab_controller/) | Lab pass: 2x DCMT + 1x RLHT + EZO pH/DO + BMP/BME |
 
 ### Getting Started (Linux)
 
 ```bash
-cd examples/core_usage/linux/simple_controller
-make
-./simple_controller /dev/i2c-1
+# From CRUMBS repo root
+cmake --preset linux
+cmake --build --preset linux
 
-cd ../mixed_bus_controller
-cmake -S . -B build -DCRUMBS_BUILD_IN_TREE=ON
-cmake --build build
-./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21 strict
+./build-linux/crumbs_simple_linux_controller /dev/i2c-1 0x14
+./build-linux/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21 strict
+
+# Topology-specific lab pass (3 CRUMBS + EZO pH/DO + BMP/BME)
+./build-linux/crumbs_mixed_bus_lab_controller /dev/i2c-1
 ```
 
 **Note:** Requires [linux-wire](https://github.com/FEASTorg/linux-wire) installed (recommended: `cmake --preset minimal && cmake --build --preset minimal && sudo cmake --install build/minimal --prefix /usr/local`).

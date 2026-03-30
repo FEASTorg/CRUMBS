@@ -23,6 +23,7 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 |            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                                    |
 | Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                                         |
 |            | [mixed_bus_controller](../examples/core_usage/linux/mixed_bus_controller/)                                   |
+|            | [mixed_bus_lab_controller](../examples/core_usage/linux/mixed_bus_lab_controller/)                       |
 
 **Start here:** Learn message structure, encoding/decoding, basic request-reply patterns.
 
@@ -91,7 +92,7 @@ See [families_usage/README.md](../examples/families_usage/README.md) for overvie
 | ---------- | ----------------------------- | ----------------------------- |
 | Arduino    | 3 Core                        | 5 Core                        |
 | PlatformIO | 1 Core + 1 Handler + 3 Family | 1 Core + 1 Handler            |
-| Linux      | —                             | 2 Core + 1 Handler + 2 Family |
+| Linux      | —                             | 3 Core + 1 Handler + 2 Family |
 
 ---
 
