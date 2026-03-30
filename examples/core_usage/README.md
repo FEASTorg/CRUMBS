@@ -79,7 +79,7 @@ cmake --build build
 ./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21 strict
 ```
 
-**Note:** Requires [linux-wire](https://github.com/AnotherDaniel/linux-wire) library installed.
+**Note:** Requires [linux-wire](https://github.com/FEASTorg/linux-wire) installed (recommended: `cmake --preset minimal && cmake --build --preset minimal && sudo cmake --install build/minimal --prefix /usr/local`).
 
 ### Mixed-Bus Validation Path (Pre-Release)
 

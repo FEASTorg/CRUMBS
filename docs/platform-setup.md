@@ -261,11 +261,13 @@ CRUMBS Linux HAL requires the `linux-wire` library for I²C bus access.
 git clone https://github.com/FEASTorg/linux-wire.git
 cd linux-wire
 
-# Build and install
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-sudo cmake --install build --prefix /usr/local
+# Build and install (linux-wire preset flow)
+cmake --preset minimal
+cmake --build --preset minimal
+sudo cmake --install build/minimal --prefix /usr/local
 ```
+
+Presets require CMake 3.20+. If your host has older CMake, use the fallback `cmake -S . -B build` flow from the linux-wire README.
 
 **To verify installation:**
 
@@ -280,16 +282,15 @@ cmake --find-package -DNAME=linux_wire -DCOMPILER_ID=GNU \
 For development without system install:
 
 ```bash
-# Build linux-wire locally
+# Build linux-wire locally (preset flow)
 cd linux-wire
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
+cmake --preset dev
+cmake --build --preset dev
 
-# Point CRUMBS at local build
+# Point CRUMBS at local linux-wire preset build
 cd ../CRUMBS
-cmake -S . -B build -DCRUMBS_ENABLE_LINUX_HAL=ON \
-      -DCMAKE_PREFIX_PATH=$HOME/linux-wire/build
-cmake --build build --parallel
+cmake --preset linux -DCMAKE_PREFIX_PATH=$HOME/linux-wire/build/dev
+cmake --build --preset linux
 ```
 
 #### Long-term CMake Integration Pattern
@@ -471,7 +472,7 @@ cmake --build build
 
 | Issue                       | Solution                                                     |
 | --------------------------- | ------------------------------------------------------------ |
-| `linux_wire not found`      | Install linux-wire (see above), or use `-DCMAKE_PREFIX_PATH` |
+| `linux_wire not found`      | Install linux-wire with presets, or set `-DCMAKE_PREFIX_PATH=$HOME/linux-wire/build/dev` (or `build/minimal`) |
 | `/dev/i2c-1` not found      | Enable I²C in raspi-config, load `i2c-dev` module            |
 | Permission denied           | Add user to `i2c` group or use `sudo`                        |
 | `i2c-dev` module not loaded | Run `sudo modprobe i2c-dev`, add to `/etc/modules` for boot  |
@@ -644,4 +645,3 @@ Once your platform is set up and basic communication is working:
 - [Protocol Specification](protocol.md) — Wire format and versioning
 - [Examples](examples.md) — Working code for all platforms
 - [Architecture](architecture.md) — Design decisions and internals
-
