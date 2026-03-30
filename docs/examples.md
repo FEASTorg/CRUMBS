@@ -22,8 +22,8 @@ CRUMBS examples are organized into a **three-tier learning path** from basics to
 | PlatformIO | [simple_peripheral](../examples/core_usage/platformio/simple_peripheral/)                                    |
 |            | [simple_controller](../examples/core_usage/platformio/simple_controller/)                                    |
 | Linux      | [simple_controller](../examples/core_usage/linux/simple_controller/)                                         |
-|            | [mixed_bus_controller](../examples/core_usage/linux/mixed_bus_controller/)                                   |
-|            | [mixed_bus_lab_controller](../examples/core_usage/linux/mixed_bus_lab_controller/)                       |
+|            | [mixed_bus_probe](../examples/core_usage/linux/mixed_bus_probe/) — generic raw mixed-bus probe tool |
+|            | [mixed_bus_lab_validation](../examples/core_usage/linux/mixed_bus_lab_validation/) — bench-specific validation pass (optional BMP/BME) |
 
 **Start here:** Learn message structure, encoding/decoding, basic request-reply patterns.
 

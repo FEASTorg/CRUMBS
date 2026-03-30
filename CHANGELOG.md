@@ -18,7 +18,7 @@ All notable changes to CRUMBS are documented in this file.
   - `crumbs_linux_write_then_read(...)`
   - `crumbs_arduino_write_then_read(...)`
 - **Mixed-bus validation examples**
-  - Linux: `examples/core_usage/linux/mixed_bus_controller/`
+  - Linux: `examples/core_usage/linux/mixed_bus_probe/`
   - Arduino: `examples/core_usage/arduino/mixed_bus_controller/`
   - includes CRUMBS candidate scanning + non-CRUMBS sensor register I/O flow
 - **Coverage for new helpers**

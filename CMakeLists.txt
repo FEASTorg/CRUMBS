@@ -82,15 +82,15 @@ if(CRUMBS_BUILD_EXAMPLES AND CRUMBS_ENABLE_LINUX_HAL)
     )
     target_link_libraries(crumbs_simple_linux_controller PRIVATE crumbs)
 
-    add_executable(crumbs_mixed_bus_controller
-        examples/core_usage/linux/mixed_bus_controller/main.c
+    add_executable(crumbs_mixed_bus_probe
+        examples/core_usage/linux/mixed_bus_probe/main.c
     )
-    target_link_libraries(crumbs_mixed_bus_controller PRIVATE crumbs)
+    target_link_libraries(crumbs_mixed_bus_probe PRIVATE crumbs)
 
-    add_executable(crumbs_mixed_bus_lab_controller
-        examples/core_usage/linux/mixed_bus_lab_controller/main.c
+    add_executable(crumbs_mixed_bus_lab_validation
+        examples/core_usage/linux/mixed_bus_lab_validation/main.c
     )
-    target_link_libraries(crumbs_mixed_bus_lab_controller PRIVATE crumbs)
+    target_link_libraries(crumbs_mixed_bus_lab_validation PRIVATE crumbs)
 
     add_executable(crumbs_mock_controller
         examples/handlers_usage/linux/mock_controller/mock_controller.c

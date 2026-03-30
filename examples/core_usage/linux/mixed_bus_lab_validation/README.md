@@ -1,10 +1,10 @@
-# Mixed Bus Lab Controller (Linux)
+# Mixed Bus Lab Validation (Linux)
 
 Lab-focused mixed-bus validation example for one Linux controller running all devices on one I2C bus:
 
 1. CRUMBS slices: RLHT (`0x0A`), DCMT (`0x14`), DCMT (`0x15`)
 2. EZO command/response sensors: pH (`0x63`), DO (`0x61`)
-3. Bosch register sensor: BMP/BME280 (`0x76` or `0x77`)
+3. Optional Bosch register sensor: BMP/BME280 (`0x76` or `0x77`)
 
 This example is intentionally topology-specific so you can validate your full bench before provider-level mixed-bus tests.
 
@@ -15,7 +15,7 @@ Single pass, then exits:
 1. Scans only the expected CRUMBS addresses with protocol-aware scan.
 2. Sends a default `SET_REPLY` query to each discovered CRUMBS device and prints reply data.
 3. Sends `R` command to EZO pH and DO sensors, waits, reads response frame, prints status + text payload.
-4. Probes Bosch candidates (`0x76`, `0x77`) for chip ID register (`0xD0`) and prints one raw sample read (`0xF7`, 6 bytes).
+4. Optionally probes Bosch candidates (`0x76`, `0x77`) for chip ID register (`0xD0`) and prints one raw sample read (`0xF7`, 6 bytes) when present.
 
 Exit code is non-zero on validation failure.
 
@@ -31,7 +31,7 @@ cmake --build --preset linux
 ## Run
 
 ```bash
-./build-linux/crumbs_mixed_bus_lab_controller /dev/i2c-1
+./build-linux/crumbs_mixed_bus_lab_validation /dev/i2c-1
 ```
 
 Device path is optional; default is `/dev/i2c-1`.
@@ -41,7 +41,7 @@ Device path is optional; default is `/dev/i2c-1`.
 1. All expected CRUMBS addresses are found: `0x0A`, `0x14`, `0x15`.
 2. CRUMBS default query/reply succeeds for discovered devices.
 3. EZO pH and DO return status byte `0x01` (`SUCCESS`).
-4. At least one Bosch sensor reports chip ID `0x58` (BMP280) or `0x60` (BME280).
+4. Optional: if a Bosch sensor is connected, at least one reports chip ID `0x58` (BMP280) or `0x60` (BME280). If none are connected, the example logs a skip message and can still pass.
 
 ## Notes
 

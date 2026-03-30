@@ -64,8 +64,8 @@ pio run --target upload
 | Example                                        | Description                               |
 | ---------------------------------------------- | ----------------------------------------- |
 | [simple_controller/](linux/simple_controller/) | Linux controller using linux-wire library |
-| [mixed_bus_controller/](linux/mixed_bus_controller/) | Mixed-bus validator for CRUMBS + sensor |
-| [mixed_bus_lab_controller/](linux/mixed_bus_lab_controller/) | Lab pass: 2x DCMT + 1x RLHT + EZO pH/DO + BMP/BME |
+| [mixed_bus_probe/](linux/mixed_bus_probe/) | Generic raw mixed-bus probe tool (CRUMBS + register I/O) |
+| [mixed_bus_lab_validation/](linux/mixed_bus_lab_validation/) | Bench validation pass: 2x DCMT + 1x RLHT + EZO pH/DO (+ optional BMP/BME) |
 
 ### Getting Started (Linux)
 
@@ -75,10 +75,10 @@ cmake --preset linux
 cmake --build --preset linux
 
 ./build-linux/crumbs_simple_linux_controller /dev/i2c-1 0x14
-./build-linux/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21 strict
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 scan 0x20,0x21 strict
 
-# Topology-specific lab pass (3 CRUMBS + EZO pH/DO + BMP/BME)
-./build-linux/crumbs_mixed_bus_lab_controller /dev/i2c-1
+# Topology-specific lab pass (3 CRUMBS + EZO pH/DO, optional BMP/BME)
+./build-linux/crumbs_mixed_bus_lab_validation /dev/i2c-1
 ```
 
 **Note:** Requires [linux-wire](https://github.com/FEASTorg/linux-wire) installed (recommended: `cmake --preset minimal && cmake --build --preset minimal && sudo cmake --install build/minimal --prefix /usr/local`).
@@ -90,13 +90,13 @@ Use this sequence to validate the new raw-I2C helper APIs end-to-end before rele
 1. `scan` known CRUMBS addresses only:
 
 ```bash
-./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21,0x30 strict
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 scan 0x20,0x21,0x30 strict
 ```
 
 2. read sensor chip-ID register with repeated-start:
 
 ```bash
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
 ```
 
 For BMP/BME280, expected chip ID from that command is:
@@ -105,20 +105,20 @@ For BMP/BME280, expected chip ID from that command is:
 3. read u16-addressed register device:
 
 ```bash
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u16 0x40 0x0100 6 repeat
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 read-u16 0x40 0x0100 6 repeat
 ```
 
 4. optional generic preamble read/write using `-ex` APIs:
 
 ```bash
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat
-./build/crumbs_mixed_bus_controller /dev/i2c-1 write-ex 0x1E 0x20,0x09 0x10,0x00
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 write-ex 0x1E 0x20,0x09 0x10,0x00
 ```
 
 5. optional sensor register write:
 
 ```bash
-./build/crumbs_mixed_bus_controller /dev/i2c-1 write-u8 0x76 0xF4 0x27
+./build-linux/crumbs_mixed_bus_probe /dev/i2c-1 write-u8 0x76 0xF4 0x27
 ```
 
 ---

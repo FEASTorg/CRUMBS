@@ -276,7 +276,7 @@ int main(int argc, char **argv)
     printf("Bus: %s\n", device_path);
     printf("Expected CRUMBS addrs: 0x0A, 0x14, 0x15\n");
     printf("Expected EZO addrs: pH=0x63, DO=0x61\n");
-    printf("Expected Bosch addrs (one required): 0x76 or 0x77\n\n");
+    printf("Optional Bosch addrs: 0x76 or 0x77\n\n");
 
     rc = crumbs_linux_init_controller(&ctx, &bus, device_path, BUS_TIMEOUT_US);
     if (rc != 0)
@@ -360,8 +360,7 @@ int main(int argc, char **argv)
 
         if (!bosch_any)
         {
-            printf("Bosch sensor validation failed (no BMP/BME280 detected at 0x76/0x77)\n");
-            overall_ok = false;
+            printf("Bosch sensor optional check skipped (no BMP/BME280 detected at 0x76/0x77)\n");
         }
     }
 

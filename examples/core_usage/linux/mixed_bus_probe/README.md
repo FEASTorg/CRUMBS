@@ -1,4 +1,4 @@
-# Mixed Bus Controller (Linux)
+# Mixed Bus Probe (Linux)
 
 Linux controller example for validating the new mixed-bus APIs:
 
@@ -31,35 +31,35 @@ cmake --build build
 ## Usage
 
 ```bash
-./build/crumbs_mixed_bus_controller <i2c-dev> scan <candidate_csv> [strict|non-strict]
-./build/crumbs_mixed_bus_controller <i2c-dev> read-u8 <sensor_addr> <reg_u8> <len> [repeat|norepeat]
-./build/crumbs_mixed_bus_controller <i2c-dev> read-u16 <sensor_addr> <reg_u16> <len> [repeat|norepeat]
-./build/crumbs_mixed_bus_controller <i2c-dev> read-ex <sensor_addr> <reg_csv> <len> [repeat|norepeat]
-./build/crumbs_mixed_bus_controller <i2c-dev> write-u8 <sensor_addr> <reg_u8> <data_csv>
-./build/crumbs_mixed_bus_controller <i2c-dev> write-u16 <sensor_addr> <reg_u16> <data_csv>
-./build/crumbs_mixed_bus_controller <i2c-dev> write-ex <sensor_addr> <reg_csv> <data_csv>
+./build/crumbs_mixed_bus_probe <i2c-dev> scan <candidate_csv> [strict|non-strict]
+./build/crumbs_mixed_bus_probe <i2c-dev> read-u8 <sensor_addr> <reg_u8> <len> [repeat|norepeat]
+./build/crumbs_mixed_bus_probe <i2c-dev> read-u16 <sensor_addr> <reg_u16> <len> [repeat|norepeat]
+./build/crumbs_mixed_bus_probe <i2c-dev> read-ex <sensor_addr> <reg_csv> <len> [repeat|norepeat]
+./build/crumbs_mixed_bus_probe <i2c-dev> write-u8 <sensor_addr> <reg_u8> <data_csv>
+./build/crumbs_mixed_bus_probe <i2c-dev> write-u16 <sensor_addr> <reg_u16> <data_csv>
+./build/crumbs_mixed_bus_probe <i2c-dev> write-ex <sensor_addr> <reg_csv> <data_csv>
 ```
 
 ## Examples
 
 ```bash
 # Scan only known CRUMBS addresses
-./build/crumbs_mixed_bus_controller /dev/i2c-1 scan 0x20,0x21,0x30 strict
+./build/crumbs_mixed_bus_probe /dev/i2c-1 scan 0x20,0x21,0x30 strict
 
 # Read BMP/BME280 chip-ID register (u8 register address)
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
+./build/crumbs_mixed_bus_probe /dev/i2c-1 read-u8 0x76 0xD0 1 repeat
 
 # Read 6 bytes using u16 register address
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-u16 0x40 0x0100 6 repeat
+./build/crumbs_mixed_bus_probe /dev/i2c-1 read-u16 0x40 0x0100 6 repeat
 
 # Read 6 bytes from a 2-byte register preamble using generic -ex API
-./build/crumbs_mixed_bus_controller /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat
+./build/crumbs_mixed_bus_probe /dev/i2c-1 read-ex 0x1E 0x20,0x08 6 repeat
 
 # Write one config byte
-./build/crumbs_mixed_bus_controller /dev/i2c-1 write-u8 0x76 0xF4 0x27
+./build/crumbs_mixed_bus_probe /dev/i2c-1 write-u8 0x76 0xF4 0x27
 
 # Generic write with multi-byte register preamble
-./build/crumbs_mixed_bus_controller /dev/i2c-1 write-ex 0x1E 0x20,0x09 0x10,0x00
+./build/crumbs_mixed_bus_probe /dev/i2c-1 write-ex 0x1E 0x20,0x09 0x10,0x00
 ```
 
 ## Validation Checklist
