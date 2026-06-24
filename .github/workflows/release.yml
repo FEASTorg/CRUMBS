@@ -17,7 +17,7 @@ jobs:
       LINUX_WIRE_SHA256: "ad15ff7742e4b4108014096386ee01e2f89a9f74c77b2e42f4591c5371479bda"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install dependencies
         run: |
