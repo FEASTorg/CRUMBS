@@ -6,6 +6,25 @@ All notable changes to CRUMBS are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed host read paths passing the raw read size to the exact-length decoder
+  (#15). Linux i2c-dev reads return the requested byte count with `0xFF` bus
+  padding after the frame, so `crumbs_controller_read()`,
+  `crumbs_linux_read_message()`, and the CRUMBS scanners rejected every valid
+  reply (`-1`, trailing bytes) since the v0.12.4 strictness fix. All host read
+  helpers now trim to the header-declared frame length before decoding; the
+  `crumbs_decode_message()` exact-length contract itself is unchanged.
+
+### Added
+
+- Added `crumbs_frame_length()` for computing the header-declared frame length
+  of a padded read, for callers that hand raw reads to the decoder themselves.
+- Added padded-read regression coverage (`tests/test_padded_read.c`) using the
+  bench-captured reply from issue #15, exercising the trim helper,
+  `crumbs_controller_read()`, and the typed scanner against Linux-style padded
+  and all-`0xFF` reads.
+
 ## [0.12.4] - 2026-06-10
 
 ### Fixed

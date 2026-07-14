@@ -371,6 +371,28 @@ extern "C"
                               crumbs_context_t *ctx);
 
     /**
+     * @brief Length of the frame declared by a received header.
+     *
+     * Transports that must request a fixed byte count up front (e.g. Linux
+     * i2c-dev) return the requested count with bus padding after the frame,
+     * because a peripheral writes only its actual frame and then stops
+     * driving the bus. crumbs_decode_message() enforces an exact frame
+     * length, so such reads must be trimmed to the header-declared length
+     * before decoding. All CRUMBS host read helpers do this internally;
+     * call it directly when handing raw reads to the decoder yourself.
+     *
+     * @param buffer     Bytes returned by the raw read.
+     * @param buffer_len Number of bytes the read returned.
+     * @param frame_len  Set to the declared frame length (4 + data_len) on success.
+     * @return 0 on success; -1 if the arguments are invalid, the read is
+     *         shorter than a minimum frame, the declared payload length is
+     *         out of range, or the read is shorter than the declared frame.
+     */
+    int crumbs_frame_length(const uint8_t *buffer,
+                            size_t buffer_len,
+                            size_t *frame_len);
+
+    /**
      * @brief Send a CRUMBS message to a 7-bit I2C target (controller helper).
      *
      * @param ctx Initialized CRUMBS context in controller mode.
@@ -390,7 +412,9 @@ extern "C"
      * @brief Read and decode a CRUMBS reply frame from a peripheral (controller helper).
      *
      * Symmetric counterpart to crumbs_controller_send(). Reads raw bytes via
-     * @p read_fn, then decodes them with crumbs_decode_message(). Passes
+     * @p read_fn, trims them to the header-declared frame length with
+     * crumbs_frame_length() (fixed-count transports pad reads past the frame),
+     * then decodes them with crumbs_decode_message(). Passes
      * timeout_us=0 to @p read_fn so the HAL uses its own default; call
      * delay_fn() before this to give the peripheral time to stage its reply
      * after a SET_REPLY write.
