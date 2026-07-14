@@ -185,6 +185,10 @@ if(CRUMBS_ENABLE_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/families_usage/lhwit_family
     )
     add_test(NAME ops_validation_test COMMAND test_ops_validation)
+
+    add_executable(test_padded_read tests/test_padded_read.c)
+    target_link_libraries(test_padded_read PRIVATE crumbs)
+    add_test(NAME padded_read_test COMMAND test_padded_read)
 endif()
 
 # -----------------------------------------------------------------------------

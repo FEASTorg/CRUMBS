@@ -156,8 +156,21 @@ int crumbs_linux_read_message(crumbs_linux_i2c_t *i2c,
         return -4;
     }
 
+    /* i2c-dev reads return the requested count with bus padding after the
+       frame; trim to the header-declared length before the exact-length
+       decode. */
+    size_t frame_len = 0u;
+    if (crumbs_frame_length(buf, total, &frame_len) != 0)
+    {
+        if (ctx)
+        {
+            ctx->last_crc_ok = 0u;
+        }
+        return -1; /* short read or garbage header */
+    }
+
     /* Decode with CRUMBS core -- validates CRC and updates ctx stats. */
-    int rc = crumbs_decode_message(buf, total, out_msg, ctx);
+    int rc = crumbs_decode_message(buf, frame_len, out_msg, ctx);
     return rc; /* 0 on success, <0 on decode/CRC error */
 }
 

@@ -406,6 +406,38 @@ int crumbs_decode_message(const uint8_t *buffer,
 }
 
 /**
+ * @brief Length of the frame declared by a received header.
+ *
+ * Fixed-count transports (Linux i2c-dev) return the requested byte count
+ * with bus padding after the frame; the decoder's exact-length contract
+ * requires trimming to this length first.
+ */
+int crumbs_frame_length(const uint8_t *buffer,
+                        size_t buffer_len,
+                        size_t *frame_len)
+{
+    if (!buffer || !frame_len || buffer_len < k_min_frame_len)
+    {
+        return -1;
+    }
+
+    uint8_t data_len = buffer[2];
+    if (data_len > CRUMBS_MAX_PAYLOAD)
+    {
+        return -1; /* garbage header (e.g. all-0xFF read from a silent device) */
+    }
+
+    size_t declared = k_header_len + data_len + 1u;
+    if (buffer_len < declared)
+    {
+        return -1; /* genuinely truncated */
+    }
+
+    *frame_len = declared;
+    return 0;
+}
+
+/**
  * @brief Helper used by controllers to send a CRUMBS frame.
  */
 int crumbs_controller_send(const crumbs_context_t *ctx,
@@ -476,7 +508,17 @@ int crumbs_controller_read(crumbs_context_t *ctx,
 
     CRUMBS_DBG("rx: addr=0x%02X %d bytes\n", target_addr, n);
 
-    return crumbs_decode_message(buf, (size_t)n, out_msg, ctx);
+    /* Fixed-count transports pad the read past the frame; trim to the
+       header-declared length before the exact-length decode. */
+    size_t frame_len = 0u;
+    if (crumbs_frame_length(buf, (size_t)n, &frame_len) != 0)
+    {
+        CRUMBS_DBG("rx: invalid frame header\n");
+        ctx->last_crc_ok = 0u;
+        return -1;
+    }
+
+    return crumbs_decode_message(buf, frame_len, out_msg, ctx);
 }
 
 /**
@@ -685,10 +727,12 @@ int crumbs_controller_scan_for_crumbs_with_types(const crumbs_context_t *ctx,
         /* Attempt a direct read first (many peripherals reply on request).
            read_fn returns number of bytes read on success, negative on error. */
         int n = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_MAX_SIZE, timeout_us);
-        if (n >= (int)k_min_frame_len)
+        size_t probe_frame_len = 0u;
+        if (n >= (int)k_min_frame_len &&
+            crumbs_frame_length(buf, (size_t)n, &probe_frame_len) == 0)
         {
             crumbs_message_t m;
-            if (crumbs_decode_message(buf, (size_t)n, &m, NULL) == 0)
+            if (crumbs_decode_message(buf, probe_frame_len, &m, NULL) == 0)
             {
                 if (count < max_found)
                 {
@@ -716,10 +760,12 @@ int crumbs_controller_scan_for_crumbs_with_types(const crumbs_context_t *ctx,
             (void)crumbs_controller_send(ctx, (uint8_t)addr, &probe, write_fn, io_ctx);
 
             int n2 = read_fn(io_ctx, (uint8_t)addr, buf, (size_t)CRUMBS_MESSAGE_MAX_SIZE, timeout_us);
-            if (n2 >= (int)k_min_frame_len)
+            size_t probe2_frame_len = 0u;
+            if (n2 >= (int)k_min_frame_len &&
+                crumbs_frame_length(buf, (size_t)n2, &probe2_frame_len) == 0)
             {
                 crumbs_message_t m2;
-                if (crumbs_decode_message(buf, (size_t)n2, &m2, NULL) == 0)
+                if (crumbs_decode_message(buf, probe2_frame_len, &m2, NULL) == 0)
                 {
                     if (count < max_found)
                     {
