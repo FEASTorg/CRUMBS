@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(CRUMBS
-    VERSION 0.12.4
+    VERSION 0.12.5
     LANGUAGES C
 )
 

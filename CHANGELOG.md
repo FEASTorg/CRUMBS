@@ -6,6 +6,8 @@ All notable changes to CRUMBS are documented in this file.
 
 ## [Unreleased]
 
+## [0.12.5] - 2026-07-13
+
 ### Fixed
 
 - Fixed host read paths passing the raw read size to the exact-length decoder
