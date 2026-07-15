@@ -475,33 +475,44 @@ python scripts/generate_crc8.py  # --no-stage to skip
 
 ### Release Process
 
-1. **Update version numbers:**
-   - `CMakeLists.txt` — CMake project/package version
-   - `library.json` — PlatformIO registry
-   - `library.properties` — Arduino registry
-   - `src/crumbs_version.h` — C macros
-   - docs and PlatformIO examples that reference the published version
+> **Ordering is load-bearing** (#18, hit live during v0.12.5): the version
+> bump pins the examples' `platformio.ini` to `^<new-version>`, so the bump
+> PR's `platformio` CI lane can only pass **after** the registry has that
+> version — but the tag that builds the GitHub release points at that same
+> commit, and branch protection (required `ok` check, admins included)
+> forbids pushing it to `main` directly. Follow the steps in this order.
 
-2. **Update CHANGELOG.md:**
-   - List all changes since last release
-   - Categorize: Added, Changed, Fixed, Removed
-   - Note breaking changes prominently
+1. **Prepare the release commit on a branch** (`release/vX.Y.Z-prep`):
+   - Version numbers: `CMakeLists.txt` (CMake), `library.json` (PlatformIO),
+     `library.properties` (Arduino), `src/crumbs_version.h` (C macros), and
+     docs/PlatformIO examples that reference the published version.
+   - `CHANGELOG.md`: date the `[Unreleased]` section; categorize Added /
+     Changed / Fixed / Removed; note breaking changes prominently.
+   - Open the bump PR. Its `platformio` lane will FAIL with
+     `UnknownPackageError` at this point — expected; do not chase it.
 
-3. **Publish PlatformIO package:**
-   - Publish the matching `library.json` version to the PlatformIO registry
-   - Keep example `lib_deps` pinned to the newly published compatible range
-
-4. **Tag release:**
+2. **Tag the release-prep commit and push the tag:**
 
    ```bash
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin vX.Y.Z
    ```
 
-5. **Verify release automation:**
-   - GitHub release is created automatically from the tag
-   - Linux binary/source tarballs, manifest, and checksums are attached
-   - CI and release workflows are green
+   The release workflow builds the GitHub release (tarballs, manifest,
+   checksums) from the tagged commit — it does not require the commit to be
+   on `main` yet.
+
+3. **Publish the PlatformIO package** (`pio pkg publish` from the tagged
+   tree) and wait for the registry to index the new version
+   (`pio pkg show "<owner>/CRUMBS@X.Y.Z"`).
+
+4. **Re-run the bump PR's failed CI lane** — it now resolves the registry
+   version and goes green — and **merge with a merge commit** (not squash),
+   so the tagged SHA remains an ancestor of `main` like every prior release.
+
+5. **Verify:**
+   - GitHub release assets attached; checksums match
+   - CI and release workflows green; `git merge-base --is-ancestor vX.Y.Z main`
    - Arduino Library Manager consumes `library.properties` from GitHub tags
 
 ### CI/CD Pipeline
